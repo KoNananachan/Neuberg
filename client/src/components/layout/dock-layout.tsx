@@ -230,6 +230,9 @@ const RegulatoryCapitalPanel = lazy(() => import('../panels/regulatory-capital-p
 const SettlementRiskPanel = lazy(() => import('../panels/settlement-risk-panel').then(m => ({ default: m.SettlementRiskPanel })));
 const SwapValuationPanel = lazy(() => import('../panels/swap-valuation-panel').then(m => ({ default: m.SwapValuationPanel })));
 const CommodityStoragePanel = lazy(() => import('../panels/commodity-storage-panel').then(m => ({ default: m.CommodityStoragePanel })));
+const CounterpartyExposurePanel = lazy(() => import('../panels/counterparty-exposure-panel').then(m => ({ default: m.CounterpartyExposurePanel })));
+const MarketImpactModelPanel = lazy(() => import('../panels/market-impact-model-panel').then(m => ({ default: m.MarketImpactModelPanel })));
+const StructuredNotesPanel = lazy(() => import('../panels/structured-notes-panel').then(m => ({ default: m.StructuredNotesPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -472,6 +475,9 @@ export const PANEL_IDS = {
   SETTLEMENT_RISK: 'settlement-risk',
   SWAP_VALUATION: 'swap-valuation',
   COMMODITY_STORAGE: 'commodity-storage',
+  COUNTERPARTY_EXPOSURE: 'counterparty-exposure',
+  MARKET_IMPACT_MODEL: 'market-impact-model',
+  STRUCTURED_NOTES: 'structured-notes',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -698,6 +704,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SETTLEMENT_RISK]: 'SETTLEMENT RISK',
   [PANEL_IDS.SWAP_VALUATION]: 'SWAP VALUATION',
   [PANEL_IDS.COMMODITY_STORAGE]: 'COMMODITY STORAGE',
+  [PANEL_IDS.COUNTERPARTY_EXPOSURE]: 'COUNTERPARTY EXPOSURE',
+  [PANEL_IDS.MARKET_IMPACT_MODEL]: 'MARKET IMPACT MODEL',
+  [PANEL_IDS.STRUCTURED_NOTES]: 'STRUCTURED NOTES',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -925,6 +934,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SETTLEMENT_RISK]: 'panelSettlementRisk',
   [PANEL_IDS.SWAP_VALUATION]: 'panelSwapValuation',
   [PANEL_IDS.COMMODITY_STORAGE]: 'panelCommodityStorage',
+  [PANEL_IDS.COUNTERPARTY_EXPOSURE]: 'panelCounterpartyExposure',
+  [PANEL_IDS.MARKET_IMPACT_MODEL]: 'panelMarketImpactModel',
+  [PANEL_IDS.STRUCTURED_NOTES]: 'panelStructuredNotes',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1448,6 +1460,9 @@ export function DockLayout() {
       case PANEL_IDS.SETTLEMENT_RISK: content = <LazyWrap><SettlementRiskPanel /></LazyWrap>; break;
       case PANEL_IDS.SWAP_VALUATION: content = <LazyWrap><SwapValuationPanel /></LazyWrap>; break;
       case PANEL_IDS.COMMODITY_STORAGE: content = <LazyWrap><CommodityStoragePanel /></LazyWrap>; break;
+      case PANEL_IDS.COUNTERPARTY_EXPOSURE: content = <LazyWrap><CounterpartyExposurePanel /></LazyWrap>; break;
+      case PANEL_IDS.MARKET_IMPACT_MODEL: content = <LazyWrap><MarketImpactModelPanel /></LazyWrap>; break;
+      case PANEL_IDS.STRUCTURED_NOTES: content = <LazyWrap><StructuredNotesPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
