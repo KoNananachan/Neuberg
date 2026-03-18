@@ -68,6 +68,9 @@ import sectorPerformanceRouter from './routes/sector-performance.js';
 import etfHoldingsRouter from './routes/etf-holdings.js';
 import drawdownRouter from './routes/drawdown.js';
 import marketRegimeRouter from './routes/market-regime.js';
+import relativeValuationRouter from './routes/relative-valuation.js';
+import confluenceRouter from './routes/confluence.js';
+import ivSurfaceRouter from './routes/iv-surface.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -237,6 +240,9 @@ export function createApp() {
   app.use('/api/etf-holdings', etfHoldingsRouter);
   app.use('/api/drawdown', drawdownRouter);
   app.use('/api/market-regime', marketRegimeRouter);
+  app.use('/api/relative-valuation', relativeValuationRouter);
+  app.use('/api/confluence', confluenceRouter);
+  app.use('/api/iv-surface', ivSurfaceRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

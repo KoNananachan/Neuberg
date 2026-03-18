@@ -75,6 +75,9 @@ const SectorPerformancePanel = lazy(() => import('../panels/sector-performance-p
 const ETFHoldingsPanel = lazy(() => import('../panels/etf-holdings-panel').then(m => ({ default: m.ETFHoldingsPanel })));
 const DrawdownPanel = lazy(() => import('../panels/drawdown-panel').then(m => ({ default: m.DrawdownPanel })));
 const MarketRegimePanel = lazy(() => import('../panels/market-regime-panel').then(m => ({ default: m.MarketRegimePanel })));
+const RelativeValuationPanel = lazy(() => import('../panels/relative-valuation-panel').then(m => ({ default: m.RelativeValuationPanel })));
+const ConfluencePanel = lazy(() => import('../panels/confluence-panel').then(m => ({ default: m.ConfluencePanel })));
+const IVSurfacePanel = lazy(() => import('../panels/iv-surface-panel').then(m => ({ default: m.IVSurfacePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -91,7 +94,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 24; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 25; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -162,6 +165,9 @@ export const PANEL_IDS = {
   ETF_HOLDINGS: 'etf-holdings',
   DRAWDOWN: 'drawdown',
   MARKET_REGIME: 'market-regime',
+  RELATIVE_VALUATION: 'relative-valuation',
+  CONFLUENCE: 'technical-confluence',
+  IV_SURFACE: 'iv-surface',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -233,6 +239,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.ETF_HOLDINGS]: 'ETF HOLDINGS',
   [PANEL_IDS.DRAWDOWN]: 'DRAWDOWN ANALYSIS',
   [PANEL_IDS.MARKET_REGIME]: 'MARKET REGIME',
+  [PANEL_IDS.RELATIVE_VALUATION]: 'RELATIVE VALUATION',
+  [PANEL_IDS.CONFLUENCE]: 'TECHNICAL CONFLUENCE',
+  [PANEL_IDS.IV_SURFACE]: 'IV SURFACE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -305,6 +314,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.ETF_HOLDINGS]: 'panelETFHoldings',
   [PANEL_IDS.DRAWDOWN]: 'panelDrawdown',
   [PANEL_IDS.MARKET_REGIME]: 'panelMarketRegime',
+  [PANEL_IDS.RELATIVE_VALUATION]: 'panelRelativeValuation',
+  [PANEL_IDS.CONFLUENCE]: 'panelConfluence',
+  [PANEL_IDS.IV_SURFACE]: 'panelIVSurface',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -673,6 +685,9 @@ export function DockLayout() {
       case PANEL_IDS.ETF_HOLDINGS: content = <LazyWrap><ETFHoldingsPanel /></LazyWrap>; break;
       case PANEL_IDS.DRAWDOWN: content = <LazyWrap><DrawdownPanel /></LazyWrap>; break;
       case PANEL_IDS.MARKET_REGIME: content = <LazyWrap><MarketRegimePanel /></LazyWrap>; break;
+      case PANEL_IDS.RELATIVE_VALUATION: content = <LazyWrap><RelativeValuationPanel /></LazyWrap>; break;
+      case PANEL_IDS.CONFLUENCE: content = <LazyWrap><ConfluencePanel /></LazyWrap>; break;
+      case PANEL_IDS.IV_SURFACE: content = <LazyWrap><IVSurfacePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
