@@ -155,6 +155,9 @@ import emBondsRouter from './routes/em-bonds.js';
 import reitMonitorRouter from './routes/reit-monitor.js';
 import moneyMarketRouter from './routes/money-market.js';
 import convertibleBondsRouter from './routes/convertible-bonds.js';
+import globalPmiRouter from './routes/global-pmi.js';
+import leveragedLoansRouter from './routes/leveraged-loans.js';
+import swaptionVolRouter from './routes/swaption-vol.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -411,6 +414,9 @@ export function createApp() {
   app.use('/api/reit-monitor', reitMonitorRouter);
   app.use('/api/money-market', moneyMarketRouter);
   app.use('/api/convertible-bonds', convertibleBondsRouter);
+  app.use('/api/global-pmi', globalPmiRouter);
+  app.use('/api/leveraged-loans', leveragedLoansRouter);
+  app.use('/api/swaption-vol', swaptionVolRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
