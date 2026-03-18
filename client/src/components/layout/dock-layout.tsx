@@ -355,6 +355,9 @@ const SwapPricingPanel = lazy(() => import('../panels/swap-pricing-panel').then(
 const OptionStrategyBuilderPanel = lazy(() => import('../panels/option-strategy-builder-panel').then(m => ({ default: m.OptionStrategyBuilderPanel })));
 const CurrencyBasketPanel = lazy(() => import('../panels/currency-basket-panel').then(m => ({ default: m.CurrencyBasketPanel })));
 const LiquidityStressTestPanel = lazy(() => import('../panels/liquidity-stress-test-panel').then(m => ({ default: m.LiquidityStressTestPanel })));
+const TradeRepositoryPanel = lazy(() => import('../panels/trade-repository-panel').then(m => ({ default: m.TradeRepositoryPanel })));
+const SovereignRiskScorePanel = lazy(() => import('../panels/sovereign-risk-score-panel').then(m => ({ default: m.SovereignRiskScorePanel })));
+const CollateralOptimizationPanel = lazy(() => import('../panels/collateral-optimization-panel').then(m => ({ default: m.CollateralOptimizationPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -722,6 +725,9 @@ export const PANEL_IDS = {
   OPTION_STRATEGY_BUILDER: 'option-strategy-builder',
   CURRENCY_BASKET: 'currency-basket',
   LIQUIDITY_STRESS_TEST: 'liquidity-stress-test',
+  TRADE_REPOSITORY: 'trade-repository',
+  SOVEREIGN_RISK_SCORE: 'sovereign-risk-score',
+  COLLATERAL_OPTIMIZATION: 'collateral-optimization',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1073,6 +1079,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.OPTION_STRATEGY_BUILDER]: 'OPTION STRATEGY BUILDER',
   [PANEL_IDS.CURRENCY_BASKET]: 'CURRENCY BASKET',
   [PANEL_IDS.LIQUIDITY_STRESS_TEST]: 'LIQUIDITY STRESS TEST',
+  [PANEL_IDS.TRADE_REPOSITORY]: 'TRADE REPOSITORY',
+  [PANEL_IDS.SOVEREIGN_RISK_SCORE]: 'SOVEREIGN RISK SCORE',
+  [PANEL_IDS.COLLATERAL_OPTIMIZATION]: 'COLLATERAL OPTIMIZATION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1425,6 +1434,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.OPTION_STRATEGY_BUILDER]: 'panelOptionStrategyBuilder',
   [PANEL_IDS.CURRENCY_BASKET]: 'panelCurrencyBasket',
   [PANEL_IDS.LIQUIDITY_STRESS_TEST]: 'panelLiquidityStressTest',
+  [PANEL_IDS.TRADE_REPOSITORY]: 'panelTradeRepository',
+  [PANEL_IDS.SOVEREIGN_RISK_SCORE]: 'panelSovereignRiskScore',
+  [PANEL_IDS.COLLATERAL_OPTIMIZATION]: 'panelCollateralOptimization',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2073,6 +2085,9 @@ export function DockLayout() {
       case PANEL_IDS.OPTION_STRATEGY_BUILDER: content = <LazyWrap><OptionStrategyBuilderPanel /></LazyWrap>; break;
       case PANEL_IDS.CURRENCY_BASKET: content = <LazyWrap><CurrencyBasketPanel /></LazyWrap>; break;
       case PANEL_IDS.LIQUIDITY_STRESS_TEST: content = <LazyWrap><LiquidityStressTestPanel /></LazyWrap>; break;
+      case PANEL_IDS.TRADE_REPOSITORY: content = <LazyWrap><TradeRepositoryPanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_RISK_SCORE: content = <LazyWrap><SovereignRiskScorePanel /></LazyWrap>; break;
+      case PANEL_IDS.COLLATERAL_OPTIMIZATION: content = <LazyWrap><CollateralOptimizationPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
