@@ -74,6 +74,9 @@ import ivSurfaceRouter from './routes/iv-surface.js';
 import seasonalityRouter from './routes/seasonality.js';
 import orderFlowRouter from './routes/order-flow.js';
 import portfolioOptimizerRouter from './routes/portfolio-optimizer.js';
+import backtestRouter from './routes/backtest.js';
+import macroDashboardRouter from './routes/macro-dashboard.js';
+import earningsSurpriseRouter from './routes/earnings-surprise.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -249,6 +252,9 @@ export function createApp() {
   app.use('/api/seasonality', seasonalityRouter);
   app.use('/api/order-flow', orderFlowRouter);
   app.use('/api/portfolio-optimizer', portfolioOptimizerRouter);
+  app.use('/api/backtest', backtestRouter);
+  app.use('/api/macro-dashboard', macroDashboardRouter);
+  app.use('/api/earnings-surprise', earningsSurpriseRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

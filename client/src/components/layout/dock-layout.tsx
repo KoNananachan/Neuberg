@@ -81,6 +81,9 @@ const IVSurfacePanel = lazy(() => import('../panels/iv-surface-panel').then(m =>
 const SeasonalityPanel = lazy(() => import('../panels/seasonality-panel').then(m => ({ default: m.SeasonalityPanel })));
 const OrderFlowPanel = lazy(() => import('../panels/order-flow-panel').then(m => ({ default: m.OrderFlowPanel })));
 const PortfolioOptimizerPanel = lazy(() => import('../panels/portfolio-optimizer-panel').then(m => ({ default: m.PortfolioOptimizerPanel })));
+const BacktestPanel = lazy(() => import('../panels/backtest-panel').then(m => ({ default: m.BacktestPanel })));
+const MacroDashboardPanel = lazy(() => import('../panels/macro-dashboard-panel').then(m => ({ default: m.MacroDashboardPanel })));
+const EarningsSurprisePanel = lazy(() => import('../panels/earnings-surprise-panel').then(m => ({ default: m.EarningsSurprisePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -174,6 +177,9 @@ export const PANEL_IDS = {
   SEASONALITY: 'seasonality',
   ORDER_FLOW: 'order-flow',
   PORTFOLIO_OPTIMIZER: 'portfolio-optimizer',
+  BACKTEST: 'backtest',
+  MACRO_DASHBOARD: 'macro-dashboard',
+  EARNINGS_SURPRISE: 'earnings-surprise',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -251,6 +257,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SEASONALITY]: 'SEASONALITY',
   [PANEL_IDS.ORDER_FLOW]: 'ORDER FLOW',
   [PANEL_IDS.PORTFOLIO_OPTIMIZER]: 'PORTFOLIO OPTIMIZER',
+  [PANEL_IDS.BACKTEST]: 'STRATEGY BACKTEST',
+  [PANEL_IDS.MACRO_DASHBOARD]: 'MACRO DASHBOARD',
+  [PANEL_IDS.EARNINGS_SURPRISE]: 'EARNINGS SURPRISE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -329,6 +338,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SEASONALITY]: 'panelSeasonality',
   [PANEL_IDS.ORDER_FLOW]: 'panelOrderFlow',
   [PANEL_IDS.PORTFOLIO_OPTIMIZER]: 'panelPortfolioOptimizer',
+  [PANEL_IDS.BACKTEST]: 'panelBacktest',
+  [PANEL_IDS.MACRO_DASHBOARD]: 'panelMacroDashboard',
+  [PANEL_IDS.EARNINGS_SURPRISE]: 'panelEarningsSurprise',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -703,6 +715,9 @@ export function DockLayout() {
       case PANEL_IDS.SEASONALITY: content = <LazyWrap><SeasonalityPanel /></LazyWrap>; break;
       case PANEL_IDS.ORDER_FLOW: content = <LazyWrap><OrderFlowPanel /></LazyWrap>; break;
       case PANEL_IDS.PORTFOLIO_OPTIMIZER: content = <LazyWrap><PortfolioOptimizerPanel /></LazyWrap>; break;
+      case PANEL_IDS.BACKTEST: content = <LazyWrap><BacktestPanel /></LazyWrap>; break;
+      case PANEL_IDS.MACRO_DASHBOARD: content = <LazyWrap><MacroDashboardPanel /></LazyWrap>; break;
+      case PANEL_IDS.EARNINGS_SURPRISE: content = <LazyWrap><EarningsSurprisePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
