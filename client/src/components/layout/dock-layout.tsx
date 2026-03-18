@@ -298,6 +298,9 @@ const RepoRatePanel = lazy(() => import('../panels/repo-rate-panel').then(m => (
 const CentralBankBalanceSheetPanel = lazy(() => import('../panels/central-bank-balance-sheet-panel').then(m => ({ default: m.CentralBankBalanceSheetPanel })));
 const CorporateBuybackPanel = lazy(() => import('../panels/corporate-buyback-panel').then(m => ({ default: m.CorporateBuybackPanel })));
 const MarginDebtPanel = lazy(() => import('../panels/margin-debt-panel').then(m => ({ default: m.MarginDebtPanel })));
+const CorporateActionsPanel = lazy(() => import('../panels/corporate-actions-panel').then(m => ({ default: m.CorporateActionsPanel })));
+const FiscalPolicyPanel = lazy(() => import('../panels/fiscal-policy-panel').then(m => ({ default: m.FiscalPolicyPanel })));
+const BasisTradePanel = lazy(() => import('../panels/basis-trade-panel').then(m => ({ default: m.BasisTradePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -608,6 +611,9 @@ export const PANEL_IDS = {
   CENTRAL_BANK_BALANCE_SHEET: 'central-bank-balance-sheet',
   CORPORATE_BUYBACK: 'corporate-buyback',
   MARGIN_DEBT: 'margin-debt',
+  CORPORATE_ACTIONS: 'corporate-actions',
+  FISCAL_POLICY: 'fiscal-policy',
+  BASIS_TRADE: 'basis-trade',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -902,6 +908,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CENTRAL_BANK_BALANCE_SHEET]: 'CB BALANCE SHEET',
   [PANEL_IDS.CORPORATE_BUYBACK]: 'CORPORATE BUYBACK',
   [PANEL_IDS.MARGIN_DEBT]: 'MARGIN DEBT',
+  [PANEL_IDS.CORPORATE_ACTIONS]: 'CORPORATE ACTIONS',
+  [PANEL_IDS.FISCAL_POLICY]: 'FISCAL POLICY',
+  [PANEL_IDS.BASIS_TRADE]: 'BASIS TRADE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1197,6 +1206,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CENTRAL_BANK_BALANCE_SHEET]: 'panelCentralBankBalanceSheet',
   [PANEL_IDS.CORPORATE_BUYBACK]: 'panelCorporateBuyback',
   [PANEL_IDS.MARGIN_DEBT]: 'panelMarginDebt',
+  [PANEL_IDS.CORPORATE_ACTIONS]: 'panelCorporateActions',
+  [PANEL_IDS.FISCAL_POLICY]: 'panelFiscalPolicy',
+  [PANEL_IDS.BASIS_TRADE]: 'panelBasisTrade',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1788,6 +1800,9 @@ export function DockLayout() {
       case PANEL_IDS.CENTRAL_BANK_BALANCE_SHEET: content = <LazyWrap><CentralBankBalanceSheetPanel /></LazyWrap>; break;
       case PANEL_IDS.CORPORATE_BUYBACK: content = <LazyWrap><CorporateBuybackPanel /></LazyWrap>; break;
       case PANEL_IDS.MARGIN_DEBT: content = <LazyWrap><MarginDebtPanel /></LazyWrap>; break;
+      case PANEL_IDS.CORPORATE_ACTIONS: content = <LazyWrap><CorporateActionsPanel /></LazyWrap>; break;
+      case PANEL_IDS.FISCAL_POLICY: content = <LazyWrap><FiscalPolicyPanel /></LazyWrap>; break;
+      case PANEL_IDS.BASIS_TRADE: content = <LazyWrap><BasisTradePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
