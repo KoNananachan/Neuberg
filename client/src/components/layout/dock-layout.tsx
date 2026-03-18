@@ -224,6 +224,9 @@ const GlobalMacroDashboardPanel = lazy(() => import('../panels/global-macro-dash
 const AbsRmbsMonitorPanel = lazy(() => import('../panels/abs-rmbs-monitor-panel').then(m => ({ default: m.AbsRmbsMonitorPanel })));
 const LiquidityRiskMonitorPanel = lazy(() => import('../panels/liquidity-risk-monitor-panel').then(m => ({ default: m.LiquidityRiskMonitorPanel })));
 const FiAttributionPanel = lazy(() => import('../panels/fi-attribution-panel').then(m => ({ default: m.FiAttributionPanel })));
+const RepoRateHeatmapPanel = lazy(() => import('../panels/repo-rate-heatmap-panel').then(m => ({ default: m.RepoRateHeatmapPanel })));
+const TradeCompressionPanel = lazy(() => import('../panels/trade-compression-panel').then(m => ({ default: m.TradeCompressionPanel })));
+const RegulatoryCapitalPanel = lazy(() => import('../panels/regulatory-capital-panel').then(m => ({ default: m.RegulatoryCapitalPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -460,6 +463,9 @@ export const PANEL_IDS = {
   ABS_RMBS_MONITOR: 'abs-rmbs-monitor',
   LIQUIDITY_RISK_MONITOR: 'liquidity-risk-monitor',
   FI_ATTRIBUTION: 'fi-attribution',
+  REPO_RATE_HEATMAP: 'repo-rate-heatmap',
+  TRADE_COMPRESSION: 'trade-compression',
+  REGULATORY_CAPITAL: 'regulatory-capital',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -680,6 +686,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.ABS_RMBS_MONITOR]: 'ABS/RMBS MONITOR',
   [PANEL_IDS.LIQUIDITY_RISK_MONITOR]: 'LIQUIDITY RISK MONITOR',
   [PANEL_IDS.FI_ATTRIBUTION]: 'FI ATTRIBUTION',
+  [PANEL_IDS.REPO_RATE_HEATMAP]: 'REPO RATE HEATMAP',
+  [PANEL_IDS.TRADE_COMPRESSION]: 'TRADE COMPRESSION',
+  [PANEL_IDS.REGULATORY_CAPITAL]: 'REGULATORY CAPITAL',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -901,6 +910,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.ABS_RMBS_MONITOR]: 'panelAbsRmbsMonitor',
   [PANEL_IDS.LIQUIDITY_RISK_MONITOR]: 'panelLiquidityRiskMonitor',
   [PANEL_IDS.FI_ATTRIBUTION]: 'panelFiAttribution',
+  [PANEL_IDS.REPO_RATE_HEATMAP]: 'panelRepoRateHeatmap',
+  [PANEL_IDS.TRADE_COMPRESSION]: 'panelTradeCompression',
+  [PANEL_IDS.REGULATORY_CAPITAL]: 'panelRegulatoryCapital',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1418,6 +1430,9 @@ export function DockLayout() {
       case PANEL_IDS.ABS_RMBS_MONITOR: content = <LazyWrap><AbsRmbsMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.LIQUIDITY_RISK_MONITOR: content = <LazyWrap><LiquidityRiskMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.FI_ATTRIBUTION: content = <LazyWrap><FiAttributionPanel /></LazyWrap>; break;
+      case PANEL_IDS.REPO_RATE_HEATMAP: content = <LazyWrap><RepoRateHeatmapPanel /></LazyWrap>; break;
+      case PANEL_IDS.TRADE_COMPRESSION: content = <LazyWrap><TradeCompressionPanel /></LazyWrap>; break;
+      case PANEL_IDS.REGULATORY_CAPITAL: content = <LazyWrap><RegulatoryCapitalPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

@@ -218,6 +218,9 @@ import globalMacroDashboardRouter from './routes/global-macro-dashboard.js';
 import absRmbsMonitorRouter from './routes/abs-rmbs-monitor.js';
 import liquidityRiskMonitorRouter from './routes/liquidity-risk-monitor.js';
 import fiAttributionRouter from './routes/fi-attribution.js';
+import repoRateHeatmapRouter from './routes/repo-rate-heatmap.js';
+import tradeCompressionRouter from './routes/trade-compression.js';
+import regulatoryCapitalRouter from './routes/regulatory-capital.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -537,6 +540,9 @@ export function createApp() {
   app.use('/api/abs-rmbs-monitor', absRmbsMonitorRouter);
   app.use('/api/liquidity-risk-monitor', liquidityRiskMonitorRouter);
   app.use('/api/fi-attribution', fiAttributionRouter);
+  app.use('/api/repo-rate-heatmap', repoRateHeatmapRouter);
+  app.use('/api/trade-compression', tradeCompressionRouter);
+  app.use('/api/regulatory-capital', regulatoryCapitalRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
