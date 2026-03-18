@@ -143,6 +143,9 @@ import onchainAnalyticsRouter from './routes/onchain-analytics.js';
 import privateCreditRouter from './routes/private-credit.js';
 import volRiskPremiumRouter from './routes/vol-risk-premium.js';
 import esgRatingsRouter from './routes/esg-ratings.js';
+import freightIndicesRouter from './routes/freight-indices.js';
+import alternativeDataRouter from './routes/alternative-data.js';
+import tradeIdeasRouter from './routes/trade-ideas.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -387,6 +390,9 @@ export function createApp() {
   app.use('/api/private-credit', privateCreditRouter);
   app.use('/api/vol-risk-premium', volRiskPremiumRouter);
   app.use('/api/esg-ratings', esgRatingsRouter);
+  app.use('/api/freight-indices', freightIndicesRouter);
+  app.use('/api/alternative-data', alternativeDataRouter);
+  app.use('/api/trade-ideas', tradeIdeasRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

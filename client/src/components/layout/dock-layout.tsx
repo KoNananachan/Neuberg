@@ -149,6 +149,9 @@ const OnchainAnalyticsPanel = lazy(() => import('../panels/onchain-analytics-pan
 const PrivateCreditPanel = lazy(() => import('../panels/private-credit-panel').then(m => ({ default: m.PrivateCreditPanel })));
 const VolRiskPremiumPanel = lazy(() => import('../panels/vol-risk-premium-panel').then(m => ({ default: m.VolRiskPremiumPanel })));
 const EsgRatingsPanel = lazy(() => import('../panels/esg-ratings-panel').then(m => ({ default: m.EsgRatingsPanel })));
+const FreightIndicesPanel = lazy(() => import('../panels/freight-indices-panel').then(m => ({ default: m.FreightIndicesPanel })));
+const AlternativeDataPanel = lazy(() => import('../panels/alternative-data-panel').then(m => ({ default: m.AlternativeDataPanel })));
+const TradeIdeasPanel = lazy(() => import('../panels/trade-ideas-panel').then(m => ({ default: m.TradeIdeasPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -310,6 +313,9 @@ export const PANEL_IDS = {
   PRIVATE_CREDIT: 'private-credit',
   VOL_RISK_PREMIUM: 'vol-risk-premium',
   ESG_RATINGS: 'esg-ratings',
+  FREIGHT_INDICES: 'freight-indices',
+  ALTERNATIVE_DATA: 'alternative-data',
+  TRADE_IDEAS: 'trade-ideas',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -455,6 +461,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.PRIVATE_CREDIT]: 'PRIVATE CREDIT',
   [PANEL_IDS.VOL_RISK_PREMIUM]: 'VOL RISK PREMIUM',
   [PANEL_IDS.ESG_RATINGS]: 'ESG RATINGS',
+  [PANEL_IDS.FREIGHT_INDICES]: 'FREIGHT INDICES',
+  [PANEL_IDS.ALTERNATIVE_DATA]: 'ALTERNATIVE DATA',
+  [PANEL_IDS.TRADE_IDEAS]: 'TRADE IDEAS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -601,6 +610,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.PRIVATE_CREDIT]: 'panelPrivateCredit',
   [PANEL_IDS.VOL_RISK_PREMIUM]: 'panelVolRiskPremium',
   [PANEL_IDS.ESG_RATINGS]: 'panelEsgRatings',
+  [PANEL_IDS.FREIGHT_INDICES]: 'panelFreightIndices',
+  [PANEL_IDS.ALTERNATIVE_DATA]: 'panelAlternativeData',
+  [PANEL_IDS.TRADE_IDEAS]: 'panelTradeIdeas',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1043,6 +1055,9 @@ export function DockLayout() {
       case PANEL_IDS.PRIVATE_CREDIT: content = <LazyWrap><PrivateCreditPanel /></LazyWrap>; break;
       case PANEL_IDS.VOL_RISK_PREMIUM: content = <LazyWrap><VolRiskPremiumPanel /></LazyWrap>; break;
       case PANEL_IDS.ESG_RATINGS: content = <LazyWrap><EsgRatingsPanel /></LazyWrap>; break;
+      case PANEL_IDS.FREIGHT_INDICES: content = <LazyWrap><FreightIndicesPanel /></LazyWrap>; break;
+      case PANEL_IDS.ALTERNATIVE_DATA: content = <LazyWrap><AlternativeDataPanel /></LazyWrap>; break;
+      case PANEL_IDS.TRADE_IDEAS: content = <LazyWrap><TradeIdeasPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
