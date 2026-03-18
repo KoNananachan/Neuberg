@@ -248,6 +248,9 @@ const MarketSentimentIndexPanel = lazy(() => import('../panels/market-sentiment-
 const PortfolioStressTestPanel = lazy(() => import('../panels/portfolio-stress-test-panel').then(m => ({ default: m.PortfolioStressTestPanel })));
 const GlobalLiquidityMonitorPanel = lazy(() => import('../panels/global-liquidity-monitor-panel').then(m => ({ default: m.GlobalLiquidityMonitorPanel })));
 const TradeRecapPanel = lazy(() => import('../panels/trade-recap-panel').then(m => ({ default: m.TradeRecapPanel })));
+const MacroSurpriseTrackerPanel = lazy(() => import('../panels/macro-surprise-tracker-panel').then(m => ({ default: m.MacroSurpriseTrackerPanel })));
+const FxVolatilitySurfacePanel = lazy(() => import('../panels/fx-volatility-surface-panel').then(m => ({ default: m.FxVolatilitySurfacePanel })));
+const CommodityFundamentalPanel = lazy(() => import('../panels/commodity-fundamental-panel').then(m => ({ default: m.CommodityFundamentalPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -508,6 +511,9 @@ export const PANEL_IDS = {
   PORTFOLIO_STRESS_TEST: 'portfolio-stress-test',
   GLOBAL_LIQUIDITY_MONITOR: 'global-liquidity-monitor',
   TRADE_RECAP: 'trade-recap',
+  MACRO_SURPRISE_TRACKER: 'macro-surprise-tracker',
+  FX_VOLATILITY_SURFACE: 'fx-volatility-surface',
+  COMMODITY_FUNDAMENTAL: 'commodity-fundamental',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -752,6 +758,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.PORTFOLIO_STRESS_TEST]: 'PORTFOLIO STRESS TEST',
   [PANEL_IDS.GLOBAL_LIQUIDITY_MONITOR]: 'GLOBAL LIQUIDITY MONITOR',
   [PANEL_IDS.TRADE_RECAP]: 'TRADE RECAP',
+  [PANEL_IDS.MACRO_SURPRISE_TRACKER]: 'MACRO SURPRISE TRACKER',
+  [PANEL_IDS.FX_VOLATILITY_SURFACE]: 'FX VOLATILITY SURFACE',
+  [PANEL_IDS.COMMODITY_FUNDAMENTAL]: 'COMMODITY FUNDAMENTAL',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -997,6 +1006,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.PORTFOLIO_STRESS_TEST]: 'panelPortfolioStressTest',
   [PANEL_IDS.GLOBAL_LIQUIDITY_MONITOR]: 'panelGlobalLiquidityMonitor',
   [PANEL_IDS.TRADE_RECAP]: 'panelTradeRecap',
+  [PANEL_IDS.MACRO_SURPRISE_TRACKER]: 'panelMacroSurpriseTracker',
+  [PANEL_IDS.FX_VOLATILITY_SURFACE]: 'panelFxVolatilitySurface',
+  [PANEL_IDS.COMMODITY_FUNDAMENTAL]: 'panelCommodityFundamental',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1538,6 +1550,9 @@ export function DockLayout() {
       case PANEL_IDS.PORTFOLIO_STRESS_TEST: content = <LazyWrap><PortfolioStressTestPanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_LIQUIDITY_MONITOR: content = <LazyWrap><GlobalLiquidityMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.TRADE_RECAP: content = <LazyWrap><TradeRecapPanel /></LazyWrap>; break;
+      case PANEL_IDS.MACRO_SURPRISE_TRACKER: content = <LazyWrap><MacroSurpriseTrackerPanel /></LazyWrap>; break;
+      case PANEL_IDS.FX_VOLATILITY_SURFACE: content = <LazyWrap><FxVolatilitySurfacePanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_FUNDAMENTAL: content = <LazyWrap><CommodityFundamentalPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
