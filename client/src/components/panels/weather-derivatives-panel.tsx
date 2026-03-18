@@ -1,194 +1,273 @@
-import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useWeatherDerivatives } from '../../api/hooks/use-weather-derivatives';
+import { useT } from '../../i18n';
 
-const ACCENT = '#38bdf8'; // sky-400
-const ACCENT_DIM = 'rgba(56,189,248,0.08)';
+type TFn = ReturnType<typeof useT>;
+const tr = (_t: TFn, _key: string, fallback: string): string => {
+  try { return (_t as (k: string) => string)(_key) || fallback; } catch { return fallback; }
+};
 
-type Tab = 'cities' | 'contracts' | 'strips' | 'cat';
+const ACCENT = '#2dd4bf'; // teal-400
+
+function fmtNum(n: number | null | undefined, decimals = 2): string {
+  if (n == null || isNaN(n)) return '-';
+  return n.toFixed(decimals);
+}
+
+function fmtLargeNum(n: number | null | undefined): string {
+  if (n == null || isNaN(n)) return '-';
+  return n.toLocaleString();
+}
+
+function fmtPct(n: number | null | undefined, decimals = 2): string {
+  if (n == null || isNaN(n)) return '-';
+  return `${n.toFixed(decimals)}%`;
+}
+
+function changeColor(n: number | null | undefined): string {
+  if (n == null) return 'text-neutral-500';
+  if (n > 0) return 'text-green-400';
+  if (n < 0) return 'text-red-400';
+  return 'text-neutral-500';
+}
+
+function statusBadge(status: string): { text: string; bg: string } {
+  const s = status?.toLowerCase() ?? '';
+  if (s === 'active') return { text: 'text-green-400', bg: 'bg-green-500/15 border-green-500/30' };
+  if (s === 'quoted') return { text: 'text-yellow-400', bg: 'bg-yellow-500/15 border-yellow-500/30' };
+  if (s === 'expired') return { text: 'text-zinc-500', bg: 'bg-zinc-500/15 border-zinc-500/30' };
+  return { text: 'text-neutral-400', bg: 'bg-neutral-500/15 border-neutral-500/30' };
+}
 
 export function WeatherDerivativesPanel() {
+  const t = useT();
   const { data, isLoading, error } = useWeatherDerivatives();
-  const [tab, setTab] = useState<Tab>('cities');
-  const [selectedCity, setSelectedCity] = useState('New York');
 
-  if (isLoading) return <div className="h-full flex items-center justify-center bg-black"><div className="text-[9px] font-mono text-neutral/40 uppercase tracking-widest animate-pulse">Loading weather derivatives data...</div></div>;
-  if (error || !data) return <div className="h-full flex items-center justify-center bg-black"><div className="text-[9px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load data</div></div>;
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
+        <Loader2 className="h-4 w-4 animate-spin text-teal-400" />
+      </div>
+    );
+  }
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'cities', label: 'CITIES' },
-    { key: 'contracts', label: 'FUTURES' },
-    { key: 'strips', label: 'STRIPS' },
-    { key: 'cat', label: 'CAT INDEX' },
-  ];
+  if (error || !data) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
+        <div className="text-[9px] font-mono text-red-400 uppercase tracking-widest">
+          {tr(t, 'error.loadFailed', 'Failed to load weather derivatives data')}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-black text-white overflow-hidden">
-      <div className="grid grid-cols-4 gap-0 border-b border-border/10 px-3 py-2 shrink-0">
-        <div>
-          <div className="text-[7px] font-mono text-neutral/40 uppercase">Notional</div>
-          <div className="text-[11px] font-mono font-black" style={{ color: ACCENT }}>${data.summary?.totalNotional}B</div>
+      {/* Market Summary Bar */}
+      {data.marketSummary && (
+        <div className="flex items-center gap-0 border-b border-border/20 px-3 py-2 shrink-0">
+          <SummaryItem label="Total Contracts" value={fmtLargeNum(data.marketSummary.totalContracts)} />
+          <SummaryItem label="Total Volume" value={fmtLargeNum(data.marketSummary.totalVolume)} />
+          <SummaryItem label="Total OI" value={fmtLargeNum(data.marketSummary.totalOpenInterest)} />
+          <SummaryItem
+            label="Avg HDD Premium"
+            value={fmtNum(data.marketSummary.avgHddPremium)}
+            color={ACCENT}
+          />
+          <SummaryItem
+            label="Avg CDD Premium"
+            value={fmtNum(data.marketSummary.avgCddPremium)}
+            color={ACCENT}
+          />
+          <SummaryItem
+            label="Mkt Change"
+            value={`${data.marketSummary.marketChange >= 0 ? '+' : ''}${fmtPct(data.marketSummary.marketChange)}`}
+            color={data.marketSummary.marketChange >= 0 ? '#4ade80' : '#f87171'}
+          />
         </div>
-        <div>
-          <div className="text-[7px] font-mono text-neutral/40 uppercase">Contracts</div>
-          <div className="text-[11px] font-mono font-black text-white/80">{data.summary?.activeContracts}</div>
-        </div>
-        <div>
-          <div className="text-[7px] font-mono text-neutral/40 uppercase">Most Active</div>
-          <div className="text-[11px] font-mono font-black text-white/60">{data.summary?.mostActiveCity}</div>
-        </div>
-        <div>
-          <div className="text-[7px] font-mono text-neutral/40 uppercase">Season</div>
-          <div className="text-[11px] font-mono font-black" style={{ color: data.summary?.currentSeason === 'Heating' ? '#f97316' : ACCENT }}>{data.summary?.currentSeason}</div>
-        </div>
-      </div>
+      )}
 
-      <div className="flex items-center border-b border-border/20 shrink-0">
-        <div className="flex items-center gap-0 overflow-x-auto no-scrollbar px-1 border-r border-border/20">
-          {data.cities?.map((c: any) => (
-            <button key={c.city} onClick={() => setSelectedCity(c.city)} className="px-2 py-2 text-[8px] font-mono font-bold uppercase tracking-wider transition-colors whitespace-nowrap" style={{ color: selectedCity === c.city ? ACCENT : 'rgba(255,255,255,0.3)', background: selectedCity === c.city ? ACCENT_DIM : 'transparent' }}>
-              {c.city}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-0">
-          {tabs.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)} className="px-3 py-2 text-[9px] font-mono font-bold uppercase tracking-wider transition-colors whitespace-nowrap" style={{ color: tab === t.key ? ACCENT : 'rgba(255,255,255,0.35)', borderBottom: tab === t.key ? `1px solid ${ACCENT}` : '1px solid transparent', background: tab === t.key ? ACCENT_DIM : 'transparent' }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-auto no-scrollbar">
-        {tab === 'cities' && (
-          <table className="w-full text-[9px] font-mono">
-            <thead className="sticky top-0 bg-black/95 text-neutral/50 uppercase tracking-wider border-b border-border/10">
-              <tr>
-                <th className="px-2 py-1.5 text-left font-bold">City</th>
-                <th className="px-2 py-1.5 text-right font-bold">Temp</th>
-                <th className="px-2 py-1.5 text-right font-bold">Normal</th>
-                <th className="px-2 py-1.5 text-right font-bold">Depart</th>
-                <th className="px-2 py-1.5 text-right font-bold">HDD YTD</th>
-                <th className="px-2 py-1.5 text-right font-bold">CDD YTD</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.cities?.map((c: any) => (
-                <tr key={c.city} className={`border-b border-border/5 hover:bg-white/[0.02] ${c.city === selectedCity ? 'bg-white/[0.03]' : ''}`} onClick={() => setSelectedCity(c.city)}>
-                  <td className="px-2 py-1.5">
-                    <span className="font-bold" style={{ color: ACCENT }}>{c.city}</span>
-                    <span className="text-neutral/30 ml-1.5 text-[7px]">{c.state}</span>
-                  </td>
-                  <td className="px-2 py-1.5 text-right text-white/80 font-bold">{c.currentTemp}°F</td>
-                  <td className="px-2 py-1.5 text-right text-white/50">{c.normalTemp}°F</td>
-                  <td className={`px-2 py-1.5 text-right font-bold ${c.departure > 0 ? 'text-bearish' : c.departure < 0 ? 'text-bullish' : 'text-white/40'}`}>
-                    {c.departure > 0 ? '+' : ''}{c.departure}°F
-                  </td>
-                  <td className="px-2 py-1.5 text-right" style={{ color: '#f97316' }}>
-                    {c.hddCumulative} <span className="text-[7px] text-neutral/30">({c.hddNormal})</span>
-                  </td>
-                  <td className="px-2 py-1.5 text-right" style={{ color: ACCENT }}>
-                    {c.cddCumulative} <span className="text-[7px] text-neutral/30">({c.cddNormal})</span>
-                  </td>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        {/* HDD/CDD Contracts */}
+        {data.hddCddContracts && data.hddCddContracts.length > 0 && (
+          <div>
+            <div className="px-3 py-1.5 border-b border-border/20">
+              <span className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color: ACCENT }}>
+                HDD / CDD Contracts
+              </span>
+            </div>
+            <table className="w-full text-[9px] font-mono">
+              <thead className="sticky top-0 bg-black/95 text-neutral-500 uppercase tracking-wider border-b border-border/20">
+                <tr>
+                  <th className="px-2 py-1.5 text-left font-bold">City</th>
+                  <th className="px-2 py-1.5 text-left font-bold">Type</th>
+                  <th className="px-2 py-1.5 text-left font-bold">Month</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Strike</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Last</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Chg</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Chg%</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Volume</th>
+                  <th className="px-2 py-1.5 text-right font-bold">OI</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Impl Temp</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {tab === 'contracts' && (() => {
-          const cityContracts = data.contracts?.filter((c: any) => c.city === selectedCity);
-          return (
-            <div className="p-0">
-              <div className="text-[8px] font-mono text-neutral/40 uppercase px-3 py-2 border-b border-border/10">
-                Futures — {selectedCity}
-              </div>
-              <table className="w-full text-[9px] font-mono">
-                <thead className="sticky top-0 bg-black/95 text-neutral/50 uppercase tracking-wider border-b border-border/10">
-                  <tr>
-                    <th className="px-2 py-1.5 text-left font-bold">Month</th>
-                    <th className="px-2 py-1.5 text-left font-bold">Type</th>
-                    <th className="px-2 py-1.5 text-right font-bold">Last</th>
-                    <th className="px-2 py-1.5 text-right font-bold">1D Chg</th>
-                    <th className="px-2 py-1.5 text-right font-bold">Volume</th>
-                    <th className="px-2 py-1.5 text-right font-bold">OI</th>
-                    <th className="px-2 py-1.5 text-right font-bold">Impl Temp</th>
+              </thead>
+              <tbody>
+                {data.hddCddContracts.map((c: any, i: number) => (
+                  <tr key={`${c.city}-${c.type}-${c.month}-${i}`} className="border-b border-border/5 hover:bg-teal-400/[0.02]">
+                    <td className="px-2 py-1.5 font-bold" style={{ color: ACCENT }}>{c.city}</td>
+                    <td className="px-2 py-1.5 text-white/60">{c.type}</td>
+                    <td className="px-2 py-1.5 text-white/60">{c.month}</td>
+                    <td className="px-2 py-1.5 text-right text-white/70">{fmtNum(c.strike)}</td>
+                    <td className="px-2 py-1.5 text-right text-white/80 font-bold">{fmtNum(c.last)}</td>
+                    <td className={`px-2 py-1.5 text-right ${changeColor(c.change)}`}>
+                      {c.change >= 0 ? '+' : ''}{fmtNum(c.change)}
+                    </td>
+                    <td className={`px-2 py-1.5 text-right font-bold ${changeColor(c.changePercent)}`}>
+                      {c.changePercent >= 0 ? '+' : ''}{fmtPct(c.changePercent)}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-white/50">{fmtLargeNum(c.volume)}</td>
+                    <td className="px-2 py-1.5 text-right text-white/40">{fmtLargeNum(c.openInterest)}</td>
+                    <td className="px-2 py-1.5 text-right text-white/60">{fmtNum(c.impliedTemp, 1)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {cityContracts?.map((c: any) => (
-                    <tr key={c.tenor} className="border-b border-border/5 hover:bg-white/[0.02]">
-                      <td className="px-2 py-1.5 font-bold" style={{ color: ACCENT }}>{c.tenor}</td>
-                      <td className="px-2 py-1.5">
-                        <span className={`text-[7px] font-bold px-1 py-0 ${c.type === 'HDD' ? 'bg-orange-500/15 text-orange-400' : 'bg-sky-400/15 text-sky-400'}`}>{c.type}</span>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* City Pricing */}
+        {data.cityPricing && data.cityPricing.length > 0 && (
+          <div>
+            <div className="px-3 py-1.5 border-b border-border/20">
+              <span className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color: ACCENT }}>
+                City Pricing
+              </span>
+            </div>
+            <table className="w-full text-[9px] font-mono">
+              <thead className="sticky top-0 bg-black/95 text-neutral-500 uppercase tracking-wider border-b border-border/20">
+                <tr>
+                  <th className="px-2 py-1.5 text-left font-bold">City</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Curr Temp</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Normal</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Deviation</th>
+                  <th className="px-2 py-1.5 text-right font-bold">HDD Prem</th>
+                  <th className="px-2 py-1.5 text-right font-bold">CDD Prem</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Vol</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Corr</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.cityPricing.map((c: any, i: number) => (
+                  <tr key={`${c.city}-${i}`} className="border-b border-border/5 hover:bg-teal-400/[0.02]">
+                    <td className="px-2 py-1.5 font-bold" style={{ color: ACCENT }}>{c.city}</td>
+                    <td className="px-2 py-1.5 text-right text-white/80 font-bold">{fmtNum(c.currentTemp, 1)}</td>
+                    <td className="px-2 py-1.5 text-right text-white/60">{fmtNum(c.normalTemp, 1)}</td>
+                    <td className={`px-2 py-1.5 text-right font-bold ${changeColor(c.deviation)}`}>
+                      {c.deviation >= 0 ? '+' : ''}{fmtNum(c.deviation, 1)}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-white/70">{fmtNum(c.hddPremium)}</td>
+                    <td className="px-2 py-1.5 text-right text-white/70">{fmtNum(c.cddPremium)}</td>
+                    <td className="px-2 py-1.5 text-right text-white/50">{fmtPct(c.volatility)}</td>
+                    <td className="px-2 py-1.5 text-right text-white/50">{fmtNum(c.correlation)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Seasonal Patterns */}
+        {data.seasonalPatterns && data.seasonalPatterns.length > 0 && (
+          <div>
+            <div className="px-3 py-1.5 border-b border-border/20">
+              <span className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color: ACCENT }}>
+                Seasonal Patterns
+              </span>
+            </div>
+            <table className="w-full text-[9px] font-mono">
+              <thead className="sticky top-0 bg-black/95 text-neutral-500 uppercase tracking-wider border-b border-border/20">
+                <tr>
+                  <th className="px-2 py-1.5 text-left font-bold">Month</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Avg HDD</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Avg CDD</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Max Dev</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Curr Dev</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Percentile</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.seasonalPatterns.map((s: any, i: number) => (
+                  <tr key={`${s.month}-${i}`} className="border-b border-border/5 hover:bg-teal-400/[0.02]">
+                    <td className="px-2 py-1.5 font-bold" style={{ color: ACCENT }}>{s.month}</td>
+                    <td className="px-2 py-1.5 text-right text-white/70">{fmtNum(s.avgHDD, 1)}</td>
+                    <td className="px-2 py-1.5 text-right text-white/70">{fmtNum(s.avgCDD, 1)}</td>
+                    <td className="px-2 py-1.5 text-right text-white/50">{fmtNum(s.maxDeviation, 1)}</td>
+                    <td className={`px-2 py-1.5 text-right font-bold ${changeColor(s.currentDeviation)}`}>
+                      {s.currentDeviation >= 0 ? '+' : ''}{fmtNum(s.currentDeviation, 1)}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-white/60">{fmtPct(s.percentile, 1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Hedging Strategies */}
+        {data.hedgingStrategies && data.hedgingStrategies.length > 0 && (
+          <div>
+            <div className="px-3 py-1.5 border-b border-border/20">
+              <span className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color: ACCENT }}>
+                Hedging Strategies
+              </span>
+            </div>
+            <table className="w-full text-[9px] font-mono">
+              <thead className="sticky top-0 bg-black/95 text-neutral-500 uppercase tracking-wider border-b border-border/20">
+                <tr>
+                  <th className="px-2 py-1.5 text-left font-bold">Strategy</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Notional</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Premium</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Max Payout</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Breakeven</th>
+                  <th className="px-2 py-1.5 text-right font-bold">Days Exp</th>
+                  <th className="px-2 py-1.5 text-center font-bold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.hedgingStrategies.map((h: any, i: number) => {
+                  const badge = statusBadge(h.status);
+                  return (
+                    <tr key={`${h.strategy}-${i}`} className="border-b border-border/5 hover:bg-teal-400/[0.02]">
+                      <td className="px-2 py-1.5 font-bold" style={{ color: ACCENT }}>{h.strategy}</td>
+                      <td className="px-2 py-1.5 text-right text-white/70">{fmtLargeNum(h.notional)}</td>
+                      <td className="px-2 py-1.5 text-right text-white/70">{fmtLargeNum(h.premium)}</td>
+                      <td className="px-2 py-1.5 text-right text-white/70">{fmtLargeNum(h.maxPayout)}</td>
+                      <td className="px-2 py-1.5 text-right text-white/60">{fmtNum(h.breakeven)}</td>
+                      <td className="px-2 py-1.5 text-right text-white/50">{h.daysToExpiry}</td>
+                      <td className="px-2 py-1.5 text-center">
+                        <span className={`text-[7px] font-mono font-bold px-1.5 py-0.5 uppercase border ${badge.text} ${badge.bg}`}>
+                          {h.status}
+                        </span>
                       </td>
-                      <td className="px-2 py-1.5 text-right text-white/80 font-bold">{c.lastPrice}</td>
-                      <td className={`px-2 py-1.5 text-right ${c.change1d >= 0 ? 'text-bullish' : 'text-bearish'}`}>
-                        {c.change1d >= 0 ? '+' : ''}{c.change1d}
-                      </td>
-                      <td className="px-2 py-1.5 text-right text-white/50">{c.volume}</td>
-                      <td className="px-2 py-1.5 text-right text-white/40">{c.openInterest}</td>
-                      <td className="px-2 py-1.5 text-right text-white/60">{c.impliedTemp}°F</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-        })()}
-
-        {tab === 'strips' && (
-          <div className="p-3 space-y-3">
-            <div className="text-[8px] font-mono text-neutral/40 uppercase mb-2">Seasonal Strip Prices</div>
-            {data.cities?.map((c: any) => {
-              const strips = data.seasonalStrips?.filter((s: any) => s.city === c.city);
-              if (!strips?.length) return null;
-              return (
-                <div key={c.city} className="border border-border/10 p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-mono font-black" style={{ color: ACCENT }}>{c.city}</span>
-                    <span className="text-[8px] font-mono text-neutral/40">{c.currentTemp}°F</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 text-[8px] font-mono">
-                    {strips.map((s: any) => (
-                      <div key={s.strip}>
-                        <div className="text-neutral/40 mb-1">{s.strip}</div>
-                        <div className="text-white/80 font-bold">{s.price}</div>
-                        <div className={`text-[7px] ${s.change >= 0 ? 'text-bullish' : 'text-bearish'}`}>
-                          {s.change >= 0 ? '+' : ''}{s.change}
-                        </div>
-                        <div className="text-[7px] text-neutral/30">Impl: {s.impliedAvgTemp}°F</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
 
-        {tab === 'cat' && (
-          <div className="p-3 space-y-3">
-            <div className="text-[8px] font-mono text-neutral/40 uppercase mb-2">Cumulative Average Temperature Index</div>
-            {data.catIndices?.map((c: any) => (
-              <div key={c.city} className="flex items-center gap-3">
-                <span className="text-[9px] font-mono w-20 text-right font-bold" style={{ color: ACCENT }}>{c.city}</span>
-                <div className="flex-1 h-5 bg-white/5 overflow-hidden relative">
-                  <div style={{ width: `${Math.min(100, (c.current / (c.normal * 1.3)) * 100)}%`, height: '100%', background: ACCENT, opacity: 0.3 }} />
-                  <div style={{ position: 'absolute', left: `${Math.min(100, (c.normal / (c.normal * 1.3)) * 100)}%`, top: 0, width: '2px', height: '100%', background: '#fbbf24' }} />
-                  <span className="absolute right-1 top-0.5 text-[7px] text-white/50">{c.current} / {c.normal}</span>
-                </div>
-                <span className={`text-[8px] font-mono w-14 text-right ${c.deviation > 0 ? 'text-bearish' : 'text-bullish'}`}>
-                  {c.deviation > 0 ? '+' : ''}{c.deviation}
-                </span>
-              </div>
-            ))}
-            <div className="flex items-center gap-4 text-[7px] font-mono text-neutral/30 mt-2">
-              <span className="flex items-center gap-1"><span className="w-3 h-1.5" style={{ background: ACCENT, opacity: 0.5 }} /> Current CAT</span>
-              <span className="flex items-center gap-1"><span className="w-0.5 h-3 bg-yellow-500" /> Normal</span>
-            </div>
-          </div>
-        )}
+function SummaryItem({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div className="flex-1 min-w-0 px-2">
+      <div className="text-[7px] font-mono text-neutral-500 uppercase tracking-wider truncate">{label}</div>
+      <div className="text-[11px] font-mono font-black truncate" style={{ color: color ?? 'rgba(255,255,255,0.8)' }}>
+        {value}
       </div>
     </div>
   );

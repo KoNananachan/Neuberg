@@ -12,216 +12,236 @@ function mulberry32(seed: number) {
   return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
+// -- Static Data --
+
 const CITIES = [
-  { city: 'New York', state: 'NY', lat: 40.7128, lng: -74.006, avgWinterTemp: 33, avgSummerTemp: 76, normalAnnualHDD: 4800, normalAnnualCDD: 1100 },
-  { city: 'Chicago', state: 'IL', lat: 41.8781, lng: -87.6298, avgWinterTemp: 26, avgSummerTemp: 73, normalAnnualHDD: 6200, normalAnnualCDD: 830 },
-  { city: 'Atlanta', state: 'GA', lat: 33.749, lng: -84.388, avgWinterTemp: 44, avgSummerTemp: 80, normalAnnualHDD: 2800, normalAnnualCDD: 1700 },
-  { city: 'Dallas', state: 'TX', lat: 32.7767, lng: -96.797, avgWinterTemp: 47, avgSummerTemp: 86, normalAnnualHDD: 2300, normalAnnualCDD: 2500 },
-  { city: 'Las Vegas', state: 'NV', lat: 36.1699, lng: -115.1398, avgWinterTemp: 48, avgSummerTemp: 92, normalAnnualHDD: 2200, normalAnnualCDD: 3100 },
-  { city: 'Portland', state: 'OR', lat: 45.5152, lng: -122.6784, avgWinterTemp: 40, avgSummerTemp: 68, normalAnnualHDD: 4400, normalAnnualCDD: 350 },
-  { city: 'Minneapolis', state: 'MN', lat: 44.9778, lng: -93.265, avgWinterTemp: 18, avgSummerTemp: 72, normalAnnualHDD: 7600, normalAnnualCDD: 700 },
-  { city: 'Detroit', state: 'MI', lat: 42.3314, lng: -83.0458, avgWinterTemp: 26, avgSummerTemp: 72, normalAnnualHDD: 6300, normalAnnualCDD: 750 },
+  { city: 'New York', lat: 40.71, avgWinterTemp: 33, avgSummerTemp: 76 },
+  { city: 'Chicago', lat: 41.88, avgWinterTemp: 26, avgSummerTemp: 73 },
+  { city: 'London', lat: 51.51, avgWinterTemp: 40, avgSummerTemp: 64 },
+  { city: 'Tokyo', lat: 35.68, avgWinterTemp: 41, avgSummerTemp: 79 },
+  { city: 'Frankfurt', lat: 50.11, avgWinterTemp: 34, avgSummerTemp: 66 },
+  { city: 'Sydney', lat: -33.87, avgWinterTemp: 53, avgSummerTemp: 72 },
+  { city: 'Toronto', lat: 43.65, avgWinterTemp: 23, avgSummerTemp: 71 },
+  { city: 'Houston', lat: 29.76, avgWinterTemp: 52, avgSummerTemp: 84 },
 ];
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const STRATEGY_DEFS = [
+  { strategy: 'HDD Collar', notionalBase: 5_000_000, premiumPct: 0.025, payoutMult: 3.5 },
+  { strategy: 'CDD Swap', notionalBase: 8_000_000, premiumPct: 0.018, payoutMult: 2.8 },
+  { strategy: 'Seasonal Strip', notionalBase: 12_000_000, premiumPct: 0.032, payoutMult: 4.0 },
+  { strategy: 'Basis Swap', notionalBase: 3_500_000, premiumPct: 0.015, payoutMult: 2.2 },
+  { strategy: 'Temperature Put', notionalBase: 6_000_000, premiumPct: 0.028, payoutMult: 3.0 },
+  { strategy: 'Dual-Trigger', notionalBase: 10_000_000, premiumPct: 0.042, payoutMult: 5.5 },
+];
+
+// -- Cache --
+
 const CACHE_TTL = 5 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
-function getSeason(month: number): 'Heating' | 'Cooling' | 'Transition' {
-  if (month >= 10 || month <= 2) return 'Heating';
-  if (month >= 5 && month <= 8) return 'Cooling';
-  return 'Transition';
+// -- Helpers --
+
+function round(v: number, decimals: number): number {
+  const m = Math.pow(10, decimals);
+  return Math.round(v * m) / m;
 }
 
+function jitter(base: number, pct: number, rng: () => number): number {
+  return base * (1 + (rng() - 0.5) * 2 * pct);
+}
+
+function pick<T>(arr: readonly T[], rng: () => number): T {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
+// Sinusoidal monthly normal temperature approximation
+// For southern hemisphere (negative lat), phase is shifted by 6 months
 function getMonthlyNormalTemp(city: typeof CITIES[number], month: number): number {
-  // Sinusoidal approximation: coldest in Jan (month 0), warmest in Jul (month 6)
   const amplitude = (city.avgSummerTemp - city.avgWinterTemp) / 2;
   const midpoint = (city.avgSummerTemp + city.avgWinterTemp) / 2;
-  return midpoint + amplitude * Math.cos(((month - 6) / 12) * 2 * Math.PI);
+  const phaseShift = city.lat < 0 ? 0 : 6; // Southern hemisphere: warmest in Jan
+  return midpoint + amplitude * Math.cos(((month - phaseShift) / 12) * 2 * Math.PI);
 }
+
+function getSeason(month: number): 'Heating' | 'Cooling' {
+  // Nov-Mar heating, Apr-Oct cooling (simplified)
+  if (month >= 10 || month <= 2) return 'Heating';
+  return 'Cooling';
+}
+
+// -- Generator --
 
 function generate() {
   const now = new Date();
   const day = now.toISOString().slice(0, 10);
   const rng = mulberry32(hashSeed(day + '-weather-derivatives'));
-  const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
 
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
   const season = getSeason(currentMonth);
-  const seasonLabel = season === 'Transition' ? 'Heating' : season; // March transition leans heating
 
-  // Calculate YTD progress fraction (0-1) through the year
-  const dayOfYear = Math.floor((now.getTime() - new Date(currentYear, 0, 1).getTime()) / 86400000) + 1;
-  const ytdFraction = dayOfYear / 365;
+  // ---- 1. HDD/CDD Contracts ----
+  const hddCddContracts = CITIES.map(c => {
+    const normalTemp = getMonthlyNormalTemp(c, currentMonth);
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-  // Generate city data
-  const cities = CITIES.map(c => {
-    const normalTemp = Math.round(getMonthlyNormalTemp(c, currentMonth) * 10) / 10;
-    const currentTemp = Math.round(jitter(normalTemp, 0.08) * 10) / 10;
-    const departure = Math.round((currentTemp - normalTemp) * 10) / 10;
+    // Determine contract type based on temperature relative to 65F baseline
+    const isHeating = normalTemp < 65;
+    const type = isHeating ? 'HDD' : 'CDD';
 
-    // HDD/CDD cumulative YTD (scaled by fraction of year elapsed)
-    const hddNormal = Math.round(c.normalAnnualHDD * ytdFraction);
-    const cddNormal = Math.round(c.normalAnnualCDD * ytdFraction);
-    const hddCumulative = Math.round(jitter(hddNormal, 0.06));
-    const cddCumulative = Math.round(jitter(cddNormal, 0.08));
+    // Calculate base degree days for the month
+    const baseDD = isHeating
+      ? Math.max(0, 65 - normalTemp) * daysInMonth
+      : Math.max(0, normalTemp - 65) * daysInMonth;
+
+    const strike = Math.round(jitter(baseDD, 0.05, rng));
+    const last = Math.round(jitter(baseDD, 0.08, rng));
+    const change = round((rng() - 0.48) * baseDD * 0.04, 1);
+    const changePercent = baseDD > 0 ? round((change / Math.max(last, 1)) * 100, 2) : 0;
+    const volume = Math.round(jitter(1200, 0.35, rng));
+    const openInterest = Math.round(jitter(4500, 0.25, rng));
+
+    // Implied temperature from last traded price
+    const impliedTemp = isHeating
+      ? round(65 - last / daysInMonth, 1)
+      : round(65 + last / daysInMonth, 1);
 
     return {
       city: c.city,
-      state: c.state,
-      lat: c.lat,
-      lng: c.lng,
+      type,
+      month: `${MONTH_NAMES[currentMonth]} ${currentYear}`,
+      strike,
+      last,
+      change,
+      changePercent,
+      volume,
+      openInterest,
+      impliedTemp,
+    };
+  });
+
+  // ---- 2. Seasonal Patterns (12 months) ----
+  // Use a "composite" city (average of all cities) for seasonal pattern display
+  const seasonalPatterns = MONTH_NAMES.map((name, m) => {
+    // Average normal temp across all northern-hemisphere cities for monthly pattern
+    const northernCities = CITIES.filter(c => c.lat > 0);
+    const avgTemp = northernCities.reduce((sum, c) => sum + getMonthlyNormalTemp(c, m), 0) / northernCities.length;
+
+    const avgHDD = Math.round(Math.max(0, 65 - avgTemp) * 30); // approximate 30-day month
+    const avgCDD = Math.round(Math.max(0, avgTemp - 65) * 30);
+    const maxDeviation = Math.round(jitter(Math.max(avgHDD, avgCDD) * 0.18, 0.2, rng));
+    const currentDeviation = round((rng() - 0.5) * maxDeviation * 1.4, 1);
+    const percentile = Math.round(jitter(50, 0.4, rng));
+
+    return {
+      month: name,
+      avgHDD,
+      avgCDD,
+      maxDeviation,
+      currentDeviation,
+      percentile: Math.max(1, Math.min(99, percentile)),
+    };
+  });
+
+  // ---- 3. City Pricing ----
+  const cityPricing = CITIES.map(c => {
+    const normalTemp = round(getMonthlyNormalTemp(c, currentMonth), 1);
+    const currentTemp = round(jitter(normalTemp, 0.08, rng), 1);
+    const deviation = round(currentTemp - normalTemp, 1);
+
+    // Premium scales with absolute deviation; higher deviation = higher premium
+    const absDeviation = Math.abs(deviation);
+    const hddPremium = round(jitter(0.12 + absDeviation * 0.015, 0.2, rng), 3);
+    const cddPremium = round(jitter(0.10 + absDeviation * 0.012, 0.2, rng), 3);
+
+    // Volatility: percentage of normal temp range; higher latitude = higher vol
+    const volatility = round(jitter(12 + Math.abs(c.lat) * 0.15, 0.15, rng), 1);
+
+    // Correlation to natural gas: heating-heavy cities correlate more in winter
+    const baseCorr = normalTemp < 50 ? 0.72 : normalTemp < 65 ? 0.45 : 0.28;
+    const correlation = round(jitter(baseCorr, 0.12, rng), 2);
+
+    return {
+      city: c.city,
       currentTemp,
       normalTemp,
-      departure,
-      hddCumulative,
-      cddCumulative,
-      hddNormal,
-      cddNormal,
+      deviation,
+      hddPremium,
+      cddPremium,
+      volatility,
+      correlation,
     };
   });
 
-  // Generate futures contracts for each city (current month + next 5 months)
-  const contracts = CITIES.map(c => {
-    const cityContracts = Array.from({ length: 6 }, (_, i) => {
-      const contractMonth = (currentMonth + i) % 12;
-      const contractYear = currentYear + Math.floor((currentMonth + i) / 12);
-      const tenor = `${MONTH_NAMES[contractMonth]} ${contractYear}`;
+  // ---- 4. Hedging Strategies ----
+  const statuses = ['Active', 'Quoted', 'Expired'] as const;
+  const hedgingStrategies = STRATEGY_DEFS.map((s, i) => {
+    const notional = Math.round(jitter(s.notionalBase, 0.2, rng));
+    const premium = Math.round(notional * jitter(s.premiumPct, 0.15, rng));
+    const maxPayout = Math.round(notional * jitter(s.payoutMult, 0.1, rng));
 
-      const contractSeason = getSeason(contractMonth);
-      const type = (contractSeason === 'Cooling' || (contractSeason === 'Transition' && contractMonth >= 3)) ? 'CDD' : 'HDD';
+    // Breakeven: degree days where payout covers premium
+    const breakeven = Math.round(jitter(120 + i * 25, 0.15, rng));
 
-      const monthNormalTemp = getMonthlyNormalTemp(c, contractMonth);
-      const daysInMonth = new Date(contractYear, contractMonth + 1, 0).getDate();
+    const daysToExpiry = Math.max(0, Math.round(jitter(90, 0.6, rng)));
 
-      let baseDD: number;
-      if (type === 'HDD') {
-        baseDD = Math.max(0, 65 - monthNormalTemp) * daysInMonth;
-      } else {
-        baseDD = Math.max(0, monthNormalTemp - 65) * daysInMonth;
-      }
-
-      const strike = Math.round(jitter(baseDD, 0.05));
-      const lastPrice = Math.round(jitter(baseDD, 0.08));
-      const change1d = Math.round((rng() - 0.5) * baseDD * 0.03);
-      const volume = Math.round(jitter(800 / (1 + i * 0.4), 0.3));
-      const openInterest = Math.round(jitter(3500 / (1 + i * 0.25), 0.2));
-
-      // Implied temperature from the last price
-      let impliedTemp: number;
-      if (type === 'HDD') {
-        impliedTemp = Math.round((65 - lastPrice / daysInMonth) * 10) / 10;
-      } else {
-        impliedTemp = Math.round((65 + lastPrice / daysInMonth) * 10) / 10;
-      }
-
-      return { tenor, type, strike, lastPrice, change1d, volume, openInterest, impliedTemp };
-    });
-
-    return { city: c.city, state: c.state, contracts: cityContracts };
-  });
-
-  // Seasonal strips
-  // Winter strip: Nov-Mar HDD
-  // Summer strip: May-Sep CDD
-  const winterMonths = [10, 11, 0, 1, 2]; // Nov, Dec, Jan, Feb, Mar
-  const summerMonths = [4, 5, 6, 7, 8]; // May, Jun, Jul, Aug, Sep
-
-  const seasonalStrips = CITIES.map(c => {
-    // Winter strip
-    const winterStripYear = currentMonth >= 6 ? currentYear : currentYear - 1;
-    const winterHDDs = winterMonths.map(m => {
-      const yr = m >= 10 ? winterStripYear : winterStripYear + 1;
-      const daysInMonth = new Date(yr, m + 1, 0).getDate();
-      const normalTemp = getMonthlyNormalTemp(c, m);
-      return Math.max(0, 65 - normalTemp) * daysInMonth;
-    });
-    const winterStripBase = winterHDDs.reduce((a, b) => a + b, 0);
-    const winterStripPrice = Math.round(jitter(winterStripBase, 0.06));
-    const winterStripChange = Math.round((rng() - 0.5) * winterStripBase * 0.02);
-    const winterImpliedAvgTemp = Math.round((65 - winterStripPrice / 151) * 10) / 10; // ~151 days Nov-Mar
-
-    // Summer strip
-    const summerStripYear = currentMonth <= 9 ? currentYear : currentYear + 1;
-    const summerCDDs = summerMonths.map(m => {
-      const daysInMonth = new Date(summerStripYear, m + 1, 0).getDate();
-      const normalTemp = getMonthlyNormalTemp(c, m);
-      return Math.max(0, normalTemp - 65) * daysInMonth;
-    });
-    const summerStripBase = summerCDDs.reduce((a, b) => a + b, 0);
-    const summerStripPrice = Math.round(jitter(summerStripBase, 0.07));
-    const summerStripChange = Math.round((rng() - 0.5) * summerStripBase * 0.02);
-    const summerImpliedAvgTemp = Math.round((65 + summerStripPrice / 153) * 10) / 10; // ~153 days May-Sep
+    // Distribute statuses: mostly Active, some Quoted, occasionally Expired
+    let status: typeof statuses[number];
+    if (daysToExpiry === 0) {
+      status = 'Expired';
+    } else {
+      const r = rng();
+      status = r < 0.55 ? 'Active' : r < 0.85 ? 'Quoted' : 'Expired';
+    }
 
     return {
-      city: c.city,
-      state: c.state,
-      winterStrip: {
-        season: `Winter ${winterStripYear}/${winterStripYear + 1}`,
-        type: 'HDD',
-        price: winterStripPrice,
-        change1d: winterStripChange,
-        impliedAvgTemp: winterImpliedAvgTemp,
-      },
-      summerStrip: {
-        season: `Summer ${summerStripYear}`,
-        type: 'CDD',
-        price: summerStripPrice,
-        change1d: summerStripChange,
-        impliedAvgTemp: summerImpliedAvgTemp,
-      },
+      strategy: s.strategy,
+      notional,
+      premium,
+      maxPayout,
+      breakeven,
+      daysToExpiry,
+      status,
     };
   });
 
-  // CAT (Cumulative Average Temperature) indices
-  const indices = CITIES.map(c => {
-    // CAT index = sum of daily average temperatures for the month so far
-    const dayOfMonth = now.getDate();
-    const normalTemp = getMonthlyNormalTemp(c, currentMonth);
-    const catNormal = Math.round(normalTemp * dayOfMonth * 10) / 10;
-    const catCurrent = Math.round(jitter(catNormal, 0.04) * 10) / 10;
-    const catDeviation = Math.round((catCurrent - catNormal) * 10) / 10;
+  // ---- 5. Market Summary ----
+  const totalNotional = round(jitter(2.8, 0.15, rng), 2);
+  const activeContracts = hddCddContracts.reduce((sum, c) => sum + c.openInterest, 0);
+  const avgVolatility = round(cityPricing.reduce((sum, c) => sum + c.volatility, 0) / cityPricing.length, 1);
+  const dominantSeason = season;
 
-    // Monthly projected CAT
-    const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const projectedCAT = Math.round((catCurrent / dayOfMonth) * daysInCurrentMonth * 10) / 10;
-    const normalMonthlyCAT = Math.round(normalTemp * daysInCurrentMonth * 10) / 10;
+  // Most active city by volume
+  const mostActiveCity = hddCddContracts.reduce((best, c) =>
+    c.volume > best.volume ? c : best
+  ).city;
 
-    return {
-      city: c.city,
-      state: c.state,
-      catCurrent,
-      catNormal,
-      catDeviation,
-      projectedCAT,
-      normalMonthlyCAT,
-      dayOfMonth,
-      daysInMonth: daysInCurrentMonth,
-    };
-  });
+  const yoyGrowth = round(jitter(14.5, 0.3, rng), 1);
 
-  // Summary
-  const totalNotional = Math.round(jitter(4.2, 0.1) * 10) / 10;
-  const activeContracts = contracts.reduce((sum, c) => sum + c.contracts.reduce((s, ct) => s + ct.openInterest, 0), 0);
-  const mostActiveCity = contracts.reduce((best, c) => {
-    const vol = c.contracts.reduce((s, ct) => s + ct.volume, 0);
-    const bestVol = best.contracts.reduce((s: number, ct: { volume: number }) => s + ct.volume, 0);
-    return vol > bestVol ? c : best;
-  });
-
-  const summary = {
-    totalMarketNotional: totalNotional,
-    totalMarketNotionalUnit: 'B USD',
+  const marketSummary = {
+    totalNotional,
+    totalNotionalUnit: 'B USD',
     activeContracts,
-    mostActiveCity: mostActiveCity.city,
-    currentSeason: seasonLabel,
-    currentMonth: MONTH_NAMES[currentMonth],
+    avgVolatility,
+    dominantSeason,
+    mostActiveCity,
+    yoyGrowth,
+    yoyGrowthUnit: '%',
   };
 
-  return { summary, cities, contracts, seasonalStrips, indices, generatedAt: new Date().toISOString() };
+  return {
+    marketSummary,
+    hddCddContracts,
+    seasonalPatterns,
+    cityPricing,
+    hedgingStrategies,
+    generatedAt: new Date().toISOString(),
+  };
 }
+
+// -- Route --
 
 router.get('/', (_req, res) => {
   try {

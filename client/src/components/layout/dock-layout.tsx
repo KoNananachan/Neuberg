@@ -203,6 +203,8 @@ const SyndicatedLoansPanel = lazy(() => import('../panels/syndicated-loans-panel
 const EmissionsTradingPanel = lazy(() => import('../panels/emissions-trading-panel').then(m => ({ default: m.EmissionsTradingPanel })));
 const InsuranceLinkedPanel = lazy(() => import('../panels/insurance-linked-panel').then(m => ({ default: m.InsuranceLinkedPanel })));
 const MetalsForwardPanel = lazy(() => import('../panels/metals-forward-panel').then(m => ({ default: m.MetalsForwardPanel })));
+const CentralBankWatchPanel = lazy(() => import('../panels/central-bank-watch-panel').then(m => ({ default: m.CentralBankWatchPanel })));
+const FreightDerivativesPanel = lazy(() => import('../panels/freight-derivatives-panel').then(m => ({ default: m.FreightDerivativesPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -418,6 +420,8 @@ export const PANEL_IDS = {
   EMISSIONS_TRADING: 'emissions-trading',
   INSURANCE_LINKED: 'insurance-linked',
   METALS_FORWARD: 'metals-forward',
+  CENTRAL_BANK_WATCH: 'central-bank-watch',
+  FREIGHT_DERIVATIVES: 'freight-derivatives',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -617,6 +621,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.EMISSIONS_TRADING]: 'EMISSIONS TRADING',
   [PANEL_IDS.INSURANCE_LINKED]: 'INSURANCE LINKED',
   [PANEL_IDS.METALS_FORWARD]: 'METALS FORWARD',
+  [PANEL_IDS.CENTRAL_BANK_WATCH]: 'CENTRAL BANK WATCH',
+  [PANEL_IDS.FREIGHT_DERIVATIVES]: 'FREIGHT DERIVATIVES',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -817,6 +823,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.EMISSIONS_TRADING]: 'panelEmissionsTrading',
   [PANEL_IDS.INSURANCE_LINKED]: 'panelInsuranceLinked',
   [PANEL_IDS.METALS_FORWARD]: 'panelMetalsForward',
+  [PANEL_IDS.CENTRAL_BANK_WATCH]: 'panelCentralBankWatch',
+  [PANEL_IDS.FREIGHT_DERIVATIVES]: 'panelFreightDerivatives',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1313,6 +1321,8 @@ export function DockLayout() {
       case PANEL_IDS.EMISSIONS_TRADING: content = <LazyWrap><EmissionsTradingPanel /></LazyWrap>; break;
       case PANEL_IDS.INSURANCE_LINKED: content = <LazyWrap><InsuranceLinkedPanel /></LazyWrap>; break;
       case PANEL_IDS.METALS_FORWARD: content = <LazyWrap><MetalsForwardPanel /></LazyWrap>; break;
+      case PANEL_IDS.CENTRAL_BANK_WATCH: content = <LazyWrap><CentralBankWatchPanel /></LazyWrap>; break;
+      case PANEL_IDS.FREIGHT_DERIVATIVES: content = <LazyWrap><FreightDerivativesPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
