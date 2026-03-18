@@ -2,221 +2,206 @@ import { Router } from 'express';
 
 const router = Router();
 
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-  return h >>> 0;
-}
-function mulberry32(seed: number) {
-  let s = seed | 0;
-  return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
+function mulberry32(a: number) { return function(){let t=(a+=0x6d2b79f5);t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}; }
+function hashSeed(str: string): number { let hash=0;for(let i=0;i<str.length;i++){const char=str.charCodeAt(i);hash=((hash<<5)-hash)+char;hash|=0;}return Math.abs(hash); }
+
+let cache: { data: any; ts: number } | null = null;
+const TTL = 5 * 60 * 1000;
 
 // -- Base data --
 
-const CTA_STRATEGIES = [
-  { strategy: 'Trend Following', baseYTD: 8.5, baseSharpe: 0.95, baseAum: 12.4 },
-  { strategy: 'Short-Term Momentum', baseYTD: 5.2, baseSharpe: 0.78, baseAum: 4.8 },
-  { strategy: 'Carry', baseYTD: 6.1, baseSharpe: 1.05, baseAum: 8.2 },
-  { strategy: 'Mean Reversion', baseYTD: 3.8, baseSharpe: 0.65, baseAum: 3.1 },
-  { strategy: 'Volatility Targeting', baseYTD: 4.5, baseSharpe: 0.82, baseAum: 6.7 },
-  { strategy: 'Statistical Arb', baseYTD: 10.2, baseSharpe: 1.35, baseAum: 5.5 },
-  { strategy: 'Global Macro', baseYTD: 7.1, baseSharpe: 0.88, baseAum: 15.3 },
-  { strategy: 'Multi-Strategy', baseYTD: 6.8, baseSharpe: 1.12, baseAum: 22.6 },
-] as const;
-
-const RISK_PARITY_CLASSES = [
-  { assetClass: 'US Equities', baseWeight: 0.18, baseVol: 16.5 },
-  { assetClass: 'Intl Equities', baseWeight: 0.14, baseVol: 18.2 },
-  { assetClass: 'US Bonds', baseWeight: 0.28, baseVol: 5.8 },
-  { assetClass: 'Global Bonds', baseWeight: 0.20, baseVol: 6.4 },
-  { assetClass: 'Commodities', baseWeight: 0.12, baseVol: 19.5 },
-  { assetClass: 'TIPS', baseWeight: 0.08, baseVol: 7.2 },
-] as const;
-
-const MACRO_FACTOR_NAMES = [
-  'Growth', 'Inflation', 'Real Rates', 'Credit',
-  'Liquidity', 'FX Carry', 'Commodity Trend', 'Vol Premium',
+const STRATEGY_NAMES = [
+  'Trend Following',
+  'Mean Reversion',
+  'Momentum',
+  'Carry',
+  'Value',
+  'Low Vol',
+  'Quality',
+  'Multi-Factor',
 ] as const;
 
 const SIGNAL_ASSETS = [
-  'S&P 500', 'Euro Stoxx', 'Nikkei', 'UST 10Y', 'Bund',
-  'Gold', 'Crude', 'EUR/USD', 'EM FX', 'Bitcoin',
+  'S&P 500',
+  'NASDAQ',
+  'Russell 2000',
+  'US 10Y',
+  'Gold',
+  'Crude Oil',
+  'EUR/USD',
+  'USD/JPY',
 ] as const;
 
-const REBALANCE_SIGNALS = ['Increase', 'Decrease', 'Hold'] as const;
-const REGIMES = ['Favorable', 'Unfavorable', 'Neutral'] as const;
-const POSITIONS = ['Long', 'Short', 'Flat'] as const;
+const FACTOR_NAMES = [
+  'Market',
+  'Size',
+  'Value',
+  'Momentum',
+  'Quality',
+  'Low Vol',
+] as const;
 
-const CACHE_TTL = 5 * 60 * 1000;
-let cache: { data: unknown; ts: number } | null = null;
+// -- Base parameters for strategies --
+
+const STRATEGY_BASES = [
+  { base1D: 0.12, base1W: 0.45, base1M: 1.8, baseYTD: 7.2, base1Y: 11.5, baseSharpe: 0.92, baseMaxDD: -12.5, baseWinRate: 54 },
+  { base1D: -0.08, base1W: 0.22, base1M: 0.9, baseYTD: 3.5, base1Y: 5.8, baseSharpe: 0.68, baseMaxDD: -8.2, baseWinRate: 58 },
+  { base1D: 0.18, base1W: 0.65, base1M: 2.4, baseYTD: 9.1, base1Y: 14.2, baseSharpe: 1.05, baseMaxDD: -15.3, baseWinRate: 52 },
+  { base1D: 0.05, base1W: 0.15, base1M: 0.6, baseYTD: 4.8, base1Y: 7.1, baseSharpe: 1.15, baseMaxDD: -6.5, baseWinRate: 61 },
+  { base1D: -0.03, base1W: 0.18, base1M: 1.1, baseYTD: 5.5, base1Y: 8.9, baseSharpe: 0.78, baseMaxDD: -10.8, baseWinRate: 55 },
+  { base1D: 0.02, base1W: 0.08, base1M: 0.4, baseYTD: 3.2, base1Y: 5.1, baseSharpe: 0.85, baseMaxDD: -5.8, baseWinRate: 62 },
+  { base1D: 0.07, base1W: 0.28, base1M: 1.3, baseYTD: 6.8, base1Y: 10.4, baseSharpe: 0.95, baseMaxDD: -9.2, baseWinRate: 57 },
+  { base1D: 0.10, base1W: 0.38, base1M: 1.5, baseYTD: 8.0, base1Y: 12.8, baseSharpe: 1.10, baseMaxDD: -11.0, baseWinRate: 56 },
+] as const;
+
+// -- Base parameters for signal assets --
+
+const SIGNAL_BASES = [
+  { baseTrend: 0.45, baseMomentum: 0.52, baseMeanRev: -0.18, baseCarry: 0.10 },
+  { baseTrend: 0.55, baseMomentum: 0.65, baseMeanRev: -0.25, baseCarry: 0.05 },
+  { baseTrend: 0.20, baseMomentum: 0.30, baseMeanRev: 0.10, baseCarry: 0.08 },
+  { baseTrend: -0.30, baseMomentum: -0.15, baseMeanRev: 0.35, baseCarry: 0.40 },
+  { baseTrend: 0.35, baseMomentum: 0.28, baseMeanRev: -0.05, baseCarry: -0.12 },
+  { baseTrend: -0.10, baseMomentum: -0.20, baseMeanRev: 0.22, baseCarry: 0.15 },
+  { baseTrend: -0.15, baseMomentum: -0.08, baseMeanRev: 0.18, baseCarry: 0.25 },
+  { baseTrend: 0.25, baseMomentum: 0.18, baseMeanRev: -0.10, baseCarry: 0.30 },
+] as const;
+
+// -- Base parameters for factors --
+
+const FACTOR_BASES = [
+  { baseMTD: 1.2, baseQTD: 3.5, baseYTD: 7.8, baseTStat: 2.15 },
+  { baseMTD: 0.4, baseQTD: 1.1, baseYTD: 2.5, baseTStat: 1.35 },
+  { baseMTD: 0.8, baseQTD: 2.2, baseYTD: 5.1, baseTStat: 1.82 },
+  { baseMTD: 1.5, baseQTD: 4.0, baseYTD: 9.2, baseTStat: 2.45 },
+  { baseMTD: 0.6, baseQTD: 1.8, baseYTD: 4.5, baseTStat: 1.68 },
+  { baseMTD: 0.3, baseQTD: 0.9, baseYTD: 2.1, baseTStat: 1.22 },
+] as const;
+
+// -- Data generation --
 
 function generate() {
   const day = new Date().toISOString().slice(0, 10);
   const rng = mulberry32(hashSeed(day + '-systematic-strategy'));
-  const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
-  const pick = <T>(arr: readonly T[] | T[]): T => arr[Math.floor(rng() * arr.length)];
-  const round2 = (v: number) => Math.round(v * 100) / 100;
-  const round1 = (v: number) => Math.round(v * 10) / 10;
-  const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 
-  // 1. CTA Performance (8 items)
-  const ctaPerformance = CTA_STRATEGIES.map(s => {
+  const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
+  const round2 = (v: number) => Math.round(v * 100) / 100;
+  const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+
+  // 1. Strategy Performance
+  const strategyPerformance = STRATEGY_NAMES.map((name, i) => {
+    const s = STRATEGY_BASES[i];
+    const return1D = round2(jitter(s.base1D, 0.6) + (rng() - 0.5) * 0.3);
+    const return1W = round2(jitter(s.base1W, 0.4) + (rng() - 0.5) * 0.5);
+    const return1M = round2(jitter(s.base1M, 0.3));
     const returnYTD = round2(jitter(s.baseYTD, 0.25));
-    const returnMTD = round2((rng() - 0.4) * 5);
-    const return1Y = round2(returnYTD * (1.3 + rng() * 0.8));
+    const return1Y = round2(jitter(s.base1Y, 0.2));
     const sharpe = round2(clamp(jitter(s.baseSharpe, 0.2), 0.1, 2.5));
-    const maxDD = round2(-rng() * 18 - 3);
-    const volatility = round2(5 + rng() * 15);
-    const correlation = round2(clamp((rng() - 0.5) * 1.4, -1, 1));
-    const aum = round1(jitter(s.baseAum, 0.15));
+    const maxDD = round2(clamp(jitter(s.baseMaxDD, 0.25), -30, -2));
+    const winRate = round2(clamp(jitter(s.baseWinRate, 0.1), 40, 75));
 
     return {
-      strategy: s.strategy,
-      returnMTD,
+      strategy: name,
+      return1D,
+      return1W,
+      return1M,
       returnYTD,
       return1Y,
       sharpe,
       maxDD,
-      volatility,
-      correlation,
-      aum,
+      winRate,
     };
   });
 
-  // 2. Risk Parity (6 items)
-  const rawWeights = RISK_PARITY_CLASSES.map(a => jitter(a.baseWeight, 0.2));
-  const totalWeight = rawWeights.reduce((sum, w) => sum + w, 0);
-  const normalizedWeights = rawWeights.map(w => w / totalWeight);
-
-  const riskParity = RISK_PARITY_CLASSES.map((a, i) => {
-    const weight = round2(normalizedWeights[i]);
-    const volatility = round2(jitter(a.baseVol, 0.15));
-    const riskContribution = round2(weight * volatility / 100);
-    const returnContrib = round2((rng() - 0.35) * 4);
-    const leverage = round2(1 + rng() * 2.5);
-    const rebalanceSignal = pick(REBALANCE_SIGNALS);
-
-    return {
-      assetClass: a.assetClass,
-      weight,
-      riskContribution,
-      returnContrib,
-      volatility,
-      leverage,
-      rebalanceSignal,
-    };
-  });
-
-  // 3. Macro Factors (8 items)
-  const macroFactors = MACRO_FACTOR_NAMES.map(factor => {
-    const currentExposure = round2((rng() - 0.5) * 2);
-    const targetExposure = round2((rng() - 0.5) * 2);
-    const activeRisk = round2(rng() * 3 + 0.2);
-    const returnMTD = round2((rng() - 0.45) * 6);
-    const zscore = round2((rng() - 0.5) * 4);
-    const regime = pick(REGIMES);
-
-    let signal: string;
-    if (zscore > 1.0) signal = 'Strong Overweight';
-    else if (zscore > 0.3) signal = 'Overweight';
-    else if (zscore > -0.3) signal = 'Neutral';
-    else if (zscore > -1.0) signal = 'Underweight';
-    else signal = 'Strong Underweight';
-
-    return {
-      factor,
-      currentExposure,
-      targetExposure,
-      activeRisk,
-      returnMTD,
-      zscore,
-      regime,
-      signal,
-    };
-  });
-
-  // 4. Signal Dashboard (10 items)
-  const signalDashboard = SIGNAL_ASSETS.map(asset => {
-    const trendSignal = round2(clamp((rng() - 0.5) * 2, -1, 1));
-    const carrySignal = round2(clamp((rng() - 0.5) * 2, -1, 1));
-    const valueSignal = round2(clamp((rng() - 0.5) * 2, -1, 1));
-    const momentumSignal = round2(clamp((rng() - 0.5) * 2, -1, 1));
+  // 2. Signal Dashboard
+  const signalDashboard = SIGNAL_ASSETS.map((asset, i) => {
+    const b = SIGNAL_BASES[i];
+    const trendSignal = round2(clamp(jitter(b.baseTrend, 0.35) + (rng() - 0.5) * 0.3, -1, 1));
+    const momentumScore = round2(clamp(jitter(b.baseMomentum, 0.35) + (rng() - 0.5) * 0.3, -1, 1));
+    const meanReversionScore = round2(clamp(jitter(b.baseMeanRev, 0.4) + (rng() - 0.5) * 0.3, -1, 1));
+    const carry = round2(clamp(jitter(b.baseCarry, 0.5) + (rng() - 0.5) * 0.2, -1, 1));
     const compositeSignal = round2(clamp(
-      (trendSignal * 0.3 + carrySignal * 0.2 + valueSignal * 0.2 + momentumSignal * 0.3),
+      trendSignal * 0.30 + momentumScore * 0.25 + meanReversionScore * 0.20 + carry * 0.25,
       -1, 1
     ));
-
-    let position: typeof POSITIONS[number];
-    if (compositeSignal > 0.2) position = 'Long';
-    else if (compositeSignal < -0.2) position = 'Short';
-    else position = 'Flat';
-
-    const confidence = round2(clamp(Math.abs(compositeSignal) * 80 + rng() * 30, 10, 99));
 
     return {
       asset,
       trendSignal,
-      carrySignal,
-      valueSignal,
-      momentumSignal,
+      momentumScore,
+      meanReversionScore,
+      carry,
       compositeSignal,
-      position,
-      confidence,
     };
   });
 
-  // 5. Market Summary
-  const avgCTAReturn = round2(
-    ctaPerformance.reduce((sum, c) => sum + c.returnYTD, 0) / ctaPerformance.length
-  );
+  // 3. Factor Performance
+  const factorPerformance = FACTOR_NAMES.map((factor, i) => {
+    const f = FACTOR_BASES[i];
+    const mtd = round2(jitter(f.baseMTD, 0.35) + (rng() - 0.5) * 0.5);
+    const qtd = round2(jitter(f.baseQTD, 0.3) + (rng() - 0.5) * 1.0);
+    const ytd = round2(jitter(f.baseYTD, 0.25));
+    const tStat = round2(clamp(jitter(f.baseTStat, 0.25) + (rng() - 0.5) * 0.4, -0.5, 4.0));
 
-  const longCount = signalDashboard.filter(s => s.position === 'Long').length;
-  const shortCount = signalDashboard.filter(s => s.position === 'Short').length;
-  let trendFollowingExposure: 'Net Long' | 'Net Short' | 'Neutral';
-  if (longCount > shortCount + 2) trendFollowingExposure = 'Net Long';
-  else if (shortCount > longCount + 2) trendFollowingExposure = 'Net Short';
-  else trendFollowingExposure = 'Neutral';
+    return {
+      factor,
+      mtd,
+      qtd,
+      ytd,
+      tStat,
+    };
+  });
 
-  const riskParityLeverage = round2(
-    riskParity.reduce((sum, r) => sum + r.leverage, 0) / riskParity.length
-  );
+  // 4. Risk Metrics
+  const portfolioBeta = round2(clamp(0.85 + (rng() - 0.5) * 0.6, 0.2, 1.5));
+  const netExposurePct = round2(clamp((rng() - 0.3) * 100, -50, 100));
+  const grossExposurePct = round2(clamp(150 + (rng() - 0.5) * 80, 80, 250));
+  const var95 = round2(clamp(-(1.5 + rng() * 3.5), -6, -0.5));
+  const cvar = round2(clamp(var95 * (1.3 + rng() * 0.5), -10, -0.8));
 
-  const favorableCount = macroFactors.filter(m => m.regime === 'Favorable').length;
-  const unfavorableCount = macroFactors.filter(m => m.regime === 'Unfavorable').length;
-  let macroRegime: string;
-  if (favorableCount > unfavorableCount + 2) macroRegime = 'Expansionary';
-  else if (unfavorableCount > favorableCount + 2) macroRegime = 'Contractionary';
-  else macroRegime = 'Mixed';
+  // Correlation matrix summary: pairwise correlations among strategies
+  const corrPairs: { pair: string; correlation: number }[] = [];
+  for (let i = 0; i < STRATEGY_NAMES.length; i++) {
+    for (let j = i + 1; j < STRATEGY_NAMES.length; j++) {
+      corrPairs.push({
+        pair: `${STRATEGY_NAMES[i]} / ${STRATEGY_NAMES[j]}`,
+        correlation: round2(clamp((rng() - 0.5) * 1.6, -0.8, 0.9)),
+      });
+    }
+  }
 
-  const activeSignals = signalDashboard.filter(s => s.position !== 'Flat').length;
+  // Pick top-5 highest and lowest correlation pairs for summary
+  const sortedCorr = [...corrPairs].sort((a, b) => b.correlation - a.correlation);
+  const correlationMatrixSummary = {
+    highestCorrelations: sortedCorr.slice(0, 5),
+    lowestCorrelations: sortedCorr.slice(-5).reverse(),
+    averageCorrelation: round2(corrPairs.reduce((s, c) => s + c.correlation, 0) / corrPairs.length),
+  };
 
-  const sortedCTA = [...ctaPerformance].sort((a, b) => b.returnYTD - a.returnYTD);
-  const topPerformer = sortedCTA[0].strategy;
-
-  const marketSummary = {
-    avgCTAReturn,
-    trendFollowingExposure,
-    riskParityLeverage,
-    macroRegime,
-    activeSignals,
-    topPerformer,
+  const riskMetrics = {
+    var95,
+    cvar,
+    correlationMatrixSummary,
+    portfolioBeta,
+    netExposurePct,
+    grossExposurePct,
   };
 
   return {
-    ctaPerformance,
-    riskParity,
-    macroFactors,
+    strategyPerformance,
     signalDashboard,
-    marketSummary,
+    factorPerformance,
+    riskMetrics,
     generatedAt: new Date().toISOString(),
   };
 }
 
+// -- Route --
+
 router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-    if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
+    if (cache && now - cache.ts < TTL) return res.json(cache.data);
     const data = generate();
     cache = { data, ts: now };
     res.json(data);

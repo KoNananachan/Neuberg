@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../client';
 
-export function useSystematicStrategy() {
+export function useCdsMonitor() {
   return useQuery({
-    queryKey: ['systematic-strategy'],
-    queryFn: () => api.get<any>('/systematic-strategy'),
+    queryKey: ['cds-monitor'],
+    queryFn: () => api.get<any>('/cds-monitor'),
     refetchInterval: 5 * 60 * 1000,
     staleTime: 3 * 60 * 1000,
   });
