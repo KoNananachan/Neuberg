@@ -26,6 +26,14 @@ const CorrelationMatrixPanel = lazy(() => import('../panels/correlation-matrix-p
 const LiveStreamsPanel = lazy(() => import('../panels/live-streams-panel').then(m => ({ default: m.LiveStreamsPanel })));
 const PredictionTradingPanel = lazy(() => import('../panels/prediction-trading-panel').then(m => ({ default: m.PredictionTradingPanel })));
 const MissedOpportunitiesPanel = lazy(() => import('../panels/missed-opportunities-panel').then(m => ({ default: m.MissedOpportunitiesPanel })));
+const MarketMoversPanel = lazy(() => import('../panels/market-movers-panel').then(m => ({ default: m.MarketMoversPanel })));
+const ForexPanel = lazy(() => import('../panels/forex-panel').then(m => ({ default: m.ForexPanel })));
+const BondsPanel = lazy(() => import('../panels/bonds-panel').then(m => ({ default: m.BondsPanel })));
+const CommoditiesPanel = lazy(() => import('../panels/commodities-panel').then(m => ({ default: m.CommoditiesPanel })));
+const CryptoPanel = lazy(() => import('../panels/crypto-panel').then(m => ({ default: m.CryptoPanel })));
+const GlobalDashboardPanel = lazy(() => import('../panels/global-dashboard-panel').then(m => ({ default: m.GlobalDashboardPanel })));
+const ScannerPanel = lazy(() => import('../panels/scanner-panel').then(m => ({ default: m.ScannerPanel })));
+const ScreenerPanel = lazy(() => import('../panels/screener-panel').then(m => ({ default: m.ScreenerPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -42,7 +50,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 11; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 12; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -64,6 +72,14 @@ export const PANEL_IDS = {
   LIVE_STREAMS: 'live-streams',
   PREDICTION: 'prediction-trading',
   MISSED_OPP: 'missed-opportunities',
+  MARKET_MOVERS: 'market-movers',
+  FOREX: 'forex',
+  BONDS: 'bonds-rates',
+  COMMODITIES: 'commodities',
+  CRYPTO: 'crypto-overview',
+  GLOBAL_DASHBOARD: 'global-dashboard',
+  SCANNER: 'tech-scanner',
+  SCREENER: 'stock-screener',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -86,6 +102,14 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.LIVE_STREAMS]: 'LIVE STREAMS',
   [PANEL_IDS.PREDICTION]: 'PREDICTION TRADING',
   [PANEL_IDS.MISSED_OPP]: 'MISSED OPPORTUNITIES',
+  [PANEL_IDS.MARKET_MOVERS]: 'MARKET MOVERS',
+  [PANEL_IDS.FOREX]: 'FOREX',
+  [PANEL_IDS.BONDS]: 'BONDS & RATES',
+  [PANEL_IDS.COMMODITIES]: 'COMMODITIES',
+  [PANEL_IDS.CRYPTO]: 'CRYPTO OVERVIEW',
+  [PANEL_IDS.GLOBAL_DASHBOARD]: 'GLOBAL DASHBOARD',
+  [PANEL_IDS.SCANNER]: 'TECHNICAL SCANNER',
+  [PANEL_IDS.SCREENER]: 'STOCK SCREENER',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -109,6 +133,14 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.LIVE_STREAMS]: 'panelLiveStreams',
   [PANEL_IDS.PREDICTION]: 'panelPredictionTrading',
   [PANEL_IDS.MISSED_OPP]: 'panelMissedOpportunities',
+  [PANEL_IDS.MARKET_MOVERS]: 'panelMarketMovers',
+  [PANEL_IDS.FOREX]: 'panelForex',
+  [PANEL_IDS.BONDS]: 'panelBonds',
+  [PANEL_IDS.COMMODITIES]: 'panelCommodities',
+  [PANEL_IDS.CRYPTO]: 'panelCrypto',
+  [PANEL_IDS.GLOBAL_DASHBOARD]: 'panelGlobalDashboard',
+  [PANEL_IDS.SCANNER]: 'panelScanner',
+  [PANEL_IDS.SCREENER]: 'panelScreener',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -410,6 +442,14 @@ export function DockLayout() {
       case PANEL_IDS.LIVE_STREAMS: content = <LazyWrap><LiveStreamsPanel /></LazyWrap>; break;
       case PANEL_IDS.PREDICTION: content = <LazyWrap><PredictionTradingPanel /></LazyWrap>; break;
       case PANEL_IDS.MISSED_OPP: content = <LazyWrap><MissedOpportunitiesPanel /></LazyWrap>; break;
+      case PANEL_IDS.MARKET_MOVERS: content = <LazyWrap><MarketMoversPanel /></LazyWrap>; break;
+      case PANEL_IDS.FOREX: content = <LazyWrap><ForexPanel /></LazyWrap>; break;
+      case PANEL_IDS.BONDS: content = <LazyWrap><BondsPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITIES: content = <LazyWrap><CommoditiesPanel /></LazyWrap>; break;
+      case PANEL_IDS.CRYPTO: content = <LazyWrap><CryptoPanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_DASHBOARD: content = <LazyWrap><GlobalDashboardPanel /></LazyWrap>; break;
+      case PANEL_IDS.SCANNER: content = <LazyWrap><ScannerPanel /></LazyWrap>; break;
+      case PANEL_IDS.SCREENER: content = <LazyWrap><ScreenerPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

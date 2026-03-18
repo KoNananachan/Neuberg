@@ -30,6 +30,14 @@ import streamsRouter from './routes/streams.js';
 import polymarketRouter from './routes/polymarket.js';
 import hyperliquidRouter from './routes/hyperliquid.js';
 import missedOpportunitiesRouter from './routes/missed-opportunities.js';
+import marketMoversRouter from './routes/market-movers.js';
+import forexRouter from './routes/forex.js';
+import bondsRouter from './routes/bonds.js';
+import commoditiesRouter from './routes/commodities.js';
+import cryptoRouter from './routes/crypto.js';
+import globalMarketsRouter from './routes/global-markets.js';
+import scannerRouter from './routes/scanner.js';
+import screenerRouter from './routes/screener.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -161,6 +169,14 @@ export function createApp() {
   app.use('/api/missed-opportunities', missedOpportunitiesRouter);
   app.use('/api/polymarket', polymarketRouter);
   app.use('/api/hyperliquid', hyperliquidRouter);
+  app.use('/api/market-movers', marketMoversRouter);
+  app.use('/api/forex', forexRouter);
+  app.use('/api/bonds', bondsRouter);
+  app.use('/api/commodities', commoditiesRouter);
+  app.use('/api/crypto', cryptoRouter);
+  app.use('/api/global-markets', globalMarketsRouter);
+  app.use('/api/scanner', scannerRouter);
+  app.use('/api/screener', screenerRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
