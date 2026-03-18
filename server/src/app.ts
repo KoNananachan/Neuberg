@@ -332,6 +332,9 @@ import dividendCaptureRouter from './routes/dividend-capture.js';
 import creditRatingMigrationRouter from './routes/credit-rating-migration.js';
 import mergerArbMonitorRouter from './routes/merger-arb-monitor.js';
 import marketMakingRouter from './routes/market-making.js';
+import rateProbabilityRouter from './routes/rate-probability.js';
+import fxForwardRouter from './routes/fx-forward.js';
+import creditEventRouter from './routes/credit-event.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -765,6 +768,9 @@ export function createApp() {
   app.use('/api/credit-rating-migration', creditRatingMigrationRouter);
   app.use('/api/merger-arb-monitor', mergerArbMonitorRouter);
   app.use('/api/market-making', marketMakingRouter);
+  app.use('/api/rate-probability', rateProbabilityRouter);
+  app.use('/api/fx-forward', fxForwardRouter);
+  app.use('/api/credit-event', creditEventRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
