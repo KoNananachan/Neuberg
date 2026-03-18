@@ -65,6 +65,9 @@ import earningsEstimatesRouter from './routes/earnings-estimates.js';
 import crossAssetRouter from './routes/cross-asset.js';
 import holdingsRouter from './routes/holdings.js';
 import sectorPerformanceRouter from './routes/sector-performance.js';
+import etfHoldingsRouter from './routes/etf-holdings.js';
+import drawdownRouter from './routes/drawdown.js';
+import marketRegimeRouter from './routes/market-regime.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -231,6 +234,9 @@ export function createApp() {
   app.use('/api/cross-asset', crossAssetRouter);
   app.use('/api/holdings', holdingsRouter);
   app.use('/api/sector-performance', sectorPerformanceRouter);
+  app.use('/api/etf-holdings', etfHoldingsRouter);
+  app.use('/api/drawdown', drawdownRouter);
+  app.use('/api/market-regime', marketRegimeRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

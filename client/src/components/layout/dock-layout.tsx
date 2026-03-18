@@ -72,6 +72,9 @@ const WorldEconomyPanel = lazy(() => import('../panels/world-economy-panel').the
 const CrossAssetPanel = lazy(() => import('../panels/cross-asset-panel').then(m => ({ default: m.CrossAssetPanel })));
 const HoldingsPanel = lazy(() => import('../panels/holdings-panel').then(m => ({ default: m.HoldingsPanel })));
 const SectorPerformancePanel = lazy(() => import('../panels/sector-performance-panel').then(m => ({ default: m.SectorPerformancePanel })));
+const ETFHoldingsPanel = lazy(() => import('../panels/etf-holdings-panel').then(m => ({ default: m.ETFHoldingsPanel })));
+const DrawdownPanel = lazy(() => import('../panels/drawdown-panel').then(m => ({ default: m.DrawdownPanel })));
+const MarketRegimePanel = lazy(() => import('../panels/market-regime-panel').then(m => ({ default: m.MarketRegimePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -156,6 +159,9 @@ export const PANEL_IDS = {
   CROSS_ASSET: 'cross-asset',
   HOLDINGS: 'holdings',
   SECTOR_PERFORMANCE: 'sector-performance',
+  ETF_HOLDINGS: 'etf-holdings',
+  DRAWDOWN: 'drawdown',
+  MARKET_REGIME: 'market-regime',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -224,6 +230,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CROSS_ASSET]: 'CROSS-ASSET',
   [PANEL_IDS.HOLDINGS]: 'INSTITUTIONAL HOLDINGS',
   [PANEL_IDS.SECTOR_PERFORMANCE]: 'SECTOR PERFORMANCE',
+  [PANEL_IDS.ETF_HOLDINGS]: 'ETF HOLDINGS',
+  [PANEL_IDS.DRAWDOWN]: 'DRAWDOWN ANALYSIS',
+  [PANEL_IDS.MARKET_REGIME]: 'MARKET REGIME',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -293,6 +302,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CROSS_ASSET]: 'panelCrossAsset',
   [PANEL_IDS.HOLDINGS]: 'panelHoldings',
   [PANEL_IDS.SECTOR_PERFORMANCE]: 'panelSectorPerformance',
+  [PANEL_IDS.ETF_HOLDINGS]: 'panelETFHoldings',
+  [PANEL_IDS.DRAWDOWN]: 'panelDrawdown',
+  [PANEL_IDS.MARKET_REGIME]: 'panelMarketRegime',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -658,6 +670,9 @@ export function DockLayout() {
       case PANEL_IDS.CROSS_ASSET: content = <LazyWrap><CrossAssetPanel /></LazyWrap>; break;
       case PANEL_IDS.HOLDINGS: content = <LazyWrap><HoldingsPanel /></LazyWrap>; break;
       case PANEL_IDS.SECTOR_PERFORMANCE: content = <LazyWrap><SectorPerformancePanel /></LazyWrap>; break;
+      case PANEL_IDS.ETF_HOLDINGS: content = <LazyWrap><ETFHoldingsPanel /></LazyWrap>; break;
+      case PANEL_IDS.DRAWDOWN: content = <LazyWrap><DrawdownPanel /></LazyWrap>; break;
+      case PANEL_IDS.MARKET_REGIME: content = <LazyWrap><MarketRegimePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
