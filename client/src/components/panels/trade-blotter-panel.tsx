@@ -1,51 +1,5 @@
-import { useMemo } from 'react';
 import { useTradeBlotter } from '../../api/hooks/use-trade-blotter';
 import { useT } from '../../i18n';
-
-// ── Types (mirroring server response) ──
-
-interface Trade {
-  id: string;
-  symbol: string;
-  side: string;
-  quantity: number;
-  avgPrice: number;
-  vwap: number;
-  twap: number;
-  arrivalPrice: number;
-  closePrice: number;
-  slippageBps: number;
-  vwapSlippageBps: number;
-  implementationShortfall: number;
-  marketImpact: number;
-  participationRate: number;
-  executionTime: string;
-  duration: number;
-  fills: number;
-  algo: string;
-  venue: string;
-  status: string;
-  qualityScore: number;
-}
-
-interface ExecutionSummary {
-  totalTrades: number;
-  avgSlippageBps: number;
-  avgVwapSlippageBps: number;
-  avgQualityScore: number;
-  totalVolume: number;
-  bestExecution: { symbol: string; slippageBps: number };
-  worstExecution: { symbol: string; slippageBps: number };
-  algoBreakdown: { algo: string; count: number; avgSlippage: number }[];
-  venueBreakdown: { venue: string; count: number; avgSlippage: number }[];
-  slippageDistribution: number[];
-}
-
-interface TradeBlotterResponse {
-  trades: Trade[];
-  summary: ExecutionSummary;
-  timestamp: string;
-}
 
 // ── i18n fallback helper ──
 
@@ -63,29 +17,15 @@ function fmtComma(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-function fmtNotionalM(n: number): string {
-  return (n / 1_000_000).toFixed(2);
-}
-
-function fmtNotionalB(n: number): string {
-  return (n / 1_000_000_000).toFixed(2);
-}
-
 function fmtPrice(n: number): string {
   return n.toFixed(2);
 }
 
-function fmtPct(n: number): string {
-  return (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
-}
-
-function fmtTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-function fmtRatio(n: number): string {
-  return n.toFixed(2);
+function fmtNotional(n: number): string {
+  if (n >= 1_000_000_000) return '$' + (n / 1_000_000_000).toFixed(2) + 'B';
+  if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(2) + 'M';
+  if (n >= 1_000) return '$' + (n / 1_000).toFixed(1) + 'K';
+  return '$' + n.toFixed(2);
 }
 
 function fmtVol(n: number): string {
@@ -94,98 +34,9 @@ function fmtVol(n: number): string {
   return String(n);
 }
 
-// ── Venue-to-sector mapping (synthetic, since the API has no sector field) ──
-
-const SYMBOL_SECTOR: Record<string, string> = {
-  AAPL: 'Technology',
-  MSFT: 'Technology',
-  NVDA: 'Technology',
-  GOOGL: 'Technology',
-  AMZN: 'Consumer',
-  META: 'Technology',
-  TSLA: 'Consumer',
-  JPM: 'Financials',
-  V: 'Financials',
-  UNH: 'Healthcare',
-  AMD: 'Technology',
-  NFLX: 'Consumer',
-  SPY: 'Index ETF',
-  QQQ: 'Index ETF',
-  GS: 'Financials',
-};
-
-function getSector(symbol: string): string {
-  return SYMBOL_SECTOR[symbol] || 'Other';
-}
-
-// ── Derived data computations ──
-
-interface SectorFlow {
-  sector: string;
-  buyVol: number;
-  sellVol: number;
-  netFlow: number;
-  trades: number;
-}
-
-interface SymbolVolume {
-  symbol: string;
-  price: number;
-  volume: number;
-  avgVol: number;
-  unusualRatio: number;
-  notional: number;
-}
-
-function computeSectorFlows(trades: Trade[]): SectorFlow[] {
-  const map = new Map<string, { buyVol: number; sellVol: number; trades: number }>();
-  for (const t of trades) {
-    const sector = getSector(t.symbol);
-    const entry = map.get(sector) || { buyVol: 0, sellVol: 0, trades: 0 };
-    if (t.side === 'BUY') {
-      entry.buyVol += t.quantity;
-    } else {
-      entry.sellVol += t.quantity;
-    }
-    entry.trades++;
-    map.set(sector, entry);
-  }
-  return Array.from(map.entries())
-    .map(([sector, v]) => ({
-      sector,
-      buyVol: v.buyVol,
-      sellVol: v.sellVol,
-      netFlow: v.buyVol - v.sellVol,
-      trades: v.trades,
-    }))
-    .sort((a, b) => b.trades - a.trades);
-}
-
-function computeTopMovers(trades: Trade[]): SymbolVolume[] {
-  const map = new Map<string, { totalQty: number; totalNotional: number; count: number; lastPrice: number }>();
-  for (const t of trades) {
-    const entry = map.get(t.symbol) || { totalQty: 0, totalNotional: 0, count: 0, lastPrice: 0 };
-    entry.totalQty += t.quantity;
-    entry.totalNotional += t.quantity * t.avgPrice;
-    entry.count++;
-    entry.lastPrice = t.avgPrice;
-    map.set(t.symbol, entry);
-  }
-
-  return Array.from(map.entries())
-    .map(([symbol, v]) => {
-      // Synthetic average volume: estimate as totalQty / count * 1.2 to create variation
-      const avgVol = Math.round(v.totalQty / v.count * 1.2);
-      return {
-        symbol,
-        price: v.lastPrice,
-        volume: v.totalQty,
-        avgVol,
-        unusualRatio: avgVol > 0 ? v.totalQty / avgVol : 0,
-        notional: v.totalNotional,
-      };
-    })
-    .sort((a, b) => b.volume - a.volume);
+function fmtTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 // ── Main Panel ──
@@ -194,207 +45,178 @@ export function TradeBlotterPanel() {
   const t = useT();
   const { data, isLoading } = useTradeBlotter();
 
-  const blotter = data as TradeBlotterResponse | undefined;
-
-  const sectorFlows = useMemo(
-    () => (blotter?.trades ? computeSectorFlows(blotter.trades) : []),
-    [blotter?.trades],
-  );
-
-  const topMovers = useMemo(
-    () => (blotter?.trades ? computeTopMovers(blotter.trades) : []),
-    [blotter?.trades],
-  );
-
-  const summaryStats = useMemo(() => {
-    if (!blotter?.trades || blotter.trades.length === 0) {
-      return { totalBlockTrades: 0, totalNotional: 0, avgBlockSize: 0, buyToSellRatio: 0 };
-    }
-    const trades = blotter.trades;
-    const totalNotional = trades.reduce((s, t) => s + t.quantity * t.avgPrice, 0);
-    const buyCount = trades.filter((t) => t.side === 'BUY').length;
-    const sellCount = trades.filter((t) => t.side === 'SELL').length;
-    const avgBlockSize = trades.reduce((s, t) => s + t.quantity, 0) / trades.length;
-    return {
-      totalBlockTrades: trades.length,
-      totalNotional,
-      avgBlockSize: Math.round(avgBlockSize),
-      buyToSellRatio: sellCount > 0 ? buyCount / sellCount : buyCount,
-    };
-  }, [blotter?.trades]);
-
   // Loading state
-  if (isLoading && !blotter) {
+  if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <span className="text-[9px] font-mono text-orange-400/40 uppercase tracking-widest animate-pulse">
-          {tr(t, 'loading', 'LOADING...')}
-        </span>
-      </div>
-    );
-  }
-
-  // Error / no data state
-  if (!blotter?.trades) {
-    return (
-      <div className="h-full flex items-center justify-center bg-black">
-        <span className="text-[9px] font-mono text-red-400/60 uppercase tracking-widest">
-          {tr(t, 'tbNoData', 'NO DATA AVAILABLE')}
+        <span className="text-[9px] font-mono text-orange-400/40 uppercase tracking-widest">
+          {tr(t, 'loading', 'Loading...')}
         </span>
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-auto bg-black p-1 text-[9px] font-mono">
-      {/* ── Summary Bar ── */}
-      <div className="grid grid-cols-4 gap-px bg-orange-400/[0.06] mb-1">
-        <div className="bg-black px-2 py-1.5">
-          <div className="text-[6px] text-white/20 uppercase tracking-wider">BLOCK TRADES</div>
-          <div className="text-[11px] font-black text-orange-400">{summaryStats.totalBlockTrades}</div>
-        </div>
-        <div className="bg-black px-2 py-1.5">
-          <div className="text-[6px] text-white/20 uppercase tracking-wider">TOTAL NOTIONAL</div>
-          <div className="text-[11px] font-black text-orange-400">${fmtNotionalB(summaryStats.totalNotional)}B</div>
-        </div>
-        <div className="bg-black px-2 py-1.5">
-          <div className="text-[6px] text-white/20 uppercase tracking-wider">AVG BLOCK SIZE</div>
-          <div className="text-[11px] font-black text-white/60">{fmtComma(summaryStats.avgBlockSize)}</div>
-        </div>
-        <div className="bg-black px-2 py-1.5">
-          <div className="text-[6px] text-white/20 uppercase tracking-wider">BUY/SELL RATIO</div>
-          <div
-            className="text-[11px] font-black"
-            style={{ color: summaryStats.buyToSellRatio >= 1 ? '#4ade80' : '#f87171' }}
-          >
-            {fmtRatio(summaryStats.buyToSellRatio)}
-          </div>
-        </div>
+    <div className="h-full flex flex-col overflow-hidden bg-black text-[9px] font-mono">
+      {/* ── Header ── */}
+      <div className="shrink-0 flex items-center gap-2 px-2 py-1.5 border-b border-border/20">
+        <div className="w-[3px] h-3 bg-orange-400" />
+        <span className="text-[10px] font-black text-orange-400 uppercase tracking-wider">
+          {tr(t, 'tbTitle', 'TRADE BLOTTER')}
+        </span>
       </div>
 
-      {/* ── Recent Block Trades ── */}
-      <div className="mb-1">
-        <div className="px-1 py-1 border-b border-border/20">
-          <span className="text-[7px] text-orange-400/60 uppercase tracking-wider font-bold">
-            RECENT BLOCK TRADES
-          </span>
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center px-1 py-0.5 border-b border-border/20 text-[6px] text-white/20 uppercase tracking-wider">
+      {/* ── Trade Log ── */}
+      <div className="flex-1 overflow-auto">
+        {/* Table Header */}
+        <div className="sticky top-0 z-10 bg-black flex items-center px-1 py-1 border-b border-border/20 text-[7px] text-white/20 uppercase tracking-wider">
           <span className="w-[56px] shrink-0">TIME</span>
-          <span className="w-[40px] shrink-0">TICKER</span>
-          <span className="w-[28px] shrink-0">SIDE</span>
-          <span className="w-[48px] shrink-0 text-right">SIZE</span>
-          <span className="w-[50px] shrink-0 text-right">PRICE</span>
-          <span className="w-[48px] shrink-0 text-right">NOTL $M</span>
+          <span className="w-[44px] shrink-0">TICKER</span>
+          <span className="w-[32px] shrink-0">SIDE</span>
+          <span className="w-[44px] shrink-0 text-right">QTY</span>
+          <span className="w-[52px] shrink-0 text-right">PRICE</span>
+          <span className="w-[56px] shrink-0 text-right">NOTIONAL</span>
           <span className="w-[40px] shrink-0 text-center">EXCH</span>
-          <span className="flex-1 text-right">BROKER</span>
+          <span className="w-[40px] shrink-0 text-center">TYPE</span>
+          <span className="flex-1 text-right">STATUS</span>
         </div>
 
-        {/* Rows */}
-        {blotter.trades.map((trade) => {
-          const notional = trade.quantity * trade.avgPrice;
+        {/* Trade Rows */}
+        {(data?.trades ?? []).map((trade: any, idx: number) => {
+          const side = (trade.side ?? '').toUpperCase();
+          const isBuy = side === 'BUY';
+          const qty = trade.quantity ?? trade.qty ?? 0;
+          const price = trade.avgPrice ?? trade.price ?? 0;
+          const notional = trade.notional ?? qty * price;
+
           return (
             <div
-              key={trade.id}
+              key={trade.id ?? idx}
               className="flex items-center px-1 py-[2px] border-b border-white/[0.02] hover:bg-orange-400/[0.02] transition-colors"
             >
-              <span className="w-[56px] shrink-0 text-[7px] text-white/30">{fmtTime(trade.executionTime)}</span>
-              <span className="w-[40px] shrink-0 text-[8px] font-bold text-orange-400">{trade.symbol}</span>
-              <span
-                className="w-[28px] shrink-0 text-[7px] font-bold"
-                style={{ color: trade.side === 'BUY' ? '#4ade80' : '#f87171' }}
-              >
-                {trade.side}
+              <span className="w-[56px] shrink-0 text-[7px] text-white/30">
+                {trade.executionTime ?? trade.timestamp ?? trade.time
+                  ? fmtTime(trade.executionTime ?? trade.timestamp ?? trade.time)
+                  : '--'}
               </span>
-              <span className="w-[48px] shrink-0 text-right text-white/50">{fmtComma(trade.quantity)}</span>
-              <span className="w-[50px] shrink-0 text-right text-white/60">{fmtPrice(trade.avgPrice)}</span>
-              <span className="w-[48px] shrink-0 text-right text-white/40">{fmtNotionalM(notional)}</span>
-              <span className="w-[40px] shrink-0 text-center text-white/30 text-[7px]">{trade.venue}</span>
-              <span className="flex-1 text-right text-white/30 text-[7px]">{trade.algo}</span>
+              <span className="w-[44px] shrink-0 text-[8px] font-bold text-orange-400">
+                {trade.symbol ?? '--'}
+              </span>
+              <span
+                className="w-[32px] shrink-0 text-[7px] font-bold"
+                style={{ color: isBuy ? '#4ade80' : '#f87171' }}
+              >
+                {side || '--'}
+              </span>
+              <span className="w-[44px] shrink-0 text-right text-white/50">
+                {fmtComma(qty)}
+              </span>
+              <span className="w-[52px] shrink-0 text-right text-white/60">
+                {fmtPrice(price)}
+              </span>
+              <span className="w-[56px] shrink-0 text-right text-white/40">
+                {fmtNotional(notional)}
+              </span>
+              <span className="w-[40px] shrink-0 text-center text-white/30 text-[7px]">
+                {trade.venue ?? trade.exchange ?? '--'}
+              </span>
+              <span className="w-[40px] shrink-0 text-center text-white/30 text-[7px]">
+                {trade.algo ?? trade.orderType ?? trade.type ?? '--'}
+              </span>
+              <span className="flex-1 text-right text-white/30 text-[7px]">
+                {trade.status ?? '--'}
+              </span>
             </div>
           );
         })}
-      </div>
 
-      {/* ── Order Flow by Sector ── */}
-      <div className="mb-1">
-        <div className="px-1 py-1 border-b border-border/20">
-          <span className="text-[7px] text-orange-400/60 uppercase tracking-wider font-bold">
-            ORDER FLOW BY SECTOR
-          </span>
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center px-1 py-0.5 border-b border-border/20 text-[6px] text-white/20 uppercase tracking-wider">
-          <span className="w-[72px] shrink-0">SECTOR</span>
-          <span className="w-[52px] shrink-0 text-right">BUY VOL</span>
-          <span className="w-[52px] shrink-0 text-right">SELL VOL</span>
-          <span className="w-[56px] shrink-0 text-right">NET FLOW</span>
-          <span className="flex-1 text-right">TRADES</span>
-        </div>
-
-        {/* Rows */}
-        {sectorFlows.map((row) => (
-          <div
-            key={row.sector}
-            className="flex items-center px-1 py-[2px] border-b border-white/[0.02] hover:bg-orange-400/[0.02] transition-colors"
-          >
-            <span className="w-[72px] shrink-0 text-[8px] font-bold text-white/60">{row.sector}</span>
-            <span className="w-[52px] shrink-0 text-right text-green-400/70">{fmtVol(row.buyVol)}</span>
-            <span className="w-[52px] shrink-0 text-right text-red-400/70">{fmtVol(row.sellVol)}</span>
-            <span
-              className="w-[56px] shrink-0 text-right font-bold"
-              style={{ color: row.netFlow >= 0 ? '#4ade80' : '#f87171' }}
-            >
-              {row.netFlow >= 0 ? '+' : ''}{fmtVol(row.netFlow)}
-            </span>
-            <span className="flex-1 text-right text-white/40">{row.trades}</span>
+        {(!data?.trades || data.trades.length === 0) && !isLoading && (
+          <div className="text-center py-6 text-white/20 text-[8px] uppercase tracking-wider">
+            {tr(t, 'tbNoTrades', 'No trades')}
           </div>
-        ))}
+        )}
       </div>
 
-      {/* ── Top Movers by Volume ── */}
-      <div>
+      {/* ── Summary Stats ── */}
+      <div className="shrink-0 border-t border-border/20">
         <div className="px-1 py-1 border-b border-border/20">
           <span className="text-[7px] text-orange-400/60 uppercase tracking-wider font-bold">
-            TOP MOVERS BY VOLUME
+            SUMMARY
           </span>
         </div>
-
-        {/* Header */}
-        <div className="flex items-center px-1 py-0.5 border-b border-border/20 text-[6px] text-white/20 uppercase tracking-wider">
-          <span className="w-[40px] shrink-0">TICKER</span>
-          <span className="w-[50px] shrink-0 text-right">PRICE</span>
-          <span className="w-[52px] shrink-0 text-right">VOLUME</span>
-          <span className="w-[52px] shrink-0 text-right">AVG VOL</span>
-          <span className="flex-1 text-right">UNUSUAL</span>
-        </div>
-
-        {/* Rows */}
-        {topMovers.map((row) => {
-          const isUnusual = row.unusualRatio > 2;
-          return (
-            <div
-              key={row.symbol}
-              className="flex items-center px-1 py-[2px] border-b border-white/[0.02] hover:bg-orange-400/[0.02] transition-colors"
-            >
-              <span className="w-[40px] shrink-0 text-[8px] font-bold text-orange-400">{row.symbol}</span>
-              <span className="w-[50px] shrink-0 text-right text-white/60">{fmtPrice(row.price)}</span>
-              <span className="w-[52px] shrink-0 text-right text-white/50">{fmtVol(row.volume)}</span>
-              <span className="w-[52px] shrink-0 text-right text-white/30">{fmtVol(row.avgVol)}</span>
-              <span
-                className={`flex-1 text-right font-bold ${isUnusual ? 'text-orange-400' : 'text-white/40'}`}
-              >
-                {row.unusualRatio.toFixed(1)}x
-                {isUnusual && (
-                  <span className="ml-1 text-[6px] text-orange-400/80 bg-orange-400/[0.08] px-0.5">HIGH</span>
-                )}
-              </span>
+        <div className="grid grid-cols-4 gap-px bg-orange-400/[0.04]">
+          <div className="bg-black px-2 py-1.5">
+            <div className="text-[6px] text-white/20 uppercase tracking-wider">TOTAL TRADES</div>
+            <div className="text-[11px] font-black text-orange-400">
+              {data?.summary?.totalTrades ?? data?.trades?.length ?? 0}
             </div>
-          );
-        })}
+          </div>
+          <div className="bg-black px-2 py-1.5">
+            <div className="text-[6px] text-white/20 uppercase tracking-wider">VOLUME</div>
+            <div className="text-[11px] font-black text-white/60">
+              {fmtVol(data?.summary?.totalVolume ?? (data?.trades ?? []).reduce((s: number, t: any) => s + (t.quantity ?? t.qty ?? 0), 0))}
+            </div>
+          </div>
+          <div className="bg-black px-2 py-1.5">
+            <div className="text-[6px] text-white/20 uppercase tracking-wider">NOTIONAL</div>
+            <div className="text-[11px] font-black text-white/60">
+              {fmtNotional(
+                data?.summary?.totalNotional ??
+                (data?.trades ?? []).reduce(
+                  (s: number, t: any) => s + (t.notional ?? (t.quantity ?? t.qty ?? 0) * (t.avgPrice ?? t.price ?? 0)),
+                  0,
+                )
+              )}
+            </div>
+          </div>
+          <div className="bg-black px-2 py-1.5">
+            <div className="text-[6px] text-white/20 uppercase tracking-wider">BUY/SELL</div>
+            {(() => {
+              const trades = data?.trades ?? [];
+              const buyCount = trades.filter((t: any) => (t.side ?? '').toUpperCase() === 'BUY').length;
+              const sellCount = trades.filter((t: any) => (t.side ?? '').toUpperCase() === 'SELL').length;
+              const ratio = sellCount > 0 ? (buyCount / sellCount).toFixed(2) : buyCount > 0 ? buyCount.toFixed(2) : '0.00';
+              const isPositive = buyCount >= sellCount;
+              return (
+                <div
+                  className="text-[11px] font-black"
+                  style={{ color: isPositive ? '#4ade80' : '#f87171' }}
+                >
+                  {ratio}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Execution Quality ── */}
+      <div className="shrink-0 border-t border-border/20">
+        <div className="px-1 py-1 border-b border-border/20">
+          <span className="text-[7px] text-orange-400/60 uppercase tracking-wider font-bold">
+            EXECUTION QUALITY
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-px bg-orange-400/[0.04]">
+          <div className="bg-black px-2 py-1.5">
+            <div className="text-[6px] text-white/20 uppercase tracking-wider">FILL RATE</div>
+            <div className="text-[11px] font-black text-orange-400">
+              {(() => {
+                const fillRate = data?.summary?.avgFillRate ?? data?.executionQuality?.fillRate ?? data?.fillRate;
+                return fillRate != null ? fillRate.toFixed(1) + '%' : '--';
+              })()}
+            </div>
+          </div>
+          <div className="bg-black px-2 py-1.5">
+            <div className="text-[6px] text-white/20 uppercase tracking-wider">AVG SLIPPAGE</div>
+            <div className="text-[11px] font-black text-orange-400">
+              {(() => {
+                const slippage = data?.summary?.avgSlippageBps ?? data?.executionQuality?.avgSlippageBps ?? data?.avgSlippageBps;
+                return slippage != null ? slippage.toFixed(2) + ' bps' : '--';
+              })()}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -4,104 +4,106 @@ const router = Router();
 
 // ── Seeded PRNG ──
 
-function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; } return h >>> 0; }
-function mulberry32(a: number) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-function seededRandom(tag: string) { const d = new Date().toISOString().slice(0, 10); return mulberry32(hashSeed(tag + d)); }
+function mulberry32(a: number) {
+  return function () {
+    let t = (a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashSeed(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+// ── Cache ──
+
+let cache: { data: any; ts: number } | null = null;
+let staleData: any = null;
+const TTL = 5 * 60 * 1000;
 
 // ── Types ──
 
-interface BlockTrade {
+interface Trade {
+  time: string;
   ticker: string;
   side: 'BUY' | 'SELL';
-  size: number;
+  quantity: number;
   price: number;
   notional: number;
   exchange: string;
-  timestamp: string;
-  broker: string;
+  orderType: string;
+  status: string;
+  limitPrice: number | null;
+  fillPrice: number;
 }
 
-interface OrderFlowSector {
-  sector: string;
-  buyVolume: number;
-  sellVolume: number;
-  netFlow: number;
+interface SymbolVWAP {
+  ticker: string;
+  vwap: number;
+  totalVolume: number;
   tradeCount: number;
 }
 
-interface TopMover {
-  ticker: string;
-  unusualVolume: number;
-  price: number;
-  changePercent: number;
-  volumeToday: number;
-  avgVolume: number;
+interface SummaryStats {
+  totalTrades: number;
+  totalVolume: number;
+  totalNotional: number;
+  buySellRatio: number;
+  averageFillRate: number;
+  topSymbolVWAP: SymbolVWAP[];
 }
 
-interface MarketSummary {
-  totalBlockTrades: number;
-  totalNotional: number;
-  avgBlockSize: number;
-  buyToSellRatio: number;
-  mostActiveExchange: string;
-  timestamp: string;
+interface ExecutionQuality {
+  filledAtOrBetterPct: number;
+  averageSlippageBps: number;
+  bestExecution: string;
+  worstExecution: string;
 }
 
 interface TradeBlotterResponse {
-  recentBlockTrades: BlockTrade[];
-  orderFlowSummary: OrderFlowSector[];
-  topMoversByVolume: TopMover[];
-  marketSummary: MarketSummary;
+  date: string;
+  generatedAt: string;
+  trades: Trade[];
+  summary: SummaryStats;
+  executionQuality: ExecutionQuality;
 }
 
-// ── Stock definitions with realistic base prices and sectors ──
+// ── Ticker definitions with realistic base prices ──
 
-interface StockDef {
-  ticker: string;
-  sector: string;
-  basePrice: number;
-  avgDailyVolume: number;
-}
-
-const BLOCK_TRADE_STOCKS: StockDef[] = [
-  { ticker: 'AAPL', sector: 'Technology', basePrice: 213.25, avgDailyVolume: 55_000_000 },
-  { ticker: 'MSFT', sector: 'Technology', basePrice: 428.50, avgDailyVolume: 22_000_000 },
-  { ticker: 'NVDA', sector: 'Technology', basePrice: 875.30, avgDailyVolume: 42_000_000 },
-  { ticker: 'GOOG', sector: 'Technology', basePrice: 175.60, avgDailyVolume: 25_000_000 },
-  { ticker: 'META', sector: 'Technology', basePrice: 505.20, avgDailyVolume: 18_000_000 },
-  { ticker: 'AMZN', sector: 'Technology', basePrice: 186.40, avgDailyVolume: 38_000_000 },
-  { ticker: 'JPM', sector: 'Financials', basePrice: 198.70, avgDailyVolume: 10_000_000 },
-  { ticker: 'GS', sector: 'Financials', basePrice: 415.80, avgDailyVolume: 3_200_000 },
-  { ticker: 'BAC', sector: 'Financials', basePrice: 37.90, avgDailyVolume: 35_000_000 },
-  { ticker: 'MS', sector: 'Financials', basePrice: 97.40, avgDailyVolume: 8_500_000 },
-  { ticker: 'JNJ', sector: 'Healthcare', basePrice: 156.30, avgDailyVolume: 7_200_000 },
-  { ticker: 'UNH', sector: 'Healthcare', basePrice: 527.80, avgDailyVolume: 3_800_000 },
-  { ticker: 'PFE', sector: 'Healthcare', basePrice: 28.40, avgDailyVolume: 32_000_000 },
-  { ticker: 'XOM', sector: 'Energy', basePrice: 117.30, avgDailyVolume: 15_000_000 },
-  { ticker: 'CVX', sector: 'Energy', basePrice: 158.90, avgDailyVolume: 8_000_000 },
-  { ticker: 'COP', sector: 'Energy', basePrice: 114.60, avgDailyVolume: 6_500_000 },
-  { ticker: 'PG', sector: 'Consumer', basePrice: 168.40, avgDailyVolume: 7_500_000 },
-  { ticker: 'KO', sector: 'Consumer', basePrice: 62.80, avgDailyVolume: 12_000_000 },
-  { ticker: 'WMT', sector: 'Consumer', basePrice: 172.50, avgDailyVolume: 8_000_000 },
-  { ticker: 'TSLA', sector: 'Consumer', basePrice: 248.90, avgDailyVolume: 95_000_000 },
-  { ticker: 'CAT', sector: 'Industrials', basePrice: 338.60, avgDailyVolume: 3_200_000 },
-  { ticker: 'BA', sector: 'Industrials', basePrice: 192.70, avgDailyVolume: 5_500_000 },
-  { ticker: 'HON', sector: 'Industrials', basePrice: 205.30, avgDailyVolume: 3_800_000 },
-  { ticker: 'GE', sector: 'Industrials', basePrice: 164.20, avgDailyVolume: 6_000_000 },
+const TICKERS: { symbol: string; basePrice: number }[] = [
+  { symbol: 'AAPL', basePrice: 213.45 },
+  { symbol: 'MSFT', basePrice: 428.70 },
+  { symbol: 'GOOGL', basePrice: 176.30 },
+  { symbol: 'AMZN', basePrice: 187.50 },
+  { symbol: 'NVDA', basePrice: 878.40 },
+  { symbol: 'META', basePrice: 507.60 },
+  { symbol: 'TSLA', basePrice: 248.15 },
+  { symbol: 'JPM', basePrice: 199.80 },
+  { symbol: 'BAC', basePrice: 38.25 },
+  { symbol: 'GS', basePrice: 416.90 },
+  { symbol: 'SPY', basePrice: 521.40 },
+  { symbol: 'QQQ', basePrice: 449.80 },
+  { symbol: 'IWM', basePrice: 203.65 },
+  { symbol: 'XLF', basePrice: 41.30 },
+  { symbol: 'COIN', basePrice: 225.70 },
 ];
 
-const EXCHANGES = ['NYSE', 'NASDAQ', 'BATS', 'IEX'];
-const BROKERS = ['ML', 'GS', 'JPM', 'BARC', 'MS', 'CITI', 'UBS', 'CS', 'DB', 'HSBC'];
-const SECTORS = ['Technology', 'Financials', 'Healthcare', 'Energy', 'Consumer', 'Industrials'];
+const EXCHANGES = ['NYSE', 'NASDAQ', 'ARCA', 'BATS', 'IEX'];
+const ORDER_TYPES = ['MKT', 'LMT', 'STOP'];
+const STATUSES = ['FILLED', 'PARTIAL', 'WORKING'];
 
 // ── Helpers ──
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
-}
-
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
 }
 
 function pick<T>(arr: T[], rng: () => number): T {
@@ -114,136 +116,201 @@ function jitter(base: number, pct: number, rng: () => number): number {
 
 // ── Generation logic ──
 
-function generateBlockTrades(rng: () => number): BlockTrade[] {
-  const trades: BlockTrade[] = [];
-  const today = new Date().toISOString().slice(0, 10);
+function generateTrades(rng: () => number): Trade[] {
+  const tradeCount = 30 + Math.floor(rng() * 11); // 30-40 trades
+  const trades: Trade[] = [];
 
-  for (let i = 0; i < 20; i++) {
-    const stock = pick(BLOCK_TRADE_STOCKS, rng);
-
-    const side: 'BUY' | 'SELL' = rng() > 0.48 ? 'BUY' : 'SELL';
-
-    // Block size: 10k-500k shares, weighted toward lower end
-    const sizeRaw = 10_000 + Math.floor(rng() * rng() * 490_000);
-    const size = Math.round(sizeRaw / 100) * 100;
-
-    // Price with realistic daily variation
-    const price = round2(jitter(stock.basePrice, 0.012, rng));
-
-    const notional = Math.round(size * price);
-
-    const exchange = pick(EXCHANGES, rng);
-    const broker = pick(BROKERS, rng);
-
-    // Spread timestamps across 9:30 - 16:00 ET (6.5h = 390 min)
-    const minuteOffset = Math.floor(rng() * 390);
-    const hour = 9 + Math.floor((30 + minuteOffset) / 60);
-    const minute = (30 + minuteOffset) % 60;
+  // Generate timestamps across market hours 09:30 - 15:59
+  const timestamps: string[] = [];
+  for (let i = 0; i < tradeCount; i++) {
+    const minuteOffset = Math.floor(rng() * 390); // 6.5 hours = 390 min
+    const totalMinutes = 9 * 60 + 30 + minuteOffset;
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
     const second = Math.floor(rng() * 60);
-    const ms = Math.floor(rng() * 1000);
-    const timestamp = `${today}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}.${String(ms).padStart(3, '0')}Z`;
+    timestamps.push(
+      `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`
+    );
+  }
+  timestamps.sort();
 
-    trades.push({ ticker: stock.ticker, side, size, price, notional, exchange, timestamp, broker });
+  for (let i = 0; i < tradeCount; i++) {
+    const tickerDef = pick(TICKERS, rng);
+    const side: 'BUY' | 'SELL' = rng() > 0.47 ? 'BUY' : 'SELL';
+
+    // Quantity: 100-50,000 shares in round lots, weighted toward smaller sizes
+    const rawQty = 100 + Math.floor(rng() * rng() * 49900);
+    const quantity = Math.round(rawQty / 100) * 100 || 100;
+
+    // Price with realistic daily variation (+/- 1.5%)
+    const price = round2(jitter(tickerDef.basePrice, 0.015, rng));
+
+    const notional = round2(quantity * price);
+    const exchange = pick(EXCHANGES, rng);
+    const orderType = pick(ORDER_TYPES, rng);
+
+    // Status: mostly FILLED, some PARTIAL/WORKING
+    const statusRoll = rng();
+    const status = statusRoll < 0.72 ? 'FILLED' : statusRoll < 0.88 ? 'PARTIAL' : 'WORKING';
+
+    // Limit price for LMT/STOP orders
+    let limitPrice: number | null = null;
+    if (orderType === 'LMT') {
+      // Limit price slightly away from market price
+      const offset = side === 'BUY' ? -(rng() * 0.005) : (rng() * 0.005);
+      limitPrice = round2(price * (1 + offset));
+    } else if (orderType === 'STOP') {
+      const offset = side === 'BUY' ? (rng() * 0.008) : -(rng() * 0.008);
+      limitPrice = round2(price * (1 + offset));
+    }
+
+    // Fill price: for FILLED orders, close to limit; for MKT, same as price
+    let fillPrice = price;
+    if (orderType === 'LMT' && limitPrice !== null && status === 'FILLED') {
+      // Filled at or slightly better than limit
+      const improvement = rng() * 0.002;
+      fillPrice = side === 'BUY'
+        ? round2(limitPrice * (1 - improvement))
+        : round2(limitPrice * (1 + improvement));
+    }
+
+    trades.push({
+      time: timestamps[i],
+      ticker: tickerDef.symbol,
+      side,
+      quantity,
+      price,
+      notional,
+      exchange,
+      orderType,
+      status,
+      limitPrice,
+      fillPrice,
+    });
   }
 
-  // Sort by timestamp descending (most recent first)
-  trades.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  // Sort descending by time (most recent first)
+  trades.sort((a, b) => b.time.localeCompare(a.time));
 
   return trades;
 }
 
-function generateOrderFlowSummary(rng: () => number): OrderFlowSector[] {
-  return SECTORS.map((sector) => {
-    // Buy volume in millions of dollars
-    const buyVolume = Math.round(jitter(1_800_000_000, 0.4, rng));
-    // Sell volume slightly asymmetric for realistic imbalance
-    const sellBias = 0.85 + rng() * 0.3; // 0.85-1.15x of buy
-    const sellVolume = Math.round(buyVolume * sellBias);
-    const netFlow = buyVolume - sellVolume;
-    const tradeCount = Math.round(jitter(4500, 0.35, rng));
+function computeSummary(trades: Trade[]): SummaryStats {
+  const totalTrades = trades.length;
+  const totalVolume = trades.reduce((sum, t) => sum + t.quantity, 0);
+  const totalNotional = round2(trades.reduce((sum, t) => sum + t.notional, 0));
 
-    return { sector, buyVolume, sellVolume, netFlow, tradeCount };
+  const buyCount = trades.filter(t => t.side === 'BUY').length;
+  const sellCount = trades.filter(t => t.side === 'SELL').length;
+  const buySellRatio = round2(sellCount > 0 ? buyCount / sellCount : buyCount);
+
+  // Average fill rate: FILLED=100%, PARTIAL=random 40-85%, WORKING=0%
+  const fillRates = trades.map(t => {
+    if (t.status === 'FILLED') return 100;
+    if (t.status === 'PARTIAL') return 40 + (t.quantity % 45); // deterministic partial
+    return 0;
   });
+  const averageFillRate = round2(fillRates.reduce((a, b) => a + b, 0) / fillRates.length);
+
+  // VWAP for top 5 symbols by trade count
+  const tickerMap = new Map<string, { totalPriceQty: number; totalQty: number; count: number }>();
+  for (const t of trades) {
+    const entry = tickerMap.get(t.ticker) || { totalPriceQty: 0, totalQty: 0, count: 0 };
+    entry.totalPriceQty += t.price * t.quantity;
+    entry.totalQty += t.quantity;
+    entry.count++;
+    tickerMap.set(t.ticker, entry);
+  }
+
+  const topSymbolVWAP: SymbolVWAP[] = [...tickerMap.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5)
+    .map(([ticker, data]) => ({
+      ticker,
+      vwap: round2(data.totalPriceQty / data.totalQty),
+      totalVolume: data.totalQty,
+      tradeCount: data.count,
+    }));
+
+  return {
+    totalTrades,
+    totalVolume,
+    totalNotional,
+    buySellRatio,
+    averageFillRate,
+    topSymbolVWAP,
+  };
 }
 
-function generateTopMovers(rng: () => number): TopMover[] {
-  // Select 10 unique stocks for top movers
-  const shuffled = [...BLOCK_TRADE_STOCKS];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  const selected = shuffled.slice(0, 10);
+function computeExecutionQuality(trades: Trade[]): ExecutionQuality {
+  // Orders filled at or better than limit price
+  const limitOrders = trades.filter(t => t.orderType === 'LMT' && t.limitPrice !== null && t.status === 'FILLED');
+  let atOrBetterCount = 0;
+  let totalSlippageBps = 0;
+  let bestSlippage = Infinity;
+  let worstSlippage = -Infinity;
+  let bestTicker = '';
+  let worstTicker = '';
 
-  const movers: TopMover[] = selected.map((stock) => {
-    const avgVolume = Math.round(jitter(stock.avgDailyVolume, 0.1, rng));
-    // Unusual volume ratio: 1.5x to 5x, skewed toward lower end
-    const unusualVolume = round1(1.5 + rng() * rng() * 3.5);
-    const volumeToday = Math.round(avgVolume * unusualVolume);
-    const price = round2(jitter(stock.basePrice, 0.015, rng));
-    // Change% correlated with unusual volume, but with randomness
-    const direction = rng() > 0.4 ? 1 : -1;
-    const magnitude = 0.5 + rng() * (unusualVolume * 1.2);
-    const changePercent = round2(direction * magnitude);
-
-    return { ticker: stock.ticker, unusualVolume, price, changePercent, volumeToday, avgVolume };
-  });
-
-  // Sort by unusual volume descending
-  movers.sort((a, b) => b.unusualVolume - a.unusualVolume);
-
-  return movers;
-}
-
-function generateMarketSummary(blockTrades: BlockTrade[]): MarketSummary {
-  const totalBlockTrades = blockTrades.length;
-  const totalNotional = blockTrades.reduce((sum, t) => sum + t.notional, 0);
-  const avgBlockSize = Math.round(blockTrades.reduce((sum, t) => sum + t.size, 0) / totalBlockTrades);
-
-  const buyCount = blockTrades.filter((t) => t.side === 'BUY').length;
-  const sellCount = blockTrades.filter((t) => t.side === 'SELL').length;
-  const buyToSellRatio = round2(sellCount > 0 ? buyCount / sellCount : buyCount);
-
-  // Determine most active exchange by trade count
-  const exchangeCounts = new Map<string, number>();
-  for (const t of blockTrades) {
-    exchangeCounts.set(t.exchange, (exchangeCounts.get(t.exchange) || 0) + 1);
-  }
-  let mostActiveExchange = 'NYSE';
-  let maxCount = 0;
-  for (const [exchange, count] of exchangeCounts) {
-    if (count > maxCount) {
-      maxCount = count;
-      mostActiveExchange = exchange;
+  for (const t of limitOrders) {
+    const limitPx = t.limitPrice!;
+    if (t.side === 'BUY') {
+      // Better = fillPrice <= limitPrice
+      if (t.fillPrice <= limitPx) atOrBetterCount++;
+      const slippage = ((t.fillPrice - limitPx) / limitPx) * 10000;
+      totalSlippageBps += slippage;
+      if (slippage < bestSlippage) { bestSlippage = slippage; bestTicker = t.ticker; }
+      if (slippage > worstSlippage) { worstSlippage = slippage; worstTicker = t.ticker; }
+    } else {
+      // Better = fillPrice >= limitPrice
+      if (t.fillPrice >= limitPx) atOrBetterCount++;
+      const slippage = ((limitPx - t.fillPrice) / limitPx) * 10000;
+      totalSlippageBps += slippage;
+      if (slippage < bestSlippage) { bestSlippage = slippage; bestTicker = t.ticker; }
+      if (slippage > worstSlippage) { worstSlippage = slippage; worstTicker = t.ticker; }
     }
   }
 
+  // Include MKT orders in slippage calculation (assume 0.5-2 bps market impact)
+  const mktOrders = trades.filter(t => t.orderType === 'MKT' && t.status === 'FILLED');
+  for (const t of mktOrders) {
+    const impliedSlippage = ((t.price * 0.0001) + (t.price * 0.00005)) / t.price * 10000;
+    totalSlippageBps += impliedSlippage;
+  }
+
+  const allFilledOrders = limitOrders.length + mktOrders.length;
+  const filledAtOrBetterPct = limitOrders.length > 0
+    ? round2((atOrBetterCount / limitOrders.length) * 100)
+    : 100;
+  const averageSlippageBps = allFilledOrders > 0
+    ? round2(totalSlippageBps / allFilledOrders)
+    : 0;
+
   return {
-    totalBlockTrades,
-    totalNotional,
-    avgBlockSize,
-    buyToSellRatio,
-    mostActiveExchange,
-    timestamp: new Date().toISOString(),
+    filledAtOrBetterPct,
+    averageSlippageBps,
+    bestExecution: bestTicker || 'N/A',
+    worstExecution: worstTicker || 'N/A',
   };
 }
 
 function buildTradeBlotterData(): TradeBlotterResponse {
-  const rng = seededRandom('trade-blotter');
+  const day = new Date().toISOString().slice(0, 10);
+  const seed = hashSeed('trade-blotter-' + day);
+  const rng = mulberry32(seed);
 
-  const recentBlockTrades = generateBlockTrades(rng);
-  const orderFlowSummary = generateOrderFlowSummary(rng);
-  const topMoversByVolume = generateTopMovers(rng);
-  const marketSummary = generateMarketSummary(recentBlockTrades);
+  const trades = generateTrades(rng);
+  const summary = computeSummary(trades);
+  const executionQuality = computeExecutionQuality(trades);
 
-  return { recentBlockTrades, orderFlowSummary, topMoversByVolume, marketSummary };
+  return {
+    date: day,
+    generatedAt: new Date().toISOString(),
+    trades,
+    summary,
+    executionQuality,
+  };
 }
-
-// ── Cache ──
-
-let cachedData: { data: TradeBlotterResponse; ts: number } | null = null;
-let staleData: TradeBlotterResponse | null = null;
-const CACHE_TTL = 5 * 60_000; // 5 minutes
 
 // ── Route ──
 
@@ -251,30 +318,26 @@ router.get('/', (_req, res) => {
   try {
     const now = Date.now();
 
-    // Return cached data if still fresh
-    if (cachedData && now - cachedData.ts < CACHE_TTL) {
-      res.json(cachedData.data);
+    if (cache && now - cache.ts < TTL) {
+      res.json(cache.data);
       return;
     }
 
-    // Generate fresh data
     const data = buildTradeBlotterData();
 
-    // Update cache
-    staleData = cachedData?.data ?? staleData;
-    cachedData = { data, ts: now };
+    staleData = cache?.data ?? staleData;
+    cache = { data, ts: now };
 
     res.json(data);
   } catch (err) {
     console.error('[TradeBlotter] Error:', err instanceof Error ? err.message : err);
 
-    // Stale fallback
     if (staleData) {
       res.json(staleData);
       return;
     }
-    if (cachedData) {
-      res.json(cachedData.data);
+    if (cache) {
+      res.json(cache.data);
       return;
     }
 

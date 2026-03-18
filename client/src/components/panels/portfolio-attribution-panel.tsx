@@ -13,7 +13,7 @@ const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string =
 
 // ── Constants ──
 
-const ACCENT = '#a78bfa'; // violet-400
+const ACCENT = '#22d3ee'; // cyan-400
 
 // ── Color / formatting helpers ──
 
@@ -41,8 +41,8 @@ function fmtNum(n: number, decimals = 2): string {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="px-2 py-1 bg-[#050505] border-b border-border/20 border-t border-t-violet-400/10">
-      <span className="text-[7px] font-mono font-black uppercase tracking-widest text-violet-400/70">
+    <div className="px-2 py-1 bg-[#050505] border-b border-border/20 border-t border-t-cyan-400/10">
+      <span className="text-[7px] font-mono font-black uppercase tracking-widest text-cyan-400/70">
         {title}
       </span>
     </div>
@@ -53,22 +53,16 @@ function SectionHeader({ title }: { title: string }) {
 
 export function PortfolioAttributionPanel() {
   const t = useT();
-  const { data, isLoading, error } = usePortfolioAttribution();
-  const d = data as any;
+  const { data, isLoading } = usePortfolioAttribution();
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/30 shrink-0">
+      {/* Header with accent bar */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/20 shrink-0">
         <div className="flex items-center gap-2">
-          <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none">
-            <rect x="1" y="8" width="3" height="7" fill={ACCENT} opacity="0.5" />
-            <rect x="5" y="4" width="3" height="11" fill={ACCENT} opacity="0.7" />
-            <rect x="9" y="1" width="3" height="14" fill={ACCENT} opacity="0.85" />
-            <rect x="13" y="6" width="2" height="9" fill={ACCENT} opacity="0.6" />
-          </svg>
+          <div className="w-[3px] h-3.5" style={{ background: ACCENT }} />
           <span
-            className="text-[9px] font-black font-mono uppercase tracking-tighter"
+            className="text-[9px] font-black font-mono uppercase tracking-wider"
             style={{ color: ACCENT }}
           >
             {tr(t, 'pattrTitle', 'Portfolio Attribution')}
@@ -87,20 +81,12 @@ export function PortfolioAttributionPanel() {
           </div>
         )}
 
-        {error && !data && (
-          <div className="text-center py-8 text-red-400 text-[9px] font-mono uppercase">
-            FAILED TO LOAD
-          </div>
-        )}
-
-        {d && (
+        {data && (
           <>
-            <PerformanceSummary data={d} />
-            <BrinsonAttribution data={d} />
-            <FactorAttribution data={d} />
-            <CurrencyAttribution data={d} />
-            <TopContributorsDetractors data={d} />
-            <RiskDecomposition data={d} />
+            <BrinsonAttribution data={data} />
+            <PerformanceSummary data={data} />
+            <TopBottomContributors data={data} />
+            <FactorExposure data={data} />
           </>
         )}
       </div>
@@ -108,39 +94,93 @@ export function PortfolioAttributionPanel() {
   );
 }
 
-// ── 1. Performance Summary ──
+// ── 1. Brinson Attribution by Sector ──
+
+function BrinsonAttribution({ data }: { data: any }) {
+  const sectors: any[] = data?.sectors ?? [];
+
+  return (
+    <>
+      <SectionHeader title="Brinson Attribution by Sector" />
+      <div className="px-1">
+        {/* Column headers */}
+        <div className="grid grid-cols-[1fr_44px_44px_44px_44px_44px_44px] gap-0 px-1 py-1 border-b border-border/20">
+          {['SECTOR', 'PORT WT', 'BENCH WT', 'ALLOC', 'SELECT', 'INTER', 'TOTAL'].map(
+            (h, i) => (
+              <span
+                key={h}
+                className={`text-[5.5px] font-mono text-neutral-600 uppercase tracking-wider ${i > 0 ? 'text-right' : ''}`}
+              >
+                {h}
+              </span>
+            ),
+          )}
+        </div>
+        {/* Data rows */}
+        {sectors.map((sec: any) => (
+          <div
+            key={sec.sector}
+            className="grid grid-cols-[1fr_44px_44px_44px_44px_44px_44px] gap-0 px-1 py-[2px] hover:bg-cyan-400/[0.02] border-b border-border/10 items-center"
+          >
+            <span className="text-[7px] font-mono font-bold text-neutral-300 truncate uppercase">
+              {sec.sector}
+            </span>
+            <span className="text-[7px] font-mono tabular-nums text-right text-neutral-400">
+              {fmtPct(sec.portWeight ?? 0, 1)}
+            </span>
+            <span className="text-[7px] font-mono tabular-nums text-right text-neutral-500">
+              {fmtPct(sec.benchWeight ?? 0, 1)}
+            </span>
+            <span
+              className="text-[7px] font-mono font-bold tabular-nums text-right"
+              style={{ color: valColor(sec.allocEffect ?? 0) }}
+            >
+              {fmtBps(sec.allocEffect ?? 0)}
+            </span>
+            <span
+              className="text-[7px] font-mono font-bold tabular-nums text-right"
+              style={{ color: valColor(sec.selectionEffect ?? 0) }}
+            >
+              {fmtBps(sec.selectionEffect ?? 0)}
+            </span>
+            <span
+              className="text-[7px] font-mono font-bold tabular-nums text-right"
+              style={{ color: valColor(sec.interaction ?? 0) }}
+            >
+              {fmtBps(sec.interaction ?? 0)}
+            </span>
+            <span
+              className="text-[7px] font-mono font-black tabular-nums text-right"
+              style={{ color: valColor(sec.total ?? 0) }}
+            >
+              {fmtBps(sec.total ?? 0)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ── 2. Performance Summary ──
 
 function PerformanceSummary({ data }: { data: any }) {
-  const summary = data.performanceSummary ?? {};
-  const periods = summary.periods ?? ['MTD', 'QTD', 'YTD', '1Y'];
-
   const metrics = [
-    { label: 'TOTAL RETURN', value: summary.totalReturn, fmt: fmtPct },
-    { label: 'BENCHMARK RETURN', value: summary.benchmarkReturn, fmt: fmtPct },
+    { label: 'PORTFOLIO RETURN', value: data?.portfolioReturn, fmt: fmtPct },
+    { label: 'BENCHMARK RETURN', value: data?.benchmarkReturn, fmt: fmtPct },
     {
-      label: 'ACTIVE RETURN (ALPHA)',
-      value: summary.activeReturn,
+      label: 'ACTIVE RETURN',
+      value: data?.activeReturn,
       fmt: fmtPct,
-      color: valColor(summary.activeReturn ?? 0),
+      color: valColor(data?.activeReturn ?? 0),
     },
-    { label: 'TRACKING ERROR', value: summary.trackingError, fmt: fmtPct, neutral: true },
-    { label: 'INFORMATION RATIO', value: summary.informationRatio, fmt: fmtNum, neutral: true },
+    { label: 'TRACKING ERROR', value: data?.trackingError, fmt: fmtPct, neutral: true },
+    { label: 'INFORMATION RATIO', value: data?.infoRatio, fmt: fmtNum, neutral: true },
   ];
 
   return (
     <>
       <SectionHeader title="Performance Summary" />
-      {/* Period display */}
-      <div className="flex gap-px bg-border/10">
-        {periods.map((p: string) => (
-          <div key={p} className="flex-1 bg-[#050505] text-center py-1">
-            <span className="text-[7px] font-mono font-black text-violet-400/60 uppercase tracking-wider">
-              {p}
-            </span>
-          </div>
-        ))}
-      </div>
-      {/* Metrics */}
       <div className="px-2 py-1">
         {metrics.map((m) => {
           const val = m.value ?? 0;
@@ -149,7 +189,7 @@ function PerformanceSummary({ data }: { data: any }) {
           return (
             <div
               key={m.label}
-              className="flex items-center justify-between py-[2px] hover:bg-violet-400/[0.02]"
+              className="flex items-center justify-between py-[2px] hover:bg-cyan-400/[0.02]"
             >
               <span className="text-[7px] font-mono text-neutral-500 uppercase tracking-wider">
                 {m.label}
@@ -168,263 +208,47 @@ function PerformanceSummary({ data }: { data: any }) {
   );
 }
 
-// ── 2. Brinson Attribution ──
+// ── 3. Top / Bottom Contributors ──
 
-function BrinsonAttribution({ data }: { data: any }) {
-  const sectors: any[] = data.brinsonAttribution?.sectors ?? [];
-  const totals = data.brinsonAttribution?.totals ?? {};
-
-  return (
-    <>
-      <SectionHeader title="Brinson Attribution" />
-      <div className="px-1">
-        {/* Header */}
-        <div className="grid grid-cols-[1fr_42px_42px_42px_42px_42px_42px_42px] gap-0 px-1 py-1 border-b border-border/20">
-          {['SECTOR', 'PF WT', 'BM WT', 'PF RET', 'BM RET', 'ALLOC', 'SELECT', 'INTER'].map(
-            (h, i) => (
-              <span
-                key={h}
-                className={`text-[5.5px] font-mono text-neutral-600 uppercase tracking-wider ${i > 0 ? 'text-right' : ''}`}
-              >
-                {h}
-              </span>
-            ),
-          )}
-        </div>
-        {/* Rows */}
-        {sectors.map((sec: any) => (
-          <div
-            key={sec.sector}
-            className="grid grid-cols-[1fr_42px_42px_42px_42px_42px_42px_42px] gap-0 px-1 py-[2px] hover:bg-violet-400/[0.02] border-b border-border/10 items-center"
-          >
-            <span className="text-[7px] font-mono font-bold text-neutral-300 truncate uppercase">
-              {sec.sector}
-            </span>
-            <span className="text-[7px] font-mono tabular-nums text-right text-neutral-400">
-              {fmtPct(sec.portfolioWeight ?? 0, 1)}
-            </span>
-            <span className="text-[7px] font-mono tabular-nums text-right text-neutral-500">
-              {fmtPct(sec.benchmarkWeight ?? 0, 1)}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: valColor(sec.portfolioReturn ?? 0) }}
-            >
-              {fmtPct(sec.portfolioReturn ?? 0, 1)}
-            </span>
-            <span className="text-[7px] font-mono tabular-nums text-right text-neutral-500">
-              {fmtPct(sec.benchmarkReturn ?? 0, 1)}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: valColor(sec.allocationEffect ?? 0) }}
-            >
-              {fmtBps(sec.allocationEffect ?? 0)}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: valColor(sec.selectionEffect ?? 0) }}
-            >
-              {fmtBps(sec.selectionEffect ?? 0)}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: valColor(sec.interactionEffect ?? 0) }}
-            >
-              {fmtBps(sec.interactionEffect ?? 0)}
-            </span>
-          </div>
-        ))}
-        {/* Totals row */}
-        <div className="grid grid-cols-[1fr_42px_42px_42px_42px_42px_42px_42px] gap-0 px-1 py-1 border-t border-violet-400/20 bg-violet-400/[0.02]">
-          <span className="text-[7px] font-mono font-black text-violet-400 uppercase">TOTAL</span>
-          <span className="text-[7px] font-mono font-bold tabular-nums text-right text-neutral-300">
-            {fmtPct(totals.portfolioWeight ?? 0, 1)}
-          </span>
-          <span className="text-[7px] font-mono tabular-nums text-right text-neutral-500">
-            {fmtPct(totals.benchmarkWeight ?? 0, 1)}
-          </span>
-          <span className="text-[7px] font-mono text-right" />
-          <span className="text-[7px] font-mono text-right" />
-          <span
-            className="text-[7px] font-mono font-black tabular-nums text-right"
-            style={{ color: valColor(totals.allocationEffect ?? 0) }}
-          >
-            {fmtBps(totals.allocationEffect ?? 0)}
-          </span>
-          <span
-            className="text-[7px] font-mono font-black tabular-nums text-right"
-            style={{ color: valColor(totals.selectionEffect ?? 0) }}
-          >
-            {fmtBps(totals.selectionEffect ?? 0)}
-          </span>
-          <span
-            className="text-[7px] font-mono font-black tabular-nums text-right"
-            style={{ color: valColor(totals.interactionEffect ?? 0) }}
-          >
-            {fmtBps(totals.interactionEffect ?? 0)}
-          </span>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ── 3. Factor Attribution ──
-
-function FactorAttribution({ data }: { data: any }) {
-  const factors: any[] = data.factorAttribution?.factors ?? [];
+function TopBottomContributors({ data }: { data: any }) {
+  const topContributors: any[] = data?.topContributors ?? [];
+  const bottomContributors: any[] = data?.bottomContributors ?? [];
 
   return (
     <>
-      <SectionHeader title="Factor Attribution" />
-      <div className="px-1">
-        {/* Header */}
-        <div className="grid grid-cols-[1fr_52px_52px_52px_52px] gap-0 px-1 py-1 border-b border-border/20">
-          {['FACTOR', 'PORT EXP', 'ACT EXP', 'FACT RET', 'CONTRIB'].map((h, i) => (
-            <span
-              key={h}
-              className={`text-[5.5px] font-mono text-neutral-600 uppercase tracking-wider ${i > 0 ? 'text-right' : ''}`}
-            >
-              {h}
-            </span>
-          ))}
-        </div>
-        {/* Rows */}
-        {factors.map((fac: any) => (
-          <div
-            key={fac.factor}
-            className="grid grid-cols-[1fr_52px_52px_52px_52px] gap-0 px-1 py-[2px] hover:bg-violet-400/[0.02] border-b border-border/10 items-center"
-          >
-            <span className="text-[7px] font-mono font-bold text-neutral-300 uppercase">
-              {fac.factor}
-            </span>
-            <span className="text-[7px] font-mono tabular-nums text-right text-neutral-400">
-              {fmtNum(fac.portfolioExposure ?? 0)}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: ACCENT }}
-            >
-              {fmtNum(fac.activeExposure ?? 0)}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: valColor(fac.factorReturn ?? 0) }}
-            >
-              {fmtPct(fac.factorReturn ?? 0)}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: valColor(fac.contribution ?? 0) }}
-            >
-              {fmtBps(fac.contribution ?? 0)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
-// ── 4. Currency Attribution ──
-
-function CurrencyAttribution({ data }: { data: any }) {
-  const currencies: any[] = data.currencyAttribution?.currencies ?? [];
-
-  return (
-    <>
-      <SectionHeader title="Currency Attribution" />
-      <div className="px-1">
-        {/* Header */}
-        <div className="grid grid-cols-[1fr_48px_48px_48px_48px] gap-0 px-1 py-1 border-b border-border/20">
-          {['CCY', 'LOCAL RET', 'FX RET', 'HEDGE', 'CONTRIB'].map((h, i) => (
-            <span
-              key={h}
-              className={`text-[5.5px] font-mono text-neutral-600 uppercase tracking-wider ${i > 0 ? 'text-right' : ''}`}
-            >
-              {h}
-            </span>
-          ))}
-        </div>
-        {/* Rows */}
-        {currencies.map((ccy: any) => (
-          <div
-            key={ccy.currency}
-            className="grid grid-cols-[1fr_48px_48px_48px_48px] gap-0 px-1 py-[2px] hover:bg-violet-400/[0.02] border-b border-border/10 items-center"
-          >
-            <span className="text-[7px] font-mono font-bold text-neutral-300 uppercase">
-              {ccy.currency}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: valColor(ccy.localReturn ?? 0) }}
-            >
-              {fmtPct(ccy.localReturn ?? 0, 1)}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: valColor(ccy.fxReturn ?? 0) }}
-            >
-              {fmtPct(ccy.fxReturn ?? 0, 1)}
-            </span>
-            <span className="text-[7px] font-mono tabular-nums text-right text-neutral-400">
-              {fmtPct(ccy.hedgeRatio ?? 0, 0)}
-            </span>
-            <span
-              className="text-[7px] font-mono font-bold tabular-nums text-right"
-              style={{ color: valColor(ccy.totalContribution ?? 0) }}
-            >
-              {fmtBps(ccy.totalContribution ?? 0)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
-// ── 5. Top Contributors / Detractors ──
-
-function TopContributorsDetractors({ data }: { data: any }) {
-  const contributors: any[] = data.topContributors ?? [];
-  const detractors: any[] = data.topDetractors ?? [];
-
-  return (
-    <>
-      <SectionHeader title="Top Contributors / Detractors" />
+      <SectionHeader title="Top / Bottom Contributors" />
       <div className="grid grid-cols-2 gap-px bg-border/10">
-        {/* Contributors */}
+        {/* Top contributors */}
         <div className="bg-black">
           <div className="px-2 py-1 border-b border-border/20">
             <span className="text-[6px] font-mono font-black uppercase tracking-widest text-green-500">
               TOP CONTRIBUTORS
             </span>
           </div>
-          <ContribTable rows={contributors} positive />
+          <ContributorTable rows={topContributors} positive />
         </div>
-        {/* Detractors */}
+        {/* Bottom contributors */}
         <div className="bg-black">
           <div className="px-2 py-1 border-b border-border/20">
             <span className="text-[6px] font-mono font-black uppercase tracking-widest text-red-500">
-              TOP DETRACTORS
+              BOTTOM CONTRIBUTORS
             </span>
           </div>
-          <ContribTable rows={detractors} positive={false} />
+          <ContributorTable rows={bottomContributors} positive={false} />
         </div>
       </div>
     </>
   );
 }
 
-function ContribTable({ rows, positive }: { rows: any[]; positive: boolean }) {
+function ContributorTable({ rows, positive }: { rows: any[]; positive: boolean }) {
   const color = positive ? '#22c55e' : '#ef4444';
 
   return (
     <div className="px-1">
       {/* Header */}
       <div className="grid grid-cols-[1fr_32px_36px_36px] gap-0 px-1 py-[2px] border-b border-border/15">
-        {['TICKER', 'WT', 'RET', 'BPS'].map((h, i) => (
+        {['NAME', 'WT', 'RET', 'CONTRIB'].map((h, i) => (
           <span
             key={h}
             className={`text-[5px] font-mono text-neutral-600 uppercase tracking-wider ${i > 0 ? 'text-right' : ''}`}
@@ -435,11 +259,11 @@ function ContribTable({ rows, positive }: { rows: any[]; positive: boolean }) {
       </div>
       {rows.map((r: any, idx: number) => (
         <div
-          key={r.ticker ?? idx}
-          className="grid grid-cols-[1fr_32px_36px_36px] gap-0 px-1 py-[2px] hover:bg-violet-400/[0.02] border-b border-border/10 items-center"
+          key={r.name ?? idx}
+          className="grid grid-cols-[1fr_32px_36px_36px] gap-0 px-1 py-[2px] hover:bg-cyan-400/[0.02] border-b border-border/10 items-center"
         >
-          <span className="text-[7px] font-mono font-bold text-neutral-200 uppercase">
-            {r.ticker}
+          <span className="text-[7px] font-mono font-bold text-neutral-200 uppercase truncate">
+            {r.name}
           </span>
           <span className="text-[7px] font-mono tabular-nums text-right text-neutral-400">
             {fmtPct(r.weight ?? 0, 1)}
@@ -454,7 +278,7 @@ function ContribTable({ rows, positive }: { rows: any[]; positive: boolean }) {
             className="text-[7px] font-mono font-black tabular-nums text-right"
             style={{ color }}
           >
-            {fmtBps(r.contributionBps ?? 0)}
+            {fmtBps(r.contribution ?? 0)}
           </span>
         </div>
       ))}
@@ -462,74 +286,63 @@ function ContribTable({ rows, positive }: { rows: any[]; positive: boolean }) {
   );
 }
 
-// ── 6. Risk Decomposition ──
+// ── 4. Factor Exposure ──
 
-function RiskDecomposition({ data }: { data: any }) {
-  const risk = data.riskDecomposition ?? {};
-
-  const rows = [
-    { label: 'SYSTEMATIC RISK', value: risk.systematicRisk, fmt: fmtPct, neutral: false },
-    { label: 'SPECIFIC RISK', value: risk.specificRisk, fmt: fmtPct, neutral: false },
-    { label: 'TOTAL RISK', value: risk.totalRisk, fmt: fmtPct, neutral: true },
-    { label: 'R-SQUARED', value: risk.rSquared, fmt: fmtNum, neutral: true },
-    { label: 'BETA', value: risk.beta, fmt: fmtNum, neutral: true },
-    { label: 'ACTIVE SHARE', value: risk.activeShare, fmt: fmtPct, neutral: false },
+function FactorExposure({ data }: { data: any }) {
+  const factors = [
+    { label: 'BETA', value: data?.factorExposure?.beta },
+    { label: 'SIZE', value: data?.factorExposure?.size },
+    { label: 'VALUE', value: data?.factorExposure?.value },
+    { label: 'MOMENTUM', value: data?.factorExposure?.momentum },
+    { label: 'QUALITY', value: data?.factorExposure?.quality },
+    { label: 'LOW VOL', value: data?.factorExposure?.lowVol },
   ];
+
+  const maxAbs = Math.max(...factors.map((f) => Math.abs(f.value ?? 0)), 0.01);
 
   return (
     <>
-      <SectionHeader title="Risk Decomposition" />
+      <SectionHeader title="Factor Exposure" />
       <div className="px-2 py-1">
-        {rows.map((r) => {
-          const val = r.value ?? 0;
-          const display = r.fmt === fmtNum ? fmtNum(val) : fmtPct(val, 1);
-          const color = r.neutral ? '#a1a1aa' : valColor(val);
+        {factors.map((f) => {
+          const val = f.value ?? 0;
+          const barPct = (Math.abs(val) / maxAbs) * 100;
+          const isPositive = val >= 0;
+
           return (
             <div
-              key={r.label}
-              className="flex items-center justify-between py-[2px] hover:bg-violet-400/[0.02]"
+              key={f.label}
+              className="flex items-center gap-2 py-[3px] hover:bg-cyan-400/[0.02]"
             >
-              <span className="text-[7px] font-mono text-neutral-500 uppercase tracking-wider">
-                {r.label}
+              <span className="text-[7px] font-mono text-neutral-500 uppercase tracking-wider w-[52px] shrink-0">
+                {f.label}
               </span>
+              {/* Bar visualization */}
+              <div className="flex-1 flex items-center">
+                <div className="relative w-full h-[6px] bg-white/[0.03]">
+                  {/* Center line */}
+                  <div className="absolute left-1/2 top-0 w-px h-full bg-white/10" />
+                  {/* Value bar */}
+                  <div
+                    className="absolute top-0 h-full"
+                    style={{
+                      left: isPositive ? '50%' : `${50 - barPct / 2}%`,
+                      width: `${barPct / 2}%`,
+                      background: isPositive ? ACCENT : '#f97316',
+                      opacity: 0.6,
+                    }}
+                  />
+                </div>
+              </div>
               <span
-                className="text-[8px] font-mono font-bold tabular-nums"
-                style={{ color }}
+                className="text-[8px] font-mono font-bold tabular-nums w-[36px] text-right shrink-0"
+                style={{ color: isPositive ? ACCENT : '#f97316' }}
               >
-                {display}
+                {val > 0 ? '+' : ''}{fmtNum(val)}
               </span>
             </div>
           );
         })}
-        {/* Visual bar for systematic vs specific */}
-        {risk.systematicRisk != null && risk.specificRisk != null && (
-          <div className="mt-1 mb-1">
-            <div className="flex h-[6px] w-full">
-              <div
-                className="h-full"
-                style={{
-                  width: `${((risk.systematicRisk / (risk.systematicRisk + risk.specificRisk)) * 100).toFixed(1)}%`,
-                  background: ACCENT,
-                  opacity: 0.7,
-                }}
-              />
-              <div
-                className="h-full"
-                style={{
-                  width: `${((risk.specificRisk / (risk.systematicRisk + risk.specificRisk)) * 100).toFixed(1)}%`,
-                  background: '#71717a',
-                  opacity: 0.4,
-                }}
-              />
-            </div>
-            <div className="flex justify-between mt-0.5">
-              <span className="text-[5px] font-mono uppercase" style={{ color: ACCENT }}>
-                SYSTEMATIC
-              </span>
-              <span className="text-[5px] font-mono text-neutral-600 uppercase">SPECIFIC</span>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
