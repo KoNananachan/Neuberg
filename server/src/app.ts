@@ -251,6 +251,9 @@ import ratesStrategyRouter from './routes/rates-strategy.js';
 import creditPortfolioRouter from './routes/credit-portfolio.js';
 import macroRegimeMonitorRouter from './routes/macro-regime-monitor.js';
 import dividendCalendarRouter from './routes/dividend-calendar.js';
+import convertibleArbitrageRouter from './routes/convertible-arbitrage.js';
+import realtimePnlRouter from './routes/realtime-pnl.js';
+import marketBreadthAdvancedRouter from './routes/market-breadth-advanced.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -603,6 +606,9 @@ export function createApp() {
   app.use('/api/credit-portfolio', creditPortfolioRouter);
   app.use('/api/macro-regime-monitor', macroRegimeMonitorRouter);
   app.use('/api/dividend-calendar', dividendCalendarRouter);
+  app.use('/api/convertible-arbitrage', convertibleArbitrageRouter);
+  app.use('/api/realtime-pnl', realtimePnlRouter);
+  app.use('/api/market-breadth-advanced', marketBreadthAdvancedRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

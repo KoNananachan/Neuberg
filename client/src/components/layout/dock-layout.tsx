@@ -257,6 +257,9 @@ const RatesStrategyPanel = lazy(() => import('../panels/rates-strategy-panel').t
 const CreditPortfolioPanel = lazy(() => import('../panels/credit-portfolio-panel').then(m => ({ default: m.CreditPortfolioPanel })));
 const MacroRegimeMonitorPanel = lazy(() => import('../panels/macro-regime-monitor-panel').then(m => ({ default: m.MacroRegimeMonitorPanel })));
 const DividendCalendarPanel = lazy(() => import('../panels/dividend-calendar-panel').then(m => ({ default: m.DividendCalendarPanel })));
+const ConvertibleArbitragePanel = lazy(() => import('../panels/convertible-arbitrage-panel').then(m => ({ default: m.ConvertibleArbitragePanel })));
+const RealtimePnlPanel = lazy(() => import('../panels/realtime-pnl-panel').then(m => ({ default: m.RealtimePnlPanel })));
+const MarketBreadthAdvancedPanel = lazy(() => import('../panels/market-breadth-advanced-panel').then(m => ({ default: m.MarketBreadthAdvancedPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -526,6 +529,9 @@ export const PANEL_IDS = {
   CREDIT_PORTFOLIO: 'credit-portfolio',
   MACRO_REGIME_MONITOR: 'macro-regime-monitor',
   DIVIDEND_CALENDAR: 'dividend-calendar',
+  CONVERTIBLE_ARBITRAGE: 'convertible-arbitrage',
+  REALTIME_PNL: 'realtime-pnl',
+  MARKET_BREADTH_ADVANCED: 'market-breadth-advanced',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -779,6 +785,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CREDIT_PORTFOLIO]: 'CREDIT PORTFOLIO',
   [PANEL_IDS.MACRO_REGIME_MONITOR]: 'MACRO REGIME MONITOR',
   [PANEL_IDS.DIVIDEND_CALENDAR]: 'DIVIDEND CALENDAR',
+  [PANEL_IDS.CONVERTIBLE_ARBITRAGE]: 'CONVERTIBLE ARBITRAGE',
+  [PANEL_IDS.REALTIME_PNL]: 'REAL-TIME P&L',
+  [PANEL_IDS.MARKET_BREADTH_ADVANCED]: 'MARKET BREADTH ADV',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1033,6 +1042,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CREDIT_PORTFOLIO]: 'panelCreditPortfolio',
   [PANEL_IDS.MACRO_REGIME_MONITOR]: 'panelMacroRegimeMonitor',
   [PANEL_IDS.DIVIDEND_CALENDAR]: 'panelDividendCalendar',
+  [PANEL_IDS.CONVERTIBLE_ARBITRAGE]: 'panelConvertibleArbitrage',
+  [PANEL_IDS.REALTIME_PNL]: 'panelRealtimePnl',
+  [PANEL_IDS.MARKET_BREADTH_ADVANCED]: 'panelMarketBreadthAdvanced',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1583,6 +1595,9 @@ export function DockLayout() {
       case PANEL_IDS.CREDIT_PORTFOLIO: content = <LazyWrap><CreditPortfolioPanel /></LazyWrap>; break;
       case PANEL_IDS.MACRO_REGIME_MONITOR: content = <LazyWrap><MacroRegimeMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.DIVIDEND_CALENDAR: content = <LazyWrap><DividendCalendarPanel /></LazyWrap>; break;
+      case PANEL_IDS.CONVERTIBLE_ARBITRAGE: content = <LazyWrap><ConvertibleArbitragePanel /></LazyWrap>; break;
+      case PANEL_IDS.REALTIME_PNL: content = <LazyWrap><RealtimePnlPanel /></LazyWrap>; break;
+      case PANEL_IDS.MARKET_BREADTH_ADVANCED: content = <LazyWrap><MarketBreadthAdvancedPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
