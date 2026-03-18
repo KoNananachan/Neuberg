@@ -111,6 +111,8 @@ const PositioningPanel = lazy(() => import('../panels/positioning-panel').then(m
 const RepoRatesPanel = lazy(() => import('../panels/repo-rates-panel').then(m => ({ default: m.RepoRatesPanel })));
 const XccyBasisPanel = lazy(() => import('../panels/xccy-basis-panel').then(m => ({ default: m.XccyBasisPanel })));
 const StyleBoxPanel = lazy(() => import('../panels/style-box-panel').then(m => ({ default: m.StyleBoxPanel })));
+const SwapRatesPanel = lazy(() => import('../panels/swap-rates-panel').then(m => ({ default: m.SwapRatesPanel })));
+const TradeBlotterPanel = lazy(() => import('../panels/trade-blotter-panel').then(m => ({ default: m.TradeBlotterPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -234,6 +236,8 @@ export const PANEL_IDS = {
   REPO_RATES: 'repo-rates',
   XCCY_BASIS: 'xccy-basis',
   STYLE_BOX: 'style-box',
+  SWAP_RATES: 'swap-rates',
+  TRADE_BLOTTER: 'trade-blotter',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -341,6 +345,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.REPO_RATES]: 'REPO RATE MONITOR',
   [PANEL_IDS.XCCY_BASIS]: 'XCCY BASIS',
   [PANEL_IDS.STYLE_BOX]: 'EQUITY STYLE BOX',
+  [PANEL_IDS.SWAP_RATES]: 'SWAP RATES',
+  [PANEL_IDS.TRADE_BLOTTER]: 'TRADE BLOTTER',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -449,6 +455,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.REPO_RATES]: 'panelRepoRates',
   [PANEL_IDS.XCCY_BASIS]: 'panelXccyBasis',
   [PANEL_IDS.STYLE_BOX]: 'panelStyleBox',
+  [PANEL_IDS.SWAP_RATES]: 'panelSwapRates',
+  [PANEL_IDS.TRADE_BLOTTER]: 'panelTradeBlotter',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -853,6 +861,8 @@ export function DockLayout() {
       case PANEL_IDS.REPO_RATES: content = <LazyWrap><RepoRatesPanel /></LazyWrap>; break;
       case PANEL_IDS.XCCY_BASIS: content = <LazyWrap><XccyBasisPanel /></LazyWrap>; break;
       case PANEL_IDS.STYLE_BOX: content = <LazyWrap><StyleBoxPanel /></LazyWrap>; break;
+      case PANEL_IDS.SWAP_RATES: content = <LazyWrap><SwapRatesPanel /></LazyWrap>; break;
+      case PANEL_IDS.TRADE_BLOTTER: content = <LazyWrap><TradeBlotterPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
