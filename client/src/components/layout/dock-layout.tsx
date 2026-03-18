@@ -242,6 +242,9 @@ const EquityCapitalMarketsPanel = lazy(() => import('../panels/equity-capital-ma
 const DebtCapitalMarketsPanel = lazy(() => import('../panels/debt-capital-markets-panel').then(m => ({ default: m.DebtCapitalMarketsPanel })));
 const HedgeFundMonitorPanel = lazy(() => import('../panels/hedge-fund-monitor-panel').then(m => ({ default: m.HedgeFundMonitorPanel })));
 const RiskDashboardPanel = lazy(() => import('../panels/risk-dashboard-panel').then(m => ({ default: m.RiskDashboardPanel })));
+const BenchmarkTrackerPanel = lazy(() => import('../panels/benchmark-tracker-panel').then(m => ({ default: m.BenchmarkTrackerPanel })));
+const LiquidityCoveragePanel = lazy(() => import('../panels/liquidity-coverage-panel').then(m => ({ default: m.LiquidityCoveragePanel })));
+const MarketSentimentIndexPanel = lazy(() => import('../panels/market-sentiment-index-panel').then(m => ({ default: m.MarketSentimentIndexPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -496,6 +499,9 @@ export const PANEL_IDS = {
   DEBT_CAPITAL_MARKETS: 'debt-capital-markets',
   HEDGE_FUND_MONITOR: 'hedge-fund-monitor',
   RISK_DASHBOARD: 'risk-dashboard',
+  BENCHMARK_TRACKER: 'benchmark-tracker',
+  LIQUIDITY_COVERAGE: 'liquidity-coverage',
+  MARKET_SENTIMENT_INDEX: 'market-sentiment-index',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -734,6 +740,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.DEBT_CAPITAL_MARKETS]: 'DEBT CAPITAL MARKETS',
   [PANEL_IDS.HEDGE_FUND_MONITOR]: 'HEDGE FUND MONITOR',
   [PANEL_IDS.RISK_DASHBOARD]: 'RISK DASHBOARD',
+  [PANEL_IDS.BENCHMARK_TRACKER]: 'BENCHMARK TRACKER',
+  [PANEL_IDS.LIQUIDITY_COVERAGE]: 'LIQUIDITY COVERAGE',
+  [PANEL_IDS.MARKET_SENTIMENT_INDEX]: 'MARKET SENTIMENT INDEX',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -973,6 +982,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.DEBT_CAPITAL_MARKETS]: 'panelDebtCapitalMarkets',
   [PANEL_IDS.HEDGE_FUND_MONITOR]: 'panelHedgeFundMonitor',
   [PANEL_IDS.RISK_DASHBOARD]: 'panelRiskDashboard',
+  [PANEL_IDS.BENCHMARK_TRACKER]: 'panelBenchmarkTracker',
+  [PANEL_IDS.LIQUIDITY_COVERAGE]: 'panelLiquidityCoverage',
+  [PANEL_IDS.MARKET_SENTIMENT_INDEX]: 'panelMarketSentimentIndex',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1508,6 +1520,9 @@ export function DockLayout() {
       case PANEL_IDS.DEBT_CAPITAL_MARKETS: content = <LazyWrap><DebtCapitalMarketsPanel /></LazyWrap>; break;
       case PANEL_IDS.HEDGE_FUND_MONITOR: content = <LazyWrap><HedgeFundMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.RISK_DASHBOARD: content = <LazyWrap><RiskDashboardPanel /></LazyWrap>; break;
+      case PANEL_IDS.BENCHMARK_TRACKER: content = <LazyWrap><BenchmarkTrackerPanel /></LazyWrap>; break;
+      case PANEL_IDS.LIQUIDITY_COVERAGE: content = <LazyWrap><LiquidityCoveragePanel /></LazyWrap>; break;
+      case PANEL_IDS.MARKET_SENTIMENT_INDEX: content = <LazyWrap><MarketSentimentIndexPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
