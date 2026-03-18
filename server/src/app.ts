@@ -344,6 +344,9 @@ import indexArbitrageRouter from './routes/index-arbitrage.js';
 import assetAllocationRouter from './routes/asset-allocation.js';
 import bondFuturesBasisRouter from './routes/bond-futures-basis.js';
 import riskBudgetingRouter from './routes/risk-budgeting.js';
+import marketSurveillanceRouter from './routes/market-surveillance.js';
+import durationManagementRouter from './routes/duration-management.js';
+import swapPricingRouter from './routes/swap-pricing.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -789,6 +792,9 @@ export function createApp() {
   app.use('/api/asset-allocation', assetAllocationRouter);
   app.use('/api/bond-futures-basis', bondFuturesBasisRouter);
   app.use('/api/risk-budgeting', riskBudgetingRouter);
+  app.use('/api/market-surveillance', marketSurveillanceRouter);
+  app.use('/api/duration-management', durationManagementRouter);
+  app.use('/api/swap-pricing', swapPricingRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
