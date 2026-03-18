@@ -87,6 +87,9 @@ const EarningsSurprisePanel = lazy(() => import('../panels/earnings-surprise-pan
 const FuturesCurvePanel = lazy(() => import('../panels/futures-curve-panel').then(m => ({ default: m.FuturesCurvePanel })));
 const CreditSpreadsPanel = lazy(() => import('../panels/credit-spreads-panel').then(m => ({ default: m.CreditSpreadsPanel })));
 const IntermarketPanel = lazy(() => import('../panels/intermarket-panel').then(m => ({ default: m.IntermarketPanel })));
+const SectorHeatmapPanel = lazy(() => import('../panels/sector-heatmap-panel').then(m => ({ default: m.SectorHeatmapPanel })));
+const EconomicSurprisesPanel = lazy(() => import('../panels/economic-surprises-panel').then(m => ({ default: m.EconomicSurprisesPanel })));
+const DispersionPanel = lazy(() => import('../panels/dispersion-panel').then(m => ({ default: m.DispersionPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -186,6 +189,9 @@ export const PANEL_IDS = {
   FUTURES_CURVE: 'futures-curve',
   CREDIT_SPREADS: 'credit-spreads',
   INTERMARKET: 'intermarket',
+  SECTOR_HEATMAP: 'sector-heatmap',
+  ECONOMIC_SURPRISES: 'economic-surprises',
+  DISPERSION: 'dispersion',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -269,6 +275,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.FUTURES_CURVE]: 'FUTURES CURVE',
   [PANEL_IDS.CREDIT_SPREADS]: 'CREDIT SPREADS',
   [PANEL_IDS.INTERMARKET]: 'INTERMARKET DIVERGENCE',
+  [PANEL_IDS.SECTOR_HEATMAP]: 'SECTOR HEATMAP',
+  [PANEL_IDS.ECONOMIC_SURPRISES]: 'ECONOMIC SURPRISES',
+  [PANEL_IDS.DISPERSION]: 'DISPERSION MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -353,6 +362,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.FUTURES_CURVE]: 'panelFuturesCurve',
   [PANEL_IDS.CREDIT_SPREADS]: 'panelCreditSpreads',
   [PANEL_IDS.INTERMARKET]: 'panelIntermarket',
+  [PANEL_IDS.SECTOR_HEATMAP]: 'panelSectorHeatmap',
+  [PANEL_IDS.ECONOMIC_SURPRISES]: 'panelEconomicSurprises',
+  [PANEL_IDS.DISPERSION]: 'panelDispersion',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -733,6 +745,9 @@ export function DockLayout() {
       case PANEL_IDS.FUTURES_CURVE: content = <LazyWrap><FuturesCurvePanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_SPREADS: content = <LazyWrap><CreditSpreadsPanel /></LazyWrap>; break;
       case PANEL_IDS.INTERMARKET: content = <LazyWrap><IntermarketPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECTOR_HEATMAP: content = <LazyWrap><SectorHeatmapPanel /></LazyWrap>; break;
+      case PANEL_IDS.ECONOMIC_SURPRISES: content = <LazyWrap><EconomicSurprisesPanel /></LazyWrap>; break;
+      case PANEL_IDS.DISPERSION: content = <LazyWrap><DispersionPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

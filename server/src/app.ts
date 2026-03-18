@@ -80,6 +80,9 @@ import earningsSurpriseRouter from './routes/earnings-surprise.js';
 import futuresCurveRouter from './routes/futures-curve.js';
 import creditSpreadsRouter from './routes/credit-spreads.js';
 import intermarketRouter from './routes/intermarket.js';
+import sectorHeatmapRouter from './routes/sector-heatmap.js';
+import economicSurprisesRouter from './routes/economic-surprises.js';
+import dispersionRouter from './routes/dispersion.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -261,6 +264,9 @@ export function createApp() {
   app.use('/api/futures-curve', futuresCurveRouter);
   app.use('/api/credit-spreads', creditSpreadsRouter);
   app.use('/api/intermarket', intermarketRouter);
+  app.use('/api/sector-heatmap', sectorHeatmapRouter);
+  app.use('/api/economic-surprises', economicSurprisesRouter);
+  app.use('/api/dispersion', dispersionRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
