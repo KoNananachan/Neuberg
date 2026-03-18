@@ -1,235 +1,397 @@
-import { useState, useMemo, useCallback } from 'react';
-import { GlassCard } from '../common/glass-card';
-import { useIPO, type IPOEntry } from '../../api/hooks/use-ipo';
-import { useAppStore } from '../../stores/use-app-store';
-import { CalendarPlus, RefreshCw } from 'lucide-react';
+import { useIpoCalendar } from '../../api/hooks/use-ipo-calendar';
 import { useT } from '../../i18n';
 
-type FilterTab = 'all' | 'upcoming' | 'priced' | 'trading';
+// ── Formatting helpers ──
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+function fmtPct(n: number | null, decimals = 1): string {
+  if (n == null) return '--';
+  return `${n >= 0 ? '+' : ''}${n.toFixed(decimals)}%`;
 }
 
-function formatPrice(price: number | null): string {
-  if (price == null) return '-';
-  return `$${price.toFixed(2)}`;
+function fmtPrice(n: number | null): string {
+  if (n == null) return '--';
+  return `$${n.toFixed(2)}`;
 }
 
-function formatReturn(pct: number | null): string {
-  if (pct == null) return '-';
-  const sign = pct >= 0 ? '+' : '';
-  return `${sign}${pct.toFixed(1)}%`;
+function fmtMoney(n: number | null): string {
+  if (n == null) return '--';
+  if (Math.abs(n) >= 1e12) return `$${(n / 1e12).toFixed(1)}T`;
+  if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
+  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+  return `$${n.toFixed(0)}`;
 }
 
-function returnColor(pct: number | null): string {
-  if (pct == null) return 'text-neutral/50';
-  if (pct >= 50) return 'text-bullish font-bold';
-  if (pct > 0) return 'text-bullish';
-  if (pct < -30) return 'text-bearish font-bold';
-  return 'text-bearish';
+function fmtShares(n: number | null): string {
+  if (n == null) return '--';
+  if (Math.abs(n) >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (Math.abs(n) >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return `${n}`;
 }
 
-function statusBadge(status: string): string {
-  switch (status) {
-    case 'upcoming': return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
-    case 'priced': return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-    case 'trading': return 'bg-green-500/20 text-green-400 border border-green-500/30';
-    default: return 'bg-neutral/10 text-neutral/50';
+function fmtDate(d: string | null): string {
+  if (!d) return '--';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function returnColor(n: number | null): string {
+  if (n == null) return 'text-neutral/40';
+  return n >= 0 ? 'text-green-400' : 'text-red-400';
+}
+
+function statusBadge(status: string | null): { label: string; cls: string } {
+  switch (status?.toLowerCase()) {
+    case 'filed':
+      return { label: 'FILED', cls: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' };
+    case 'priced':
+      return { label: 'PRICED', cls: 'text-green-400 bg-green-500/10 border-green-500/30' };
+    case 'expected':
+      return { label: 'EXPECTED', cls: 'text-blue-400 bg-blue-500/10 border-blue-500/30' };
+    case 'withdrawn':
+      return { label: 'WITHDRAWN', cls: 'text-red-400 bg-red-500/10 border-red-500/30' };
+    case 'postponed':
+      return { label: 'POSTPONED', cls: 'text-orange-400 bg-orange-500/10 border-orange-500/30' };
+    default:
+      return { label: status?.toUpperCase() ?? '--', cls: 'text-neutral/40 bg-white/5 border-border/20' };
   }
 }
 
-function groupByDate(entries: IPOEntry[]): Map<string, IPOEntry[]> {
-  const groups = new Map<string, IPOEntry[]>();
-  for (const entry of entries) {
-    const key = entry.ipoDate;
-    const existing = groups.get(key);
-    if (existing) {
-      existing.push(entry);
-    } else {
-      groups.set(key, [entry]);
-    }
-  }
-  return groups;
+// ── Section Header ──
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="px-2 py-1 bg-white/[0.02] border-b border-border/20">
+      <span className="text-[9px] font-mono font-bold text-pink-400 uppercase tracking-wider">
+        {title}
+      </span>
+    </div>
+  );
 }
 
-export function IPOPanel() {
-  const t = useT();
-  const { data, isLoading, refetch, dataUpdatedAt } = useIPO();
-  const setSelectedSymbol = useAppStore((s) => s.setSelectedSymbol);
-  const [filter, setFilter] = useState<FilterTab>('all');
+// ── Section 1: Upcoming IPOs ──
 
-  const filtered = useMemo(() => {
-    if (!data) return [];
-    if (filter === 'all') return data;
-    return data.filter((e) => e.status === filter);
-  }, [data, filter]);
+function UpcomingIpos({ items }: { items: any[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        NO UPCOMING IPOS
+      </div>
+    );
+  }
 
-  const grouped = useMemo(() => groupByDate(filtered), [filtered]);
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[9px] font-mono">
+        <thead>
+          <tr className="bg-white/[0.03] border-b border-border/20">
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">COMPANY</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">TICKER</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">EXCH</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">SECTOR</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">PRICE RANGE</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">SHARES</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">VALUATION</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">EXP DATE</th>
+            <th className="text-center px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">STATUS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((e: any, i: number) => {
+            const badge = statusBadge(e.status);
+            const priceRange = e.priceRangeLow != null && e.priceRangeHigh != null
+              ? `$${e.priceRangeLow}-${e.priceRangeHigh}`
+              : e.priceRange ?? '--';
 
-  const stats = useMemo(() => {
-    if (!data) return { total: 0, avgReturn: 0, trading: 0, upcoming: 0 };
-    const tradingEntries = data.filter((e) => e.status === 'trading' && e.changeFromIPO != null);
-    const avgReturn = tradingEntries.length > 0
-      ? tradingEntries.reduce((sum, e) => sum + (e.changeFromIPO ?? 0), 0) / tradingEntries.length
-      : 0;
-    return {
-      total: data.length,
-      avgReturn,
-      trading: data.filter((e) => e.status === 'trading').length,
-      upcoming: data.filter((e) => e.status === 'upcoming').length,
-    };
-  }, [data]);
+            return (
+              <tr
+                key={`upcoming-${e.ticker ?? e.symbol ?? e.company}-${i}`}
+                className="border-b border-border/10 hover:bg-pink-400/[0.02] transition-colors"
+              >
+                <td className="px-2 py-1 text-neutral/70 truncate max-w-[120px]">
+                  {e.company ?? e.name ?? '--'}
+                </td>
+                <td className="px-1.5 py-1 font-bold text-pink-400">
+                  {e.ticker ?? e.symbol ?? '--'}
+                </td>
+                <td className="px-1.5 py-1 text-neutral/50">{e.exchange ?? '--'}</td>
+                <td className="px-1.5 py-1 text-neutral/50 truncate max-w-[80px]">{e.sector ?? '--'}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/60 tabular-nums">{priceRange}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/60 tabular-nums">{fmtShares(e.sharesOffered ?? e.shares ?? null)}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/60 tabular-nums">{fmtMoney(e.valuation ?? e.marketCap ?? null)}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/60 whitespace-nowrap">{fmtDate(e.expectedDate ?? e.date ?? null)}</td>
+                <td className="text-center px-1.5 py-1">
+                  <span className={`text-[7px] px-1.5 py-0.5 font-black border ${badge.cls}`}>
+                    {badge.label}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {/* Lead underwriters */}
+      {items.some((e: any) => e.leadUnderwriters || e.underwriters) && (
+        <div className="px-2 py-1 border-t border-border/10">
+          {items.filter((e: any) => e.leadUnderwriters || e.underwriters).slice(0, 5).map((e: any, i: number) => (
+            <div key={`uw-${i}`} className="flex items-center gap-1 text-[8px] text-neutral/30">
+              <span className="text-pink-400/60 font-bold">{e.ticker ?? e.symbol}</span>
+              <span className="text-neutral/20">|</span>
+              <span className="truncate">{(e.leadUnderwriters ?? e.underwriters ?? []).join(', ')}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
-  const handleRowClick = useCallback((entry: IPOEntry) => {
-    if (entry.status === 'trading') {
-      setSelectedSymbol(entry.symbol);
-    }
-  }, [setSelectedSymbol]);
+// ── Section 2: Recently Priced ──
 
-  const filterTabs: { key: FilterTab; label: string }[] = [
-    { key: 'all', label: t('scan_all') },
-    { key: 'upcoming', label: t('ipoUpcoming') },
-    { key: 'priced', label: t('ipoPriced') },
-    { key: 'trading', label: t('ipoTrading') },
+function RecentlyPriced({ items }: { items: any[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        NO RECENTLY PRICED IPOS
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[9px] font-mono">
+        <thead>
+          <tr className="bg-white/[0.03] border-b border-border/20">
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">TICKER</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">COMPANY</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">IPO PRICE</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">CURRENT</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">1D RTN</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">TOTAL RTN</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">DATE</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">MKT CAP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((e: any, i: number) => {
+            const dayReturn = e.oneDayReturn ?? e.firstDayReturn ?? e.dayReturn ?? null;
+            const totalReturn = e.totalReturn ?? e.returnFromIPO ?? e.changeFromIPO ?? null;
+
+            return (
+              <tr
+                key={`recent-${e.ticker ?? e.symbol}-${i}`}
+                className="border-b border-border/10 hover:bg-pink-400/[0.02] transition-colors"
+              >
+                <td className="px-2 py-1 font-bold text-pink-400">{e.ticker ?? e.symbol ?? '--'}</td>
+                <td className="px-1.5 py-1 text-neutral/50 truncate max-w-[100px]">{e.company ?? e.name ?? '--'}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/60 tabular-nums">{fmtPrice(e.ipoPrice ?? e.offerPrice ?? null)}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/70 tabular-nums font-bold">{fmtPrice(e.currentPrice ?? e.price ?? null)}</td>
+                <td className={`text-right px-1.5 py-1 tabular-nums font-bold ${returnColor(dayReturn)}`}>
+                  {fmtPct(dayReturn)}
+                </td>
+                <td className={`text-right px-1.5 py-1 tabular-nums font-bold ${returnColor(totalReturn)}`}>
+                  {fmtPct(totalReturn)}
+                </td>
+                <td className="text-right px-1.5 py-1 text-neutral/50 whitespace-nowrap">{fmtDate(e.date ?? e.ipoDate ?? null)}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/60 tabular-nums">{fmtMoney(e.marketCap ?? e.valuation ?? null)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Section 3: Market Performance ──
+
+function MarketPerformance({ stats }: { stats: any }) {
+  if (!stats) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        NO PERFORMANCE DATA
+      </div>
+    );
+  }
+
+  const items = [
+    { label: 'TOTAL IPOS YTD', value: stats.totalIpos ?? stats.total ?? '--' },
+    { label: 'TOTAL PROCEEDS', value: fmtMoney(stats.totalProceeds ?? stats.proceeds ?? null) },
+    { label: 'AVG FIRST DAY RETURN', value: fmtPct(stats.avgFirstDayReturn ?? stats.avgFirstDay ?? null), color: returnColor(stats.avgFirstDayReturn ?? stats.avgFirstDay ?? null) },
+    { label: 'AVG RETURN FROM IPO', value: fmtPct(stats.avgReturnFromIPO ?? stats.avgReturn ?? null), color: returnColor(stats.avgReturnFromIPO ?? stats.avgReturn ?? null) },
+    { label: '% POSITIVE', value: stats.pctPositive != null ? `${stats.pctPositive.toFixed(1)}%` : (stats.positiveRate != null ? `${stats.positiveRate.toFixed(1)}%` : '--') },
+    { label: 'LARGEST IPO', value: stats.largestIPO ?? stats.largest ?? '--' },
   ];
 
   return (
-    <GlassCard
-      className="h-full"
-      title={
-        <span className="flex items-center gap-1.5">
-          <CalendarPlus size={13} className="text-accent" />
-          {t('panelIPO')}
-        </span>
-      }
-      headerRight={
-        <button
-          onClick={() => refetch()}
-          className="text-neutral/40 hover:text-accent transition-colors p-0.5"
-          title="Refresh"
+    <div className="grid grid-cols-3 gap-px p-2">
+      {items.map((item, i) => (
+        <div
+          key={i}
+          className="bg-white/[0.02] border border-border/20 px-2 py-1.5 hover:bg-pink-400/[0.02] transition-colors"
         >
-          <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
-        </button>
-      }
-    >
-      {/* Filter tabs */}
-      <div className="flex items-center gap-0.5 px-2 py-1 border-b border-border bg-black/40 shrink-0">
-        {filterTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilter(tab.key)}
-            className={`px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider transition-colors ${
-              filter === tab.key
-                ? 'text-accent bg-accent/10 border border-accent/30'
-                : 'text-neutral/40 hover:text-neutral/70 border border-transparent'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+          <div className="text-[7px] font-mono text-neutral/40 uppercase tracking-wider mb-0.5">
+            {item.label}
+          </div>
+          <div className={`text-[11px] font-mono font-bold tabular-nums ${item.color ?? 'text-neutral/80'}`}>
+            {item.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Section 4: Sector Breakdown ──
+
+function SectorBreakdown({ items }: { items: any[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        NO SECTOR DATA
       </div>
+    );
+  }
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto">
-        {isLoading && !data ? (
-          <div className="flex items-center justify-center h-full">
-            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest animate-pulse">
-              {t('loading')}
-            </span>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <span className="text-[10px] font-mono text-neutral/40 uppercase tracking-widest">
-              {t('ipoNoData')}
-            </span>
-          </div>
-        ) : (
-          <div className="font-mono text-[10px]">
-            {/* Table header */}
-            <div className="grid grid-cols-[70px_50px_1fr_55px_55px_55px_60px_60px] gap-px px-2 py-1 border-b border-border bg-black/60 text-neutral/40 uppercase tracking-wider sticky top-0 z-10">
-              <span>{t('ipoDate')}</span>
-              <span>{t('ipoExchange')}</span>
-              <span>Symbol / Name</span>
-              <span>{t('ipoSector')}</span>
-              <span className="text-right">{t('ipoPrice')}</span>
-              <span className="text-right">Price</span>
-              <span className="text-right">{t('ipoReturn')}</span>
-              <span className="text-center">Status</span>
-            </div>
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[9px] font-mono">
+        <thead>
+          <tr className="bg-white/[0.03] border-b border-border/20">
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">SECTOR</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">COUNT</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">TOTAL PROCEEDS</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">AVG RETURN</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">BEST PERFORMER</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((s: any, i: number) => {
+            const avgReturn = s.avgReturn ?? s.averageReturn ?? null;
 
-            {/* Grouped rows */}
-            {Array.from(grouped.entries()).map(([date, entries]) => (
-              <div key={date}>
-                {/* Date divider */}
-                <div className="px-2 py-0.5 bg-black/30 border-b border-border/50">
-                  <span className="text-[9px] text-accent/70 tracking-wider font-bold">
-                    {formatDate(date)}
-                  </span>
-                </div>
+            return (
+              <tr
+                key={`sector-${s.sector ?? s.name}-${i}`}
+                className="border-b border-border/10 hover:bg-pink-400/[0.02] transition-colors"
+              >
+                <td className="px-2 py-1 text-neutral/70 uppercase">{s.sector ?? s.name ?? '--'}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/60 tabular-nums">{s.count ?? s.total ?? '--'}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/60 tabular-nums">{fmtMoney(s.totalProceeds ?? s.proceeds ?? null)}</td>
+                <td className={`text-right px-1.5 py-1 font-bold tabular-nums ${returnColor(avgReturn)}`}>
+                  {fmtPct(avgReturn)}
+                </td>
+                <td className="px-1.5 py-1 text-pink-400/80 truncate max-w-[100px]">
+                  {s.bestPerformer ?? s.topPerformer ?? '--'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-                {/* Entries */}
-                {entries.map((entry) => {
-                  const isUpcoming = entry.status === 'upcoming';
-                  return (
-                    <div
-                      key={entry.symbol}
-                      onClick={() => handleRowClick(entry)}
-                      className={`grid grid-cols-[70px_50px_1fr_55px_55px_55px_60px_60px] gap-px px-2 py-[3px] border-b border-border/30 transition-colors ${
-                        entry.status === 'trading'
-                          ? 'hover:bg-accent/5 cursor-pointer'
-                          : ''
-                      } ${isUpcoming ? 'border-l-2 border-l-amber-500/40' : ''}`}
-                    >
-                      <span className="text-neutral/40 tabular-nums">{entry.ipoDate.slice(5)}</span>
-                      <span className="text-neutral/50">{entry.exchange}</span>
-                      <span className="flex items-center gap-1 min-w-0">
-                        <span className="text-accent font-bold shrink-0">{entry.symbol}</span>
-                        <span className="text-neutral/50 truncate">{entry.name}</span>
-                      </span>
-                      <span className="text-neutral/40 truncate">{entry.sector}</span>
-                      <span className="text-right text-neutral/70 tabular-nums">
-                        {entry.ipoPrice != null ? `$${entry.ipoPrice}` : '-'}
-                      </span>
-                      <span className="text-right tabular-nums text-neutral/80">
-                        {formatPrice(entry.currentPrice)}
-                      </span>
-                      <span className={`text-right tabular-nums ${returnColor(entry.changeFromIPO)}`}>
-                        {formatReturn(entry.changeFromIPO)}
-                      </span>
-                      <span className="flex items-center justify-center">
-                        <span className={`text-[8px] px-1.5 py-px uppercase tracking-wider ${statusBadge(entry.status)}`}>
-                          {entry.status}
-                        </span>
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        )}
+// ── Section 5: Pipeline (S-1 Filers) ──
+
+function Pipeline({ items }: { items: any[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        NO PIPELINE DATA
       </div>
+    );
+  }
 
-      {/* Status bar */}
-      <div className="flex items-center justify-between px-2 py-0.5 border-t border-border bg-black/60 text-[9px] font-mono text-neutral/40 shrink-0">
-        <span>
-          {stats.total} IPOs
-          {stats.upcoming > 0 && ` | ${stats.upcoming} upcoming`}
-          {stats.trading > 0 && ` | ${stats.trading} trading`}
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[9px] font-mono">
+        <thead>
+          <tr className="bg-white/[0.03] border-b border-border/20">
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">COMPANY</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">FILING DATE</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">SECTOR</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">EST SIZE</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((e: any, i: number) => (
+            <tr
+              key={`pipeline-${e.company ?? e.name}-${i}`}
+              className="border-b border-border/10 hover:bg-pink-400/[0.02] transition-colors"
+            >
+              <td className="px-2 py-1 text-neutral/70">{e.company ?? e.name ?? '--'}</td>
+              <td className="text-right px-1.5 py-1 text-neutral/50 whitespace-nowrap">{fmtDate(e.filingDate ?? e.date ?? null)}</td>
+              <td className="px-1.5 py-1 text-neutral/50 truncate max-w-[80px]">{e.sector ?? '--'}</td>
+              <td className="text-right px-1.5 py-1 text-neutral/60 tabular-nums">{fmtMoney(e.estimatedSize ?? e.size ?? e.amount ?? null)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Main Panel ──
+
+export function IPOPanel() {
+  const t = useT();
+  const { data, isLoading, error } = useIpoCalendar();
+  const d = data as any;
+
+  if (isLoading) {
+    return (
+      <div className="h-full bg-black flex items-center justify-center">
+        <span className="text-[9px] font-mono text-neutral/40 uppercase tracking-wider">
+          {t('loading')}
         </span>
-        <span>
-          Avg {t('ipoReturn')}: <span className={stats.avgReturn >= 0 ? 'text-bullish' : 'text-bearish'}>
-            {stats.avgReturn >= 0 ? '+' : ''}{stats.avgReturn.toFixed(1)}%
-          </span>
-        </span>
-        {dataUpdatedAt > 0 && (
-          <span className="text-neutral/25">
-            {new Date(dataUpdatedAt).toLocaleTimeString()}
-          </span>
-        )}
       </div>
-    </GlassCard>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full bg-black flex items-center justify-center">
+        <span className="text-[9px] font-mono text-red-400 uppercase tracking-wider">
+          FAILED TO LOAD
+        </span>
+      </div>
+    );
+  }
+
+  const upcomingItems: any[] = d?.upcoming ?? d?.upcomingIpos ?? [];
+  const recentItems: any[] = d?.recentlyPriced ?? d?.recent ?? d?.priced ?? [];
+  const performanceStats: any = d?.marketPerformance ?? d?.performance ?? d?.stats ?? null;
+  const sectorItems: any[] = d?.sectorBreakdown ?? d?.sectors ?? [];
+  const pipelineItems: any[] = d?.pipeline ?? d?.filings ?? d?.s1Filers ?? [];
+
+  return (
+    <div className="h-full bg-black text-[9px] font-mono overflow-y-auto">
+      {/* ── Header ── */}
+      <div className="px-2 py-1.5 border-b border-border/20 bg-black sticky top-0 z-10">
+        <span className="text-[10px] font-mono font-bold text-pink-400 uppercase tracking-wider">
+          {t('panelIpoCalendar' as any) || 'IPO CALENDAR'}
+        </span>
+      </div>
+
+      {/* ── Section 1: Upcoming IPOs ── */}
+      <SectionHeader title="UPCOMING IPOS" />
+      <UpcomingIpos items={upcomingItems} />
+
+      {/* ── Section 2: Recently Priced ── */}
+      <SectionHeader title="RECENTLY PRICED" />
+      <RecentlyPriced items={recentItems} />
+
+      {/* ── Section 3: Market Performance ── */}
+      <SectionHeader title="MARKET PERFORMANCE" />
+      <MarketPerformance stats={performanceStats} />
+
+      {/* ── Section 4: Sector Breakdown ── */}
+      <SectionHeader title="SECTOR BREAKDOWN" />
+      <SectorBreakdown items={sectorItems} />
+
+      {/* ── Section 5: Pipeline (S-1 Filers) ── */}
+      <SectionHeader title="PIPELINE — S-1 FILERS" />
+      <Pipeline items={pipelineItems} />
+    </div>
   );
 }
