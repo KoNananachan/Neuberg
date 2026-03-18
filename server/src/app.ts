@@ -194,6 +194,9 @@ import primaryDealerRouter from './routes/primary-dealer.js';
 import realEstateCapitalRouter from './routes/real-estate-capital.js';
 import electricityMarketsRouter from './routes/electricity-markets.js';
 import syndicatedLoansRouter from './routes/syndicated-loans.js';
+import emissionsTradingRouter from './routes/emissions-trading.js';
+import insuranceLinkedRouter from './routes/insurance-linked.js';
+import metalsForwardRouter from './routes/metals-forward.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -489,6 +492,9 @@ export function createApp() {
   app.use('/api/real-estate-capital', realEstateCapitalRouter);
   app.use('/api/electricity-markets', electricityMarketsRouter);
   app.use('/api/syndicated-loans', syndicatedLoansRouter);
+  app.use('/api/emissions-trading', emissionsTradingRouter);
+  app.use('/api/insurance-linked', insuranceLinkedRouter);
+  app.use('/api/metals-forward', metalsForwardRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
