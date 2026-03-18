@@ -116,6 +116,9 @@ const TradeBlotterPanel = lazy(() => import('../panels/trade-blotter-panel').the
 const InflationBreakevenPanel = lazy(() => import('../panels/inflation-breakeven-panel').then(m => ({ default: m.InflationBreakevenPanel })));
 const CorporateCdsPanel = lazy(() => import('../panels/corporate-cds-panel').then(m => ({ default: m.CorporateCdsPanel })));
 const EventDrivenPanel = lazy(() => import('../panels/event-driven-panel').then(m => ({ default: m.EventDrivenPanel })));
+const DebtMaturityPanel = lazy(() => import('../panels/debt-maturity-panel').then(m => ({ default: m.DebtMaturityPanel })));
+const EquityRiskPremiumPanel = lazy(() => import('../panels/equity-risk-premium-panel').then(m => ({ default: m.EquityRiskPremiumPanel })));
+const CentralBanksPanel = lazy(() => import('../panels/central-banks-panel').then(m => ({ default: m.CentralBanksPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -244,6 +247,9 @@ export const PANEL_IDS = {
   INFLATION_BREAKEVEN: 'inflation-breakeven',
   CORPORATE_CDS: 'corporate-cds',
   EVENT_DRIVEN: 'event-driven',
+  DEBT_MATURITY: 'debt-maturity',
+  EQUITY_RISK_PREMIUM: 'equity-risk-premium',
+  CENTRAL_BANKS: 'central-banks',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -356,6 +362,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.INFLATION_BREAKEVEN]: 'INFLATION BREAKEVENS',
   [PANEL_IDS.CORPORATE_CDS]: 'CORPORATE CDS',
   [PANEL_IDS.EVENT_DRIVEN]: 'EVENT-DRIVEN MONITOR',
+  [PANEL_IDS.DEBT_MATURITY]: 'DEBT MATURITY PROFILE',
+  [PANEL_IDS.EQUITY_RISK_PREMIUM]: 'EQUITY RISK PREMIUM',
+  [PANEL_IDS.CENTRAL_BANKS]: 'CENTRAL BANK MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -469,6 +478,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.INFLATION_BREAKEVEN]: 'panelInflationBreakeven',
   [PANEL_IDS.CORPORATE_CDS]: 'panelCorporateCds',
   [PANEL_IDS.EVENT_DRIVEN]: 'panelEventDriven',
+  [PANEL_IDS.DEBT_MATURITY]: 'panelDebtMaturity',
+  [PANEL_IDS.EQUITY_RISK_PREMIUM]: 'panelEquityRiskPremium',
+  [PANEL_IDS.CENTRAL_BANKS]: 'panelCentralBanks',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -878,6 +890,9 @@ export function DockLayout() {
       case PANEL_IDS.INFLATION_BREAKEVEN: content = <LazyWrap><InflationBreakevenPanel /></LazyWrap>; break;
       case PANEL_IDS.CORPORATE_CDS: content = <LazyWrap><CorporateCdsPanel /></LazyWrap>; break;
       case PANEL_IDS.EVENT_DRIVEN: content = <LazyWrap><EventDrivenPanel /></LazyWrap>; break;
+      case PANEL_IDS.DEBT_MATURITY: content = <LazyWrap><DebtMaturityPanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_RISK_PREMIUM: content = <LazyWrap><EquityRiskPremiumPanel /></LazyWrap>; break;
+      case PANEL_IDS.CENTRAL_BANKS: content = <LazyWrap><CentralBanksPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
