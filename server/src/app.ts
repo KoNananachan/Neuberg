@@ -170,6 +170,9 @@ import totalReturnSwapsRouter from './routes/total-return-swaps.js';
 import catBondsRouter from './routes/cat-bonds.js';
 import inflationLinkedBondsRouter from './routes/inflation-linked-bonds.js';
 import equityBasketSwapsRouter from './routes/equity-basket-swaps.js';
+import crossCurrencySwapsRouter from './routes/cross-currency-swaps.js';
+import commodityOptionsRouter from './routes/commodity-options.js';
+import loanCdsRouter from './routes/loan-cds.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -441,6 +444,9 @@ export function createApp() {
   app.use('/api/cat-bonds', catBondsRouter);
   app.use('/api/inflation-linked-bonds', inflationLinkedBondsRouter);
   app.use('/api/equity-basket-swaps', equityBasketSwapsRouter);
+  app.use('/api/cross-currency-swaps', crossCurrencySwapsRouter);
+  app.use('/api/commodity-options', commodityOptionsRouter);
+  app.use('/api/loan-cds', loanCdsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

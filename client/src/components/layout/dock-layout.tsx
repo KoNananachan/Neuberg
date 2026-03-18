@@ -176,6 +176,9 @@ const TotalReturnSwapsPanel = lazy(() => import('../panels/total-return-swaps-pa
 const CatBondsPanel = lazy(() => import('../panels/cat-bonds-panel').then(m => ({ default: m.CatBondsPanel })));
 const InflationLinkedBondsPanel = lazy(() => import('../panels/inflation-linked-bonds-panel').then(m => ({ default: m.InflationLinkedBondsPanel })));
 const EquityBasketSwapsPanel = lazy(() => import('../panels/equity-basket-swaps-panel').then(m => ({ default: m.EquityBasketSwapsPanel })));
+const CrossCurrencySwapsPanel = lazy(() => import('../panels/cross-currency-swaps-panel').then(m => ({ default: m.CrossCurrencySwapsPanel })));
+const CommodityOptionsPanel = lazy(() => import('../panels/commodity-options-panel').then(m => ({ default: m.CommodityOptionsPanel })));
+const LoanCdsPanel = lazy(() => import('../panels/loan-cds-panel').then(m => ({ default: m.LoanCdsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -364,6 +367,9 @@ export const PANEL_IDS = {
   CAT_BONDS: 'cat-bonds',
   INFLATION_LINKED_BONDS: 'inflation-linked-bonds',
   EQUITY_BASKET_SWAPS: 'equity-basket-swaps',
+  CROSS_CURRENCY_SWAPS: 'cross-currency-swaps',
+  COMMODITY_OPTIONS: 'commodity-options',
+  LOAN_CDS: 'loan-cds',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -536,6 +542,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CAT_BONDS]: 'CATASTROPHE BONDS',
   [PANEL_IDS.INFLATION_LINKED_BONDS]: 'INFLATION LINKERS',
   [PANEL_IDS.EQUITY_BASKET_SWAPS]: 'EQUITY BASKET SWAPS',
+  [PANEL_IDS.CROSS_CURRENCY_SWAPS]: 'CROSS-CURRENCY SWAPS',
+  [PANEL_IDS.COMMODITY_OPTIONS]: 'COMMODITY OPTIONS',
+  [PANEL_IDS.LOAN_CDS]: 'LOAN CDS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -709,6 +718,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CAT_BONDS]: 'panelCatBonds',
   [PANEL_IDS.INFLATION_LINKED_BONDS]: 'panelInflationLinkedBonds',
   [PANEL_IDS.EQUITY_BASKET_SWAPS]: 'panelEquityBasketSwaps',
+  [PANEL_IDS.CROSS_CURRENCY_SWAPS]: 'panelCrossCurrencySwaps',
+  [PANEL_IDS.COMMODITY_OPTIONS]: 'panelCommodityOptions',
+  [PANEL_IDS.LOAN_CDS]: 'panelLoanCds',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1178,6 +1190,9 @@ export function DockLayout() {
       case PANEL_IDS.CAT_BONDS: content = <LazyWrap><CatBondsPanel /></LazyWrap>; break;
       case PANEL_IDS.INFLATION_LINKED_BONDS: content = <LazyWrap><InflationLinkedBondsPanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_BASKET_SWAPS: content = <LazyWrap><EquityBasketSwapsPanel /></LazyWrap>; break;
+      case PANEL_IDS.CROSS_CURRENCY_SWAPS: content = <LazyWrap><CrossCurrencySwapsPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_OPTIONS: content = <LazyWrap><CommodityOptionsPanel /></LazyWrap>; break;
+      case PANEL_IDS.LOAN_CDS: content = <LazyWrap><LoanCdsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
