@@ -90,6 +90,9 @@ const IntermarketPanel = lazy(() => import('../panels/intermarket-panel').then(m
 const SectorHeatmapPanel = lazy(() => import('../panels/sector-heatmap-panel').then(m => ({ default: m.SectorHeatmapPanel })));
 const EconomicSurprisesPanel = lazy(() => import('../panels/economic-surprises-panel').then(m => ({ default: m.EconomicSurprisesPanel })));
 const DispersionPanel = lazy(() => import('../panels/dispersion-panel').then(m => ({ default: m.DispersionPanel })));
+const FundFlowsPanel = lazy(() => import('../panels/fund-flows-panel').then(m => ({ default: m.FundFlowsPanel })));
+const VolTermStructurePanel = lazy(() => import('../panels/vol-term-structure-panel').then(m => ({ default: m.VolTermStructurePanel })));
+const MacroHeatmapPanel = lazy(() => import('../panels/macro-heatmap-panel').then(m => ({ default: m.MacroHeatmapPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -192,6 +195,9 @@ export const PANEL_IDS = {
   SECTOR_HEATMAP: 'sector-heatmap',
   ECONOMIC_SURPRISES: 'economic-surprises',
   DISPERSION: 'dispersion',
+  FUND_FLOWS: 'fund-flows',
+  VOL_TERM_STRUCTURE: 'vol-term-structure',
+  MACRO_HEATMAP: 'macro-heatmap',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -278,6 +284,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SECTOR_HEATMAP]: 'SECTOR HEATMAP',
   [PANEL_IDS.ECONOMIC_SURPRISES]: 'ECONOMIC SURPRISES',
   [PANEL_IDS.DISPERSION]: 'DISPERSION MONITOR',
+  [PANEL_IDS.FUND_FLOWS]: 'FUND FLOWS',
+  [PANEL_IDS.VOL_TERM_STRUCTURE]: 'VOL TERM STRUCTURE',
+  [PANEL_IDS.MACRO_HEATMAP]: 'GLOBAL MACRO HEATMAP',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -365,6 +374,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SECTOR_HEATMAP]: 'panelSectorHeatmap',
   [PANEL_IDS.ECONOMIC_SURPRISES]: 'panelEconomicSurprises',
   [PANEL_IDS.DISPERSION]: 'panelDispersion',
+  [PANEL_IDS.FUND_FLOWS]: 'panelFundFlows',
+  [PANEL_IDS.VOL_TERM_STRUCTURE]: 'panelVolTermStructure',
+  [PANEL_IDS.MACRO_HEATMAP]: 'panelMacroHeatmap',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -748,6 +760,9 @@ export function DockLayout() {
       case PANEL_IDS.SECTOR_HEATMAP: content = <LazyWrap><SectorHeatmapPanel /></LazyWrap>; break;
       case PANEL_IDS.ECONOMIC_SURPRISES: content = <LazyWrap><EconomicSurprisesPanel /></LazyWrap>; break;
       case PANEL_IDS.DISPERSION: content = <LazyWrap><DispersionPanel /></LazyWrap>; break;
+      case PANEL_IDS.FUND_FLOWS: content = <LazyWrap><FundFlowsPanel /></LazyWrap>; break;
+      case PANEL_IDS.VOL_TERM_STRUCTURE: content = <LazyWrap><VolTermStructurePanel /></LazyWrap>; break;
+      case PANEL_IDS.MACRO_HEATMAP: content = <LazyWrap><MacroHeatmapPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

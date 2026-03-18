@@ -83,6 +83,9 @@ import intermarketRouter from './routes/intermarket.js';
 import sectorHeatmapRouter from './routes/sector-heatmap.js';
 import economicSurprisesRouter from './routes/economic-surprises.js';
 import dispersionRouter from './routes/dispersion.js';
+import fundFlowsRouter from './routes/fund-flows.js';
+import volTermStructureRouter from './routes/vol-term-structure.js';
+import macroHeatmapRouter from './routes/macro-heatmap.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -267,6 +270,9 @@ export function createApp() {
   app.use('/api/sector-heatmap', sectorHeatmapRouter);
   app.use('/api/economic-surprises', economicSurprisesRouter);
   app.use('/api/dispersion', dispersionRouter);
+  app.use('/api/fund-flows', fundFlowsRouter);
+  app.use('/api/vol-term-structure', volTermStructureRouter);
+  app.use('/api/macro-heatmap', macroHeatmapRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
