@@ -364,6 +364,8 @@ const PriceDiscoveryPanel = lazy(() => import('../panels/price-discovery-panel')
 const OperationalRiskPanel = lazy(() => import('../panels/operational-risk-panel').then(m => ({ default: m.OperationalRiskPanel })));
 const TransitionManagementPanel = lazy(() => import('../panels/transition-management-panel').then(m => ({ default: m.TransitionManagementPanel })));
 const SecuritiesValuationPanel = lazy(() => import('../panels/securities-valuation-panel').then(m => ({ default: m.SecuritiesValuationPanel })));
+const BenchmarkAnalyticsPanel = lazy(() => import('../panels/benchmark-analytics-panel').then(m => ({ default: m.BenchmarkAnalyticsPanel })));
+const CounterpartyRiskPanel = lazy(() => import('../panels/counterparty-risk-panel').then(m => ({ default: m.CounterpartyRiskPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -740,6 +742,8 @@ export const PANEL_IDS = {
   OPERATIONAL_RISK: 'operational-risk',
   TRANSITION_MANAGEMENT: 'transition-management',
   SECURITIES_VALUATION: 'securities-valuation',
+  BENCHMARK_ANALYTICS: 'benchmark-analytics',
+  COUNTERPARTY_RISK: 'counterparty-risk',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1100,6 +1104,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.OPERATIONAL_RISK]: 'OPERATIONAL RISK',
   [PANEL_IDS.TRANSITION_MANAGEMENT]: 'TRANSITION MANAGEMENT',
   [PANEL_IDS.SECURITIES_VALUATION]: 'SECURITIES VALUATION',
+  [PANEL_IDS.BENCHMARK_ANALYTICS]: 'BENCHMARK ANALYTICS',
+  [PANEL_IDS.COUNTERPARTY_RISK]: 'COUNTERPARTY RISK',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1461,6 +1467,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.OPERATIONAL_RISK]: 'panelOperationalRisk',
   [PANEL_IDS.TRANSITION_MANAGEMENT]: 'panelTransitionManagement',
   [PANEL_IDS.SECURITIES_VALUATION]: 'panelSecuritiesValuation',
+  [PANEL_IDS.BENCHMARK_ANALYTICS]: 'panelBenchmarkAnalytics',
+  [PANEL_IDS.COUNTERPARTY_RISK]: 'panelCounterpartyRisk',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2118,6 +2126,8 @@ export function DockLayout() {
       case PANEL_IDS.OPERATIONAL_RISK: content = <LazyWrap><OperationalRiskPanel /></LazyWrap>; break;
       case PANEL_IDS.TRANSITION_MANAGEMENT: content = <LazyWrap><TransitionManagementPanel /></LazyWrap>; break;
       case PANEL_IDS.SECURITIES_VALUATION: content = <LazyWrap><SecuritiesValuationPanel /></LazyWrap>; break;
+      case PANEL_IDS.BENCHMARK_ANALYTICS: content = <LazyWrap><BenchmarkAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.COUNTERPARTY_RISK: content = <LazyWrap><CounterpartyRiskPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

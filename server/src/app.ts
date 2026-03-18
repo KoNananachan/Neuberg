@@ -359,6 +359,8 @@ import priceDiscoveryRouter from './routes/price-discovery.js';
 import operationalRiskRouter from './routes/operational-risk.js';
 import transitionManagementRouter from './routes/transition-management.js';
 import securitiesValuationRouter from './routes/securities-valuation.js';
+import benchmarkAnalyticsRouter from './routes/benchmark-analytics.js';
+import counterpartyRiskRouter from './routes/counterparty-risk.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -819,6 +821,8 @@ export function createApp() {
   app.use('/api/operational-risk', operationalRiskRouter);
   app.use('/api/transition-management', transitionManagementRouter);
   app.use('/api/securities-valuation', securitiesValuationRouter);
+  app.use('/api/benchmark-analytics', benchmarkAnalyticsRouter);
+  app.use('/api/counterparty-risk', counterpartyRiskRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

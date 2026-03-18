@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../client';
 
-export function useFxOptions() {
+export function useCounterpartyRisk() {
   return useQuery({
-    queryKey: ['fx-options'],
-    queryFn: () => api.get<any>('/fx-options'),
+    queryKey: ['counterparty-risk'],
+    queryFn: () => api.get<any>('/counterparty-risk'),
     refetchInterval: 5 * 60 * 1000,
     staleTime: 3 * 60 * 1000,
   });
