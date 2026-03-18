@@ -131,6 +131,9 @@ const VolatilityConePanel = lazy(() => import('../panels/volatility-cone-panel')
 const TermStructurePanel = lazy(() => import('../panels/term-structure-panel').then(m => ({ default: m.TermStructurePanel })));
 const InstitutionalOwnershipPanel = lazy(() => import('../panels/institutional-ownership-panel').then(m => ({ default: m.InstitutionalOwnershipPanel })));
 const ImpliedCorrelationPanel = lazy(() => import('../panels/implied-correlation-panel').then(m => ({ default: m.ImpliedCorrelationPanel })));
+const EarningsQualityPanel = lazy(() => import('../panels/earnings-quality-panel').then(m => ({ default: m.EarningsQualityPanel })));
+const VolSurfacePanel = lazy(() => import('../panels/vol-surface-panel').then(m => ({ default: m.VolSurfacePanel })));
+const GlobalFlowsPanel = lazy(() => import('../panels/global-flows-panel').then(m => ({ default: m.GlobalFlowsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -274,6 +277,9 @@ export const PANEL_IDS = {
   TERM_STRUCTURE: 'term-structure',
   INSTITUTIONAL_OWNERSHIP: 'institutional-ownership',
   IMPLIED_CORRELATION: 'implied-correlation',
+  EARNINGS_QUALITY: 'earnings-quality',
+  VOL_SURFACE: 'vol-surface',
+  GLOBAL_FLOWS: 'global-flows',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -401,6 +407,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.TERM_STRUCTURE]: 'TERM STRUCTURE',
   [PANEL_IDS.INSTITUTIONAL_OWNERSHIP]: 'INSTITUTIONAL OWNERSHIP',
   [PANEL_IDS.IMPLIED_CORRELATION]: 'IMPLIED CORRELATION',
+  [PANEL_IDS.EARNINGS_QUALITY]: 'EARNINGS QUALITY',
+  [PANEL_IDS.VOL_SURFACE]: 'VOL SURFACE',
+  [PANEL_IDS.GLOBAL_FLOWS]: 'GLOBAL FLOWS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -529,6 +538,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.TERM_STRUCTURE]: 'panelTermStructure',
   [PANEL_IDS.INSTITUTIONAL_OWNERSHIP]: 'panelInstitutionalOwnership',
   [PANEL_IDS.IMPLIED_CORRELATION]: 'panelImpliedCorrelation',
+  [PANEL_IDS.EARNINGS_QUALITY]: 'panelEarningsQuality',
+  [PANEL_IDS.VOL_SURFACE]: 'panelVolSurface',
+  [PANEL_IDS.GLOBAL_FLOWS]: 'panelGlobalFlows',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -953,6 +965,9 @@ export function DockLayout() {
       case PANEL_IDS.TERM_STRUCTURE: content = <LazyWrap><TermStructurePanel /></LazyWrap>; break;
       case PANEL_IDS.INSTITUTIONAL_OWNERSHIP: content = <LazyWrap><InstitutionalOwnershipPanel /></LazyWrap>; break;
       case PANEL_IDS.IMPLIED_CORRELATION: content = <LazyWrap><ImpliedCorrelationPanel /></LazyWrap>; break;
+      case PANEL_IDS.EARNINGS_QUALITY: content = <LazyWrap><EarningsQualityPanel /></LazyWrap>; break;
+      case PANEL_IDS.VOL_SURFACE: content = <LazyWrap><VolSurfacePanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_FLOWS: content = <LazyWrap><GlobalFlowsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

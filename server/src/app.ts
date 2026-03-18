@@ -125,6 +125,9 @@ import volatilityConeRouter from './routes/volatility-cone.js';
 import termStructureRouter from './routes/term-structure.js';
 import institutionalOwnershipRouter from './routes/institutional-ownership.js';
 import impliedCorrelationRouter from './routes/implied-correlation.js';
+import earningsQualityRouter from './routes/earnings-quality.js';
+import volSurfaceRouter from './routes/vol-surface.js';
+import globalFlowsRouter from './routes/global-flows.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -351,6 +354,9 @@ export function createApp() {
   app.use('/api/term-structure', termStructureRouter);
   app.use('/api/institutional-ownership', institutionalOwnershipRouter);
   app.use('/api/implied-correlation', impliedCorrelationRouter);
+  app.use('/api/earnings-quality', earningsQualityRouter);
+  app.use('/api/vol-surface', volSurfaceRouter);
+  app.use('/api/global-flows', globalFlowsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
