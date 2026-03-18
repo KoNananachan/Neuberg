@@ -69,6 +69,9 @@ const MoneyFlowPanel = lazy(() => import('../panels/money-flow-panel').then(m =>
 const TechnicalChartPanel = lazy(() => import('../panels/technical-chart-panel').then(m => ({ default: m.TechnicalChartPanel })));
 const EarningsEstimatesPanel = lazy(() => import('../panels/earnings-estimates-panel').then(m => ({ default: m.EarningsEstimatesPanel })));
 const WorldEconomyPanel = lazy(() => import('../panels/world-economy-panel').then(m => ({ default: m.WorldEconomyPanel })));
+const CrossAssetPanel = lazy(() => import('../panels/cross-asset-panel').then(m => ({ default: m.CrossAssetPanel })));
+const HoldingsPanel = lazy(() => import('../panels/holdings-panel').then(m => ({ default: m.HoldingsPanel })));
+const SectorPerformancePanel = lazy(() => import('../panels/sector-performance-panel').then(m => ({ default: m.SectorPerformancePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -85,7 +88,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 23; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 24; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -150,6 +153,9 @@ export const PANEL_IDS = {
   TECHNICAL_CHART: 'technical-chart',
   EARNINGS_ESTIMATES: 'earnings-estimates',
   WORLD_ECONOMY: 'world-economy',
+  CROSS_ASSET: 'cross-asset',
+  HOLDINGS: 'holdings',
+  SECTOR_PERFORMANCE: 'sector-performance',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -215,6 +221,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.TECHNICAL_CHART]: 'TECHNICAL CHART',
   [PANEL_IDS.EARNINGS_ESTIMATES]: 'EARNINGS ESTIMATES',
   [PANEL_IDS.WORLD_ECONOMY]: 'WORLD ECONOMY',
+  [PANEL_IDS.CROSS_ASSET]: 'CROSS-ASSET',
+  [PANEL_IDS.HOLDINGS]: 'INSTITUTIONAL HOLDINGS',
+  [PANEL_IDS.SECTOR_PERFORMANCE]: 'SECTOR PERFORMANCE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -281,6 +290,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.TECHNICAL_CHART]: 'panelTechnicalChart',
   [PANEL_IDS.EARNINGS_ESTIMATES]: 'panelEarningsEstimates',
   [PANEL_IDS.WORLD_ECONOMY]: 'panelWorldEconomy',
+  [PANEL_IDS.CROSS_ASSET]: 'panelCrossAsset',
+  [PANEL_IDS.HOLDINGS]: 'panelHoldings',
+  [PANEL_IDS.SECTOR_PERFORMANCE]: 'panelSectorPerformance',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -297,26 +309,28 @@ export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
 
 /** Panel IDs that exist in the DEFAULT_LAYOUT (core panels shown on first load) */
 const DEFAULT_PANEL_IDS: Set<string> = new Set([
-  PANEL_IDS.NEWS, PANEL_IDS.HEAT_MAP, PANEL_IDS.STOCKS,
-  PANEL_IDS.AI, PANEL_IDS.LOG, PANEL_IDS.YIELD_CURVE,
-  PANEL_IDS.MONEY_FLOW, PANEL_IDS.CURRENCY_STRENGTH,
-  PANEL_IDS.FEAR_GREED, PANEL_IDS.MARKET_MOVERS,
-  PANEL_IDS.SENTIMENT_HEATMAP, PANEL_IDS.FX_CROSS,
+  PANEL_IDS.TECHNICAL_CHART, PANEL_IDS.CROSS_ASSET, PANEL_IDS.SECTOR_PERFORMANCE,
+  PANEL_IDS.HEAT_MAP, PANEL_IDS.YIELD_CURVE, PANEL_IDS.MONEY_FLOW,
+  PANEL_IDS.CURRENCY_STRENGTH, PANEL_IDS.HOLDINGS, PANEL_IDS.EARNINGS_ESTIMATES,
+  PANEL_IDS.STOCKS, PANEL_IDS.NEWS, PANEL_IDS.FEAR_GREED,
+  PANEL_IDS.FX_CROSS, PANEL_IDS.WORLD_ECONOMY,
 ]);
 
 /*
- * Showcase layout — designed to display the most visually impressive panels:
+ * Pro layout — maximum information density, showcasing advanced analytics:
  *
- * +---- 22% ----+---------- 45% ----------+------- 33% --------+
- * |             |  HEAT MAP     (tab)      | MARKET WATCH (tab) |
- * | NEWS FEED   |  YIELD CURVE  (tab)      | CURRENCY STR (tab) |
- * | (60%)       |  FX CROSS     (tab)      | FEAR & GREED (tab) |
- * |             |         (65%)            | (50%)              |
- * +-------------+                          +--------------------+
- * | SENTIMENT   +--------------------------+ MONEY FLOW         |
- * | HEATMAP     | MARKET MOVERS     (35%)  | AI INSIGHTS  (tab) |
- * | (40%)       |                          | (50%)              |
- * +-------------+--------------------------+--------------------+
+ * +------ 30% ------+---------- 40% ----------+------- 30% --------+
+ * |                  | SECTOR PERF  (tab)      | CROSS-ASSET  (tab) |
+ * | TECHNICAL CHART  | HEAT MAP     (tab)      | CURRENCY STR (tab) |
+ * | (55%)            | YIELD CURVE  (tab)      | WORLD ECONOMY(tab) |
+ * |                  | FX CROSS     (tab)      | (45%)              |
+ * |                  |         (55%)           +--------------------+
+ * +------------------+                         | HOLDINGS     (tab) |
+ * | MARKET WATCH     +---------+---------------+ EARNINGS EST (tab) |
+ * | (tab)            | MONEY   | FEAR &        | (55%)              |
+ * | NEWS FEED  (tab) | FLOW    | GREED         |                    |
+ * | (45%)            | (45%)   | (45%)         |                    |
+ * +------------------+---------+---------------+--------------------+
  */
 const DEFAULT_LAYOUT: IJsonModel = {
   global: {
@@ -334,72 +348,85 @@ const DEFAULT_LAYOUT: IJsonModel = {
     type: 'row',
     weight: 100,
     children: [
-      // Left column: News Feed + Sentiment Heatmap
+      // Left column: Technical Chart on top, Market Watch + News on bottom
       {
         type: 'row',
-        weight: 22,
+        weight: 30,
         children: [
           {
             type: 'tabset',
-            weight: 60,
+            weight: 55,
             children: [
-              { type: 'tab', name: 'NEWS FEED', component: PANEL_IDS.NEWS, id: PANEL_IDS.NEWS },
+              { type: 'tab', name: 'TECHNICAL CHART', component: PANEL_IDS.TECHNICAL_CHART, id: PANEL_IDS.TECHNICAL_CHART },
             ],
           },
           {
             type: 'tabset',
-            weight: 40,
+            weight: 45,
             children: [
-              { type: 'tab', name: 'SENTIMENT HEATMAP', component: PANEL_IDS.SENTIMENT_HEATMAP, id: PANEL_IDS.SENTIMENT_HEATMAP },
-              { type: 'tab', name: 'TERMINAL LOG', component: PANEL_IDS.LOG, id: PANEL_IDS.LOG },
+              { type: 'tab', name: 'MARKET WATCH', component: PANEL_IDS.STOCKS, id: PANEL_IDS.STOCKS },
+              { type: 'tab', name: 'NEWS FEED', component: PANEL_IDS.NEWS, id: PANEL_IDS.NEWS },
             ],
           },
         ],
       },
-      // Center column: Heat Map/Yield Curve/FX Cross on top, Market Movers on bottom
+      // Center column: Sector Perf/Heat Map/Yield Curve/FX Cross on top, Money Flow + Fear&Greed on bottom
       {
         type: 'row',
-        weight: 45,
+        weight: 40,
         children: [
           {
             type: 'tabset',
-            weight: 65,
+            weight: 55,
             children: [
+              { type: 'tab', name: 'SECTOR PERFORMANCE', component: PANEL_IDS.SECTOR_PERFORMANCE, id: PANEL_IDS.SECTOR_PERFORMANCE },
               { type: 'tab', name: 'HEAT MAP', component: PANEL_IDS.HEAT_MAP, id: PANEL_IDS.HEAT_MAP },
               { type: 'tab', name: 'YIELD CURVE', component: PANEL_IDS.YIELD_CURVE, id: PANEL_IDS.YIELD_CURVE },
               { type: 'tab', name: 'FX CROSS RATES', component: PANEL_IDS.FX_CROSS, id: PANEL_IDS.FX_CROSS },
             ],
           },
           {
-            type: 'tabset',
-            weight: 35,
+            type: 'row',
+            weight: 45,
             children: [
-              { type: 'tab', name: 'MARKET MOVERS', component: PANEL_IDS.MARKET_MOVERS, id: PANEL_IDS.MARKET_MOVERS },
+              {
+                type: 'tabset',
+                weight: 55,
+                children: [
+                  { type: 'tab', name: 'MONEY FLOW', component: PANEL_IDS.MONEY_FLOW, id: PANEL_IDS.MONEY_FLOW },
+                ],
+              },
+              {
+                type: 'tabset',
+                weight: 45,
+                children: [
+                  { type: 'tab', name: 'FEAR & GREED', component: PANEL_IDS.FEAR_GREED, id: PANEL_IDS.FEAR_GREED },
+                ],
+              },
             ],
           },
         ],
       },
-      // Right column: Market Watch/Currency Strength/Fear&Greed on top, Money Flow/AI on bottom
+      // Right column: Cross-Asset/Currency/World on top, Holdings/Earnings on bottom
       {
         type: 'row',
-        weight: 33,
+        weight: 30,
         children: [
           {
             type: 'tabset',
-            weight: 50,
-            selected: 0,
+            weight: 45,
             children: [
-              { type: 'tab', name: 'MARKET WATCH', component: PANEL_IDS.STOCKS, id: PANEL_IDS.STOCKS },
+              { type: 'tab', name: 'CROSS-ASSET', component: PANEL_IDS.CROSS_ASSET, id: PANEL_IDS.CROSS_ASSET },
               { type: 'tab', name: 'CURRENCY STRENGTH', component: PANEL_IDS.CURRENCY_STRENGTH, id: PANEL_IDS.CURRENCY_STRENGTH },
-              { type: 'tab', name: 'FEAR & GREED', component: PANEL_IDS.FEAR_GREED, id: PANEL_IDS.FEAR_GREED },
+              { type: 'tab', name: 'WORLD ECONOMY', component: PANEL_IDS.WORLD_ECONOMY, id: PANEL_IDS.WORLD_ECONOMY },
             ],
           },
           {
             type: 'tabset',
-            weight: 50,
+            weight: 55,
             children: [
-              { type: 'tab', name: 'MONEY FLOW', component: PANEL_IDS.MONEY_FLOW, id: PANEL_IDS.MONEY_FLOW },
-              { type: 'tab', name: 'AI INSIGHTS', component: PANEL_IDS.AI, id: PANEL_IDS.AI },
+              { type: 'tab', name: 'INSTITUTIONAL HOLDINGS', component: PANEL_IDS.HOLDINGS, id: PANEL_IDS.HOLDINGS },
+              { type: 'tab', name: 'EARNINGS ESTIMATES', component: PANEL_IDS.EARNINGS_ESTIMATES, id: PANEL_IDS.EARNINGS_ESTIMATES },
             ],
           },
         ],
@@ -628,6 +655,9 @@ export function DockLayout() {
       case PANEL_IDS.TECHNICAL_CHART: content = <LazyWrap><TechnicalChartPanel /></LazyWrap>; break;
       case PANEL_IDS.EARNINGS_ESTIMATES: content = <LazyWrap><EarningsEstimatesPanel /></LazyWrap>; break;
       case PANEL_IDS.WORLD_ECONOMY: content = <LazyWrap><WorldEconomyPanel /></LazyWrap>; break;
+      case PANEL_IDS.CROSS_ASSET: content = <LazyWrap><CrossAssetPanel /></LazyWrap>; break;
+      case PANEL_IDS.HOLDINGS: content = <LazyWrap><HoldingsPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECTOR_PERFORMANCE: content = <LazyWrap><SectorPerformancePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

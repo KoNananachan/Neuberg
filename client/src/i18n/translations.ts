@@ -1236,6 +1236,9 @@ const en = {
   panelTechnicalChart: 'TECHNICAL CHART',
   panelEarningsEstimates: 'EARNINGS ESTIMATES',
   panelWorldEconomy: 'WORLD ECONOMY',
+  panelCrossAsset: 'CROSS-ASSET',
+  panelHoldings: 'INSTITUTIONAL HOLDINGS',
+  panelSectorPerformance: 'SECTOR PERFORMANCE',
 };
 
 export type TranslationKey = keyof typeof en;
@@ -2330,6 +2333,9 @@ const zh: Record<TranslationKey, string> = {
   panelTechnicalChart: '技术图表',
   panelEarningsEstimates: '盈利预估',
   panelWorldEconomy: '世界经济',
+  panelCrossAsset: '跨资产总览',
+  panelHoldings: '机构持仓',
+  panelSectorPerformance: '行业表现',
 };
 
 const ja: Record<TranslationKey, string> = {
@@ -3419,6 +3425,9 @@ const ja: Record<TranslationKey, string> = {
   panelTechnicalChart: 'テクニカルチャート',
   panelEarningsEstimates: '業績予想',
   panelWorldEconomy: '世界経済',
+  panelCrossAsset: 'クロスアセット',
+  panelHoldings: '機関投資家保有',
+  panelSectorPerformance: 'セクターパフォーマンス',
 };
 
 const ko: Record<TranslationKey, string> = {
@@ -4508,6 +4517,9 @@ const ko: Record<TranslationKey, string> = {
   panelTechnicalChart: '기술적 차트',
   panelEarningsEstimates: '실적 추정',
   panelWorldEconomy: '세계 경제',
+  panelCrossAsset: '크로스 자산',
+  panelHoldings: '기관 보유',
+  panelSectorPerformance: '섹터 성과',
 };
 
 const es: Record<TranslationKey, string> = {
@@ -5597,6 +5609,9 @@ const es: Record<TranslationKey, string> = {
   panelTechnicalChart: 'GRAFICO TECNICO',
   panelEarningsEstimates: 'ESTIMACIONES',
   panelWorldEconomy: 'ECONOMIA MUNDIAL',
+  panelCrossAsset: 'MULTI-ACTIVOS',
+  panelHoldings: 'TENENCIAS INSTITUCIONALES',
+  panelSectorPerformance: 'RENDIMIENTO SECTORIAL',
 };
 
 const fr: Record<TranslationKey, string> = {
@@ -6686,6 +6701,9 @@ const fr: Record<TranslationKey, string> = {
   panelTechnicalChart: 'GRAPHIQUE TECHNIQUE',
   panelEarningsEstimates: 'ESTIMATIONS',
   panelWorldEconomy: 'ECONOMIE MONDIALE',
+  panelCrossAsset: 'MULTI-ACTIFS',
+  panelHoldings: 'PARTICIPATIONS INSTITUTIONNELLES',
+  panelSectorPerformance: 'PERFORMANCE SECTORIELLE',
 };
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {

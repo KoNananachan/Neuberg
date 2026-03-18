@@ -62,6 +62,9 @@ import currencyStrengthRouter from './routes/currency-strength.js';
 import moneyFlowRouter from './routes/money-flow.js';
 import chartRouter from './routes/chart.js';
 import earningsEstimatesRouter from './routes/earnings-estimates.js';
+import crossAssetRouter from './routes/cross-asset.js';
+import holdingsRouter from './routes/holdings.js';
+import sectorPerformanceRouter from './routes/sector-performance.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -225,6 +228,9 @@ export function createApp() {
   app.use('/api/money-flow', moneyFlowRouter);
   app.use('/api/chart', chartRouter);
   app.use('/api/earnings-estimates', earningsEstimatesRouter);
+  app.use('/api/cross-asset', crossAssetRouter);
+  app.use('/api/holdings', holdingsRouter);
+  app.use('/api/sector-performance', sectorPerformanceRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
