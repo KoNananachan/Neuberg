@@ -1,11 +1,74 @@
-import { useEffect, type RefObject } from 'react';
+import { useState, useMemo, useEffect, type RefObject } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../stores/use-app-store';
+import { useT } from '../../i18n';
 import { ALL_PANEL_IDS, PANEL_IDS, getLocalizedPanelName, showPanelInLayout, hidePanelInLayout, resetLayout } from '../layout/dock-layout';
+import { Eye, EyeOff, RotateCcw, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import type { TranslationKey } from '../../i18n/translations';
 
 /** Panels hidden from the toggle menu (not ready for release) */
 const HIDDEN_FROM_MENU: Set<string> = new Set([PANEL_IDS.AI_CHAT]);
-import { Eye, EyeOff, RotateCcw } from 'lucide-react';
+
+interface PanelCategory {
+  key: TranslationKey;
+  panels: string[];
+}
+
+const PANEL_CATEGORIES: PanelCategory[] = [
+  {
+    key: 'catMarkets',
+    panels: [
+      PANEL_IDS.STOCKS, PANEL_IDS.MARKET_MOVERS, PANEL_IDS.FOREX, PANEL_IDS.BONDS,
+      PANEL_IDS.COMMODITIES, PANEL_IDS.CRYPTO, PANEL_IDS.FUTURES, PANEL_IDS.GLOBAL_DASHBOARD,
+    ],
+  },
+  {
+    key: 'catAnalysis',
+    panels: [
+      PANEL_IDS.AI, PANEL_IDS.SENTIMENT, PANEL_IDS.CORRELATIONS, PANEL_IDS.HEAT_MAP,
+      PANEL_IDS.BREADTH, PANEL_IDS.SCANNER, PANEL_IDS.SCREENER, PANEL_IDS.VOLATILITY,
+      PANEL_IDS.RELATIVE_STRENGTH,
+    ],
+  },
+  {
+    key: 'catEquities',
+    panels: [
+      PANEL_IDS.COMPANY_PROFILE, PANEL_IDS.FINANCIALS, PANEL_IDS.ANALYST, PANEL_IDS.EARNINGS,
+      PANEL_IDS.DIVIDENDS, PANEL_IDS.INSIDERS, PANEL_IDS.SHORT_INTEREST, PANEL_IDS.IPO,
+      PANEL_IDS.ETF, PANEL_IDS.PAIRS_TRADING, PANEL_IDS.PERFORMANCE,
+    ],
+  },
+  {
+    key: 'catOptions',
+    panels: [
+      PANEL_IDS.OPTIONS, PANEL_IDS.OPTIONS_CALC, PANEL_IDS.PIVOT_POINTS, PANEL_IDS.FIBONACCI,
+    ],
+  },
+  {
+    key: 'catNews',
+    panels: [
+      PANEL_IDS.NEWS, PANEL_IDS.ECON_CALENDAR, PANEL_IDS.LIVE_STREAMS, PANEL_IDS.MAP,
+    ],
+  },
+  {
+    key: 'catTrading',
+    panels: [
+      PANEL_IDS.TRADING, PANEL_IDS.PREDICTION, PANEL_IDS.MISSED_OPP,
+      PANEL_IDS.RISK, PANEL_IDS.ALERTS, PANEL_IDS.SECTORS,
+    ],
+  },
+  {
+    key: 'catCalculators',
+    panels: [
+      PANEL_IDS.INVESTMENT_CALC, PANEL_IDS.BOND_CALC, PANEL_IDS.FX_CONVERTER,
+      PANEL_IDS.MORTGAGE_CALC, PANEL_IDS.MARKET_HOURS, PANEL_IDS.MARKET_CALENDAR,
+    ],
+  },
+  {
+    key: 'catSystem',
+    panels: [PANEL_IDS.LOG],
+  },
+];
 
 interface PanelToggleMenuProps {
   open: boolean;
@@ -14,13 +77,16 @@ interface PanelToggleMenuProps {
 }
 
 export function PanelToggleMenu({ open, onClose, containerRef }: PanelToggleMenuProps) {
+  const t = useT();
   const hiddenPanels = useAppStore((s) => s.hiddenPanels);
   const hidePanel = useAppStore((s) => s.hidePanel);
   const showPanel = useAppStore((s) => s.showPanel);
-  useAppStore((s) => s.locale); // subscribe to locale changes for i18n panel names
+  useAppStore((s) => s.locale);
+  const [search, setSearch] = useState('');
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setSearch(''); return; }
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         onClose();
@@ -41,6 +107,25 @@ export function PanelToggleMenu({ open, onClose, containerRef }: PanelToggleMenu
     }
   };
 
+  const toggleCategory = (key: string) => {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const filteredCategories = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return PANEL_CATEGORIES.map(cat => ({
+      ...cat,
+      panels: cat.panels
+        .filter(id => !HIDDEN_FROM_MENU.has(id))
+        .filter(id => !q || getLocalizedPanelName(id).toLowerCase().includes(q)),
+    })).filter(cat => cat.panels.length > 0);
+  }, [search]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -49,46 +134,91 @@ export function PanelToggleMenu({ open, onClose, containerRef }: PanelToggleMenu
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -4 }}
           transition={{ duration: 0.1 }}
-          className="absolute right-0 top-full mt-1 w-52 bg-zinc-900 border border-border/80 shadow-2xl z-50"
+          className="absolute right-0 top-full mt-1 w-64 bg-zinc-900 border border-border/80 shadow-2xl z-50 max-h-[80vh] flex flex-col"
         >
-          <div className="px-3 py-2 border-b border-border/30">
-            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
-              Panels
-            </span>
+          {/* Header + search */}
+          <div className="px-3 py-2 border-b border-border/30 shrink-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
+                {t('catPanels')}
+              </span>
+              <span className="text-[8px] font-mono text-neutral/30">
+                {ALL_PANEL_IDS.filter(id => !HIDDEN_FROM_MENU.has(id)).length - hiddenPanels.length} / {ALL_PANEL_IDS.filter(id => !HIDDEN_FROM_MENU.has(id)).length}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-black/60 border border-border/20 px-2 py-1">
+              <Search className="w-3 h-3 text-neutral/30 shrink-0" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('search')}
+                className="w-full bg-transparent text-[9px] font-mono text-white placeholder:text-neutral/20 outline-none"
+                autoFocus
+              />
+            </div>
           </div>
-          <div className="py-1">
-            {ALL_PANEL_IDS.filter(id => !HIDDEN_FROM_MENU.has(id)).map((panelId) => {
-              const isHidden = hiddenPanels.includes(panelId);
+
+          {/* Categories */}
+          <div className="flex-1 overflow-auto no-scrollbar py-1">
+            {filteredCategories.map((cat) => {
+              const isCollapsed = collapsed.has(cat.key) && !search;
+              const activeCount = cat.panels.filter(id => !hiddenPanels.includes(id)).length;
               return (
-                <button
-                  key={panelId}
-                  onClick={() => togglePanel(panelId)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-white/5 transition-colors ${
-                    isHidden ? 'opacity-40' : ''
-                  }`}
-                >
-                  {isHidden ? (
-                    <EyeOff className="w-3.5 h-3.5 text-neutral/50 shrink-0" />
-                  ) : (
-                    <Eye className="w-3.5 h-3.5 text-accent shrink-0" />
-                  )}
-                  <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
-                    isHidden ? 'text-neutral/50' : 'text-white'
-                  }`}>
-                    {getLocalizedPanelName(panelId)}
-                  </span>
-                </button>
+                <div key={cat.key}>
+                  <button
+                    onClick={() => toggleCategory(cat.key)}
+                    className="w-full flex items-center gap-1.5 px-3 py-1.5 text-left hover:bg-white/5 transition-colors"
+                  >
+                    {isCollapsed ? (
+                      <ChevronRight className="w-3 h-3 text-neutral/40 shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3 text-neutral/40 shrink-0" />
+                    )}
+                    <span className="text-[8px] font-black uppercase tracking-wider text-accent/80 flex-1">
+                      {t(cat.key)}
+                    </span>
+                    <span className="text-[7px] font-mono text-neutral/30">
+                      {activeCount}/{cat.panels.length}
+                    </span>
+                  </button>
+                  {!isCollapsed && cat.panels.map((panelId) => {
+                    const isHidden = hiddenPanels.includes(panelId);
+                    return (
+                      <button
+                        key={panelId}
+                        onClick={() => togglePanel(panelId)}
+                        className={`w-full flex items-center gap-2 pl-7 pr-3 py-1.5 text-left hover:bg-white/5 transition-colors ${
+                          isHidden ? 'opacity-40' : ''
+                        }`}
+                      >
+                        {isHidden ? (
+                          <EyeOff className="w-3 h-3 text-neutral/50 shrink-0" />
+                        ) : (
+                          <Eye className="w-3 h-3 text-accent shrink-0" />
+                        )}
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-wider ${
+                          isHidden ? 'text-neutral/50' : 'text-white'
+                        }`}>
+                          {getLocalizedPanelName(panelId)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               );
             })}
           </div>
-          <div className="border-t border-border/30 px-3 py-2">
+
+          {/* Reset button */}
+          <div className="border-t border-border/30 px-3 py-2 shrink-0">
             <button
               onClick={resetLayout}
-              className="w-full flex items-center gap-2.5 px-0 py-1.5 text-left text-neutral/60 hover:text-bearish transition-colors"
+              className="w-full flex items-center gap-2.5 px-0 py-1 text-left text-neutral/60 hover:text-bearish transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
-                Reset Default Layout
+              <span className="text-[9px] font-mono font-bold uppercase tracking-wider">
+                {t('catReset')}
               </span>
             </button>
           </div>

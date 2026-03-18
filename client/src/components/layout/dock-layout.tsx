@@ -55,6 +55,8 @@ const PairsPanel = lazy(() => import('../panels/pairs-panel').then(m => ({ defau
 const VolatilityPanel = lazy(() => import('../panels/volatility-panel').then(m => ({ default: m.VolatilityPanel })));
 const FibonacciPanel = lazy(() => import('../panels/fibonacci-panel').then(m => ({ default: m.FibonacciPanel })));
 const MortgageCalcPanel = lazy(() => import('../panels/mortgage-calc-panel').then(m => ({ default: m.MortgageCalcPanel })));
+const InvestmentCalcPanel = lazy(() => import('../panels/investment-calc-panel').then(m => ({ default: m.InvestmentCalcPanel })));
+const RelativeStrengthPanel = lazy(() => import('../panels/relative-strength-panel').then(m => ({ default: m.RelativeStrengthPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -71,7 +73,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 19; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 20; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -122,6 +124,8 @@ export const PANEL_IDS = {
   VOLATILITY: 'volatility',
   FIBONACCI: 'fibonacci',
   MORTGAGE_CALC: 'mortgage-calc',
+  INVESTMENT_CALC: 'investment-calc',
+  RELATIVE_STRENGTH: 'relative-strength',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -173,6 +177,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.VOLATILITY]: 'VOLATILITY',
   [PANEL_IDS.FIBONACCI]: 'FIBONACCI',
   [PANEL_IDS.MORTGAGE_CALC]: 'MORTGAGE CALC',
+  [PANEL_IDS.INVESTMENT_CALC]: 'INVESTMENT CALC',
+  [PANEL_IDS.RELATIVE_STRENGTH]: 'RELATIVE STRENGTH',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -225,6 +231,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.VOLATILITY]: 'panelVolatility',
   [PANEL_IDS.FIBONACCI]: 'panelFibonacci',
   [PANEL_IDS.MORTGAGE_CALC]: 'panelMortgage',
+  [PANEL_IDS.INVESTMENT_CALC]: 'panelInvestCalc',
+  [PANEL_IDS.RELATIVE_STRENGTH]: 'panelRelStrength',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -555,6 +563,8 @@ export function DockLayout() {
       case PANEL_IDS.VOLATILITY: content = <LazyWrap><VolatilityPanel /></LazyWrap>; break;
       case PANEL_IDS.FIBONACCI: content = <LazyWrap><FibonacciPanel /></LazyWrap>; break;
       case PANEL_IDS.MORTGAGE_CALC: content = <LazyWrap><MortgageCalcPanel /></LazyWrap>; break;
+      case PANEL_IDS.INVESTMENT_CALC: content = <LazyWrap><InvestmentCalcPanel /></LazyWrap>; break;
+      case PANEL_IDS.RELATIVE_STRENGTH: content = <LazyWrap><RelativeStrengthPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
