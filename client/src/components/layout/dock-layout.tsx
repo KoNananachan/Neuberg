@@ -316,6 +316,9 @@ const MunicipalCreditPanel = lazy(() => import('../panels/municipal-credit-panel
 const CommoditySpreadPanel = lazy(() => import('../panels/commodity-spread-panel').then(m => ({ default: m.CommoditySpreadPanel })));
 const InflationSwapPanel = lazy(() => import('../panels/inflation-swap-panel').then(m => ({ default: m.InflationSwapPanel })));
 const CreditDefaultIndexPanel = lazy(() => import('../panels/credit-default-index-panel').then(m => ({ default: m.CreditDefaultIndexPanel })));
+const SovereignWealthFundPanel = lazy(() => import('../panels/sovereign-wealth-fund-panel').then(m => ({ default: m.SovereignWealthFundPanel })));
+const CollateralManagementPanel = lazy(() => import('../panels/collateral-management-panel').then(m => ({ default: m.CollateralManagementPanel })));
+const PrimeBrokeragePanel = lazy(() => import('../panels/prime-brokerage-panel').then(m => ({ default: m.PrimeBrokeragePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -644,6 +647,9 @@ export const PANEL_IDS = {
   COMMODITY_SPREAD: 'commodity-spread',
   INFLATION_SWAP: 'inflation-swap',
   CREDIT_DEFAULT_INDEX: 'credit-default-index',
+  SOVEREIGN_WEALTH_FUND: 'sovereign-wealth-fund',
+  COLLATERAL_MANAGEMENT: 'collateral-management',
+  PRIME_BROKERAGE: 'prime-brokerage',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -956,6 +962,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.COMMODITY_SPREAD]: 'COMMODITY SPREAD',
   [PANEL_IDS.INFLATION_SWAP]: 'INFLATION SWAP',
   [PANEL_IDS.CREDIT_DEFAULT_INDEX]: 'CREDIT DEFAULT INDEX',
+  [PANEL_IDS.SOVEREIGN_WEALTH_FUND]: 'SOVEREIGN WEALTH FUND',
+  [PANEL_IDS.COLLATERAL_MANAGEMENT]: 'COLLATERAL MANAGEMENT',
+  [PANEL_IDS.PRIME_BROKERAGE]: 'PRIME BROKERAGE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1269,6 +1278,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.COMMODITY_SPREAD]: 'panelCommoditySpread',
   [PANEL_IDS.INFLATION_SWAP]: 'panelInflationSwap',
   [PANEL_IDS.CREDIT_DEFAULT_INDEX]: 'panelCreditDefaultIndex',
+  [PANEL_IDS.SOVEREIGN_WEALTH_FUND]: 'panelSovereignWealthFund',
+  [PANEL_IDS.COLLATERAL_MANAGEMENT]: 'panelCollateralManagement',
+  [PANEL_IDS.PRIME_BROKERAGE]: 'panelPrimeBrokerage',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1878,6 +1890,9 @@ export function DockLayout() {
       case PANEL_IDS.COMMODITY_SPREAD: content = <LazyWrap><CommoditySpreadPanel /></LazyWrap>; break;
       case PANEL_IDS.INFLATION_SWAP: content = <LazyWrap><InflationSwapPanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_DEFAULT_INDEX: content = <LazyWrap><CreditDefaultIndexPanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_WEALTH_FUND: content = <LazyWrap><SovereignWealthFundPanel /></LazyWrap>; break;
+      case PANEL_IDS.COLLATERAL_MANAGEMENT: content = <LazyWrap><CollateralManagementPanel /></LazyWrap>; break;
+      case PANEL_IDS.PRIME_BROKERAGE: content = <LazyWrap><PrimeBrokeragePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

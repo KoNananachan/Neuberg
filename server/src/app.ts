@@ -311,6 +311,9 @@ import municipalCreditRouter from './routes/municipal-credit.js';
 import commoditySpreadRouter from './routes/commodity-spread.js';
 import inflationSwapRouter from './routes/inflation-swap.js';
 import creditDefaultIndexRouter from './routes/credit-default-index.js';
+import sovereignWealthFundRouter from './routes/sovereign-wealth-fund.js';
+import collateralManagementRouter from './routes/collateral-management.js';
+import primeBrokerageRouter from './routes/prime-brokerage.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -723,6 +726,9 @@ export function createApp() {
   app.use('/api/commodity-spread', commoditySpreadRouter);
   app.use('/api/inflation-swap', inflationSwapRouter);
   app.use('/api/credit-default-index', creditDefaultIndexRouter);
+  app.use('/api/sovereign-wealth-fund', sovereignWealthFundRouter);
+  app.use('/api/collateral-management', collateralManagementRouter);
+  app.use('/api/prime-brokerage', primeBrokerageRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
