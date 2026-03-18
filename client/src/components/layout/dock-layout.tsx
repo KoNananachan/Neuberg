@@ -271,6 +271,9 @@ const CurrencyOptionsPanel = lazy(() => import('../panels/currency-options-panel
 const SwapCurveMonitorPanel = lazy(() => import('../panels/swap-curve-monitor-panel').then(m => ({ default: m.SwapCurveMonitorPanel })));
 const FundFlowAnalyticsPanel = lazy(() => import('../panels/fund-flow-analytics-panel').then(m => ({ default: m.FundFlowAnalyticsPanel })));
 const TradeCostAnalysisPanel = lazy(() => import('../panels/trade-cost-analysis-panel').then(m => ({ default: m.TradeCostAnalysisPanel })));
+const WarrantConvertiblePanel = lazy(() => import('../panels/warrant-convertible-panel').then(m => ({ default: m.WarrantConvertiblePanel })));
+const GlobalTradeFlowPanel = lazy(() => import('../panels/global-trade-flow-panel').then(m => ({ default: m.GlobalTradeFlowPanel })));
+const RealEstateAnalyticsPanel = lazy(() => import('../panels/real-estate-analytics-panel').then(m => ({ default: m.RealEstateAnalyticsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -554,6 +557,9 @@ export const PANEL_IDS = {
   SWAP_CURVE_MONITOR: 'swap-curve-monitor',
   FUND_FLOW_ANALYTICS: 'fund-flow-analytics',
   TRADE_COST_ANALYSIS: 'trade-cost-analysis',
+  WARRANT_CONVERTIBLE: 'warrant-convertible',
+  GLOBAL_TRADE_FLOW: 'global-trade-flow',
+  REAL_ESTATE_ANALYTICS: 'real-estate-analytics',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -821,6 +827,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SWAP_CURVE_MONITOR]: 'SWAP CURVE MONITOR',
   [PANEL_IDS.FUND_FLOW_ANALYTICS]: 'FUND FLOW ANALYTICS',
   [PANEL_IDS.TRADE_COST_ANALYSIS]: 'TRADE COST ANALYSIS',
+  [PANEL_IDS.WARRANT_CONVERTIBLE]: 'WARRANT & CONVERTIBLE',
+  [PANEL_IDS.GLOBAL_TRADE_FLOW]: 'GLOBAL TRADE FLOW',
+  [PANEL_IDS.REAL_ESTATE_ANALYTICS]: 'REAL ESTATE ANALYTICS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1089,6 +1098,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SWAP_CURVE_MONITOR]: 'panelSwapCurveMonitor',
   [PANEL_IDS.FUND_FLOW_ANALYTICS]: 'panelFundFlowAnalytics',
   [PANEL_IDS.TRADE_COST_ANALYSIS]: 'panelTradeCostAnalysis',
+  [PANEL_IDS.WARRANT_CONVERTIBLE]: 'panelWarrantConvertible',
+  [PANEL_IDS.GLOBAL_TRADE_FLOW]: 'panelGlobalTradeFlow',
+  [PANEL_IDS.REAL_ESTATE_ANALYTICS]: 'panelRealEstateAnalytics',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1653,6 +1665,9 @@ export function DockLayout() {
       case PANEL_IDS.SWAP_CURVE_MONITOR: content = <LazyWrap><SwapCurveMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.FUND_FLOW_ANALYTICS: content = <LazyWrap><FundFlowAnalyticsPanel /></LazyWrap>; break;
       case PANEL_IDS.TRADE_COST_ANALYSIS: content = <LazyWrap><TradeCostAnalysisPanel /></LazyWrap>; break;
+      case PANEL_IDS.WARRANT_CONVERTIBLE: content = <LazyWrap><WarrantConvertiblePanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_TRADE_FLOW: content = <LazyWrap><GlobalTradeFlowPanel /></LazyWrap>; break;
+      case PANEL_IDS.REAL_ESTATE_ANALYTICS: content = <LazyWrap><RealEstateAnalyticsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

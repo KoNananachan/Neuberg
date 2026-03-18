@@ -266,6 +266,9 @@ import currencyOptionsRouter from './routes/currency-options.js';
 import swapCurveMonitorRouter from './routes/swap-curve-monitor.js';
 import fundFlowAnalyticsRouter from './routes/fund-flow-analytics.js';
 import tradeCostAnalysisRouter from './routes/trade-cost-analysis.js';
+import warrantConvertibleRouter from './routes/warrant-convertible.js';
+import globalTradeFlowRouter from './routes/global-trade-flow.js';
+import realEstateAnalyticsRouter from './routes/real-estate-analytics.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -633,6 +636,9 @@ export function createApp() {
   app.use('/api/swap-curve-monitor', swapCurveMonitorRouter);
   app.use('/api/fund-flow-analytics', fundFlowAnalyticsRouter);
   app.use('/api/trade-cost-analysis', tradeCostAnalysisRouter);
+  app.use('/api/warrant-convertible', warrantConvertibleRouter);
+  app.use('/api/global-trade-flow', globalTradeFlowRouter);
+  app.use('/api/real-estate-analytics', realEstateAnalyticsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
