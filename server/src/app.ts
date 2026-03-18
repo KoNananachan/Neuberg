@@ -107,6 +107,9 @@ import styleBoxRouter from './routes/style-box.js';
 import swapRatesRouter from './routes/swap-rates.js';
 import earningsCalendarRouter from './routes/earnings-calendar.js';
 import tradeBlotterRouter from './routes/trade-blotter.js';
+import inflationBreakevenRouter from './routes/inflation-breakeven.js';
+import corporateCdsRouter from './routes/corporate-cds.js';
+import eventDrivenRouter from './routes/event-driven.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -315,6 +318,9 @@ export function createApp() {
   app.use('/api/swap-rates', swapRatesRouter);
   app.use('/api/earnings-calendar', earningsCalendarRouter);
   app.use('/api/trade-blotter', tradeBlotterRouter);
+  app.use('/api/inflation-breakeven', inflationBreakevenRouter);
+  app.use('/api/corporate-cds', corporateCdsRouter);
+  app.use('/api/event-driven', eventDrivenRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

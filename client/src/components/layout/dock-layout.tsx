@@ -113,6 +113,9 @@ const XccyBasisPanel = lazy(() => import('../panels/xccy-basis-panel').then(m =>
 const StyleBoxPanel = lazy(() => import('../panels/style-box-panel').then(m => ({ default: m.StyleBoxPanel })));
 const SwapRatesPanel = lazy(() => import('../panels/swap-rates-panel').then(m => ({ default: m.SwapRatesPanel })));
 const TradeBlotterPanel = lazy(() => import('../panels/trade-blotter-panel').then(m => ({ default: m.TradeBlotterPanel })));
+const InflationBreakevenPanel = lazy(() => import('../panels/inflation-breakeven-panel').then(m => ({ default: m.InflationBreakevenPanel })));
+const CorporateCdsPanel = lazy(() => import('../panels/corporate-cds-panel').then(m => ({ default: m.CorporateCdsPanel })));
+const EventDrivenPanel = lazy(() => import('../panels/event-driven-panel').then(m => ({ default: m.EventDrivenPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -238,6 +241,9 @@ export const PANEL_IDS = {
   STYLE_BOX: 'style-box',
   SWAP_RATES: 'swap-rates',
   TRADE_BLOTTER: 'trade-blotter',
+  INFLATION_BREAKEVEN: 'inflation-breakeven',
+  CORPORATE_CDS: 'corporate-cds',
+  EVENT_DRIVEN: 'event-driven',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -347,6 +353,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.STYLE_BOX]: 'EQUITY STYLE BOX',
   [PANEL_IDS.SWAP_RATES]: 'SWAP RATES',
   [PANEL_IDS.TRADE_BLOTTER]: 'TRADE BLOTTER',
+  [PANEL_IDS.INFLATION_BREAKEVEN]: 'INFLATION BREAKEVENS',
+  [PANEL_IDS.CORPORATE_CDS]: 'CORPORATE CDS',
+  [PANEL_IDS.EVENT_DRIVEN]: 'EVENT-DRIVEN MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -457,6 +466,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.STYLE_BOX]: 'panelStyleBox',
   [PANEL_IDS.SWAP_RATES]: 'panelSwapRates',
   [PANEL_IDS.TRADE_BLOTTER]: 'panelTradeBlotter',
+  [PANEL_IDS.INFLATION_BREAKEVEN]: 'panelInflationBreakeven',
+  [PANEL_IDS.CORPORATE_CDS]: 'panelCorporateCds',
+  [PANEL_IDS.EVENT_DRIVEN]: 'panelEventDriven',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -863,6 +875,9 @@ export function DockLayout() {
       case PANEL_IDS.STYLE_BOX: content = <LazyWrap><StyleBoxPanel /></LazyWrap>; break;
       case PANEL_IDS.SWAP_RATES: content = <LazyWrap><SwapRatesPanel /></LazyWrap>; break;
       case PANEL_IDS.TRADE_BLOTTER: content = <LazyWrap><TradeBlotterPanel /></LazyWrap>; break;
+      case PANEL_IDS.INFLATION_BREAKEVEN: content = <LazyWrap><InflationBreakevenPanel /></LazyWrap>; break;
+      case PANEL_IDS.CORPORATE_CDS: content = <LazyWrap><CorporateCdsPanel /></LazyWrap>; break;
+      case PANEL_IDS.EVENT_DRIVEN: content = <LazyWrap><EventDrivenPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
