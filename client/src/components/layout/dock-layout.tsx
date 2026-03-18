@@ -295,6 +295,9 @@ const IrsMonitorPanel = lazy(() => import('../panels/irs-monitor-panel').then(m 
 const EquityCapitalRaisePanel = lazy(() => import('../panels/equity-capital-raise-panel').then(m => ({ default: m.EquityCapitalRaisePanel })));
 const VolatilitySmilePanel = lazy(() => import('../panels/volatility-smile-panel').then(m => ({ default: m.VolatilitySmilePanel })));
 const RepoRatePanel = lazy(() => import('../panels/repo-rate-panel').then(m => ({ default: m.RepoRatePanel })));
+const CentralBankBalanceSheetPanel = lazy(() => import('../panels/central-bank-balance-sheet-panel').then(m => ({ default: m.CentralBankBalanceSheetPanel })));
+const CorporateBuybackPanel = lazy(() => import('../panels/corporate-buyback-panel').then(m => ({ default: m.CorporateBuybackPanel })));
+const MarginDebtPanel = lazy(() => import('../panels/margin-debt-panel').then(m => ({ default: m.MarginDebtPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -602,6 +605,9 @@ export const PANEL_IDS = {
   EQUITY_CAPITAL_RAISE: 'equity-capital-raise',
   VOLATILITY_SMILE: 'volatility-smile',
   REPO_RATE: 'repo-rate',
+  CENTRAL_BANK_BALANCE_SHEET: 'central-bank-balance-sheet',
+  CORPORATE_BUYBACK: 'corporate-buyback',
+  MARGIN_DEBT: 'margin-debt',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -893,6 +899,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.EQUITY_CAPITAL_RAISE]: 'EQUITY CAPITAL RAISE',
   [PANEL_IDS.VOLATILITY_SMILE]: 'VOLATILITY SMILE',
   [PANEL_IDS.REPO_RATE]: 'REPO RATE MONITOR',
+  [PANEL_IDS.CENTRAL_BANK_BALANCE_SHEET]: 'CB BALANCE SHEET',
+  [PANEL_IDS.CORPORATE_BUYBACK]: 'CORPORATE BUYBACK',
+  [PANEL_IDS.MARGIN_DEBT]: 'MARGIN DEBT',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1185,6 +1194,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.EQUITY_CAPITAL_RAISE]: 'panelEquityCapitalRaise',
   [PANEL_IDS.VOLATILITY_SMILE]: 'panelVolatilitySmile',
   [PANEL_IDS.REPO_RATE]: 'panelRepoRate',
+  [PANEL_IDS.CENTRAL_BANK_BALANCE_SHEET]: 'panelCentralBankBalanceSheet',
+  [PANEL_IDS.CORPORATE_BUYBACK]: 'panelCorporateBuyback',
+  [PANEL_IDS.MARGIN_DEBT]: 'panelMarginDebt',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1773,6 +1785,9 @@ export function DockLayout() {
       case PANEL_IDS.EQUITY_CAPITAL_RAISE: content = <LazyWrap><EquityCapitalRaisePanel /></LazyWrap>; break;
       case PANEL_IDS.VOLATILITY_SMILE: content = <LazyWrap><VolatilitySmilePanel /></LazyWrap>; break;
       case PANEL_IDS.REPO_RATE: content = <LazyWrap><RepoRatePanel /></LazyWrap>; break;
+      case PANEL_IDS.CENTRAL_BANK_BALANCE_SHEET: content = <LazyWrap><CentralBankBalanceSheetPanel /></LazyWrap>; break;
+      case PANEL_IDS.CORPORATE_BUYBACK: content = <LazyWrap><CorporateBuybackPanel /></LazyWrap>; break;
+      case PANEL_IDS.MARGIN_DEBT: content = <LazyWrap><MarginDebtPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

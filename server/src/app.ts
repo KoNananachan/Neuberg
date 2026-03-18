@@ -290,6 +290,9 @@ import volatilitySmileRouter from './routes/volatility-smile.js';
 import tradeBlotterRouter from './routes/trade-blotter.js';
 import repoRateRouter from './routes/repo-rate.js';
 import countryRiskRouter from './routes/country-risk.js';
+import centralBankBalanceSheetRouter from './routes/central-bank-balance-sheet.js';
+import corporateBuybackRouter from './routes/corporate-buyback.js';
+import marginDebtRouter from './routes/margin-debt.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -681,6 +684,9 @@ export function createApp() {
   app.use('/api/trade-blotter', tradeBlotterRouter);
   app.use('/api/repo-rate', repoRateRouter);
   app.use('/api/country-risk', countryRiskRouter);
+  app.use('/api/central-bank-balance-sheet', centralBankBalanceSheetRouter);
+  app.use('/api/corporate-buyback', corporateBuybackRouter);
+  app.use('/api/margin-debt', marginDebtRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
