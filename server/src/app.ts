@@ -338,6 +338,9 @@ import creditEventRouter from './routes/credit-event.js';
 import portfolioMarginRouter from './routes/portfolio-margin.js';
 import corporateGovernanceRouter from './routes/corporate-governance.js';
 import treasuryBillRouter from './routes/treasury-bill.js';
+import equityLendingRouter from './routes/equity-lending.js';
+import tradeSettlementRouter from './routes/trade-settlement.js';
+import indexArbitrageRouter from './routes/index-arbitrage.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -777,6 +780,9 @@ export function createApp() {
   app.use('/api/portfolio-margin', portfolioMarginRouter);
   app.use('/api/corporate-governance', corporateGovernanceRouter);
   app.use('/api/treasury-bill', treasuryBillRouter);
+  app.use('/api/equity-lending', equityLendingRouter);
+  app.use('/api/trade-settlement', tradeSettlementRouter);
+  app.use('/api/index-arbitrage', indexArbitrageRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
