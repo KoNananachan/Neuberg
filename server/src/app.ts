@@ -122,6 +122,9 @@ import earningsRevisionsRouter from './routes/earnings-revisions.js';
 import dividendForecastRouter from './routes/dividend-forecast.js';
 import creditRatingsRouter from './routes/credit-ratings.js';
 import volatilityConeRouter from './routes/volatility-cone.js';
+import termStructureRouter from './routes/term-structure.js';
+import institutionalOwnershipRouter from './routes/institutional-ownership.js';
+import impliedCorrelationRouter from './routes/implied-correlation.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -345,6 +348,9 @@ export function createApp() {
   app.use('/api/dividend-forecast', dividendForecastRouter);
   app.use('/api/credit-ratings', creditRatingsRouter);
   app.use('/api/volatility-cone', volatilityConeRouter);
+  app.use('/api/term-structure', termStructureRouter);
+  app.use('/api/institutional-ownership', institutionalOwnershipRouter);
+  app.use('/api/implied-correlation', impliedCorrelationRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
