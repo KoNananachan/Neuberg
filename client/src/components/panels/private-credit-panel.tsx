@@ -2,250 +2,163 @@ import { usePrivateCredit } from '../../api/hooks/use-private-credit';
 import { useT } from '../../i18n';
 import { Loader2 } from 'lucide-react';
 
-// ── i18n fallback helper ──
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 // ── Formatting helpers ──
 
-function fmtNum(n: number, decimals = 2): string {
-  return n.toFixed(decimals);
-}
-
-function fmtPct(n: number): string {
-  return `${n.toFixed(2)}%`;
+function fmtPct(n: number, d = 2): string {
+  return `${n.toFixed(d)}%`;
 }
 
 function fmtBp(n: number): string {
-  return n.toFixed(0);
+  return `${n.toFixed(0)}bp`;
 }
 
-function fmtDollarM(n: number): string {
-  return `$${n.toFixed(0)}M`;
+function fmtX(n: number): string {
+  return `${n.toFixed(1)}x`;
+}
+
+function fmtMoic(n: number): string {
+  return `${n.toFixed(2)}x`;
 }
 
 function fmtDollarB(n: number): string {
   return `$${n.toFixed(1)}B`;
 }
 
-function fmtLeverage(n: number): string {
-  return `${n.toFixed(1)}x`;
+function fmtDollarM(n: number): string {
+  return `$${n.toFixed(0)}M`;
 }
 
-function fmtChange(n: number): string {
-  const sign = n >= 0 ? '+' : '';
-  return `${sign}${n.toFixed(2)}`;
+function fmtOid(n: number): string {
+  return `${n.toFixed(1)}`;
 }
 
 // ── Color helpers ──
 
-function changeColor(n: number): string {
+function premiumDiscountColor(n: number): string {
   if (n > 0) return 'text-green-400';
   if (n < 0) return 'text-red-400';
   return 'text-neutral-500';
 }
 
-function premiumColor(n: number): string {
-  if (n > 0) return 'text-green-400';
-  if (n < 0) return 'text-red-400';
-  return 'text-neutral-500';
+function perfColor(n: number, threshHigh: number, threshLow: number): string {
+  if (n >= threshHigh) return 'text-green-400';
+  if (n >= threshLow) return 'text-yellow-400';
+  return 'text-red-400';
 }
 
-function sentimentBadge(sentiment: string): { text: string; bg: string } {
-  const s = sentiment.toLowerCase();
-  if (s === 'bullish' || s === 'risk on' || s === 'strong') {
-    return { text: 'text-green-400', bg: 'bg-green-500/10 border border-green-500/30' };
-  }
-  if (s === 'bearish' || s === 'risk off' || s === 'weak') {
-    return { text: 'text-red-400', bg: 'bg-red-500/10 border border-red-500/30' };
-  }
-  if (s === 'cautious' || s === 'mixed') {
-    return { text: 'text-yellow-400', bg: 'bg-yellow-500/10 border border-yellow-500/30' };
-  }
-  return { text: 'text-purple-400', bg: 'bg-purple-500/10 border border-purple-500/30' };
+function lossColor(n: number): string {
+  if (n <= 1) return 'text-green-400';
+  if (n <= 3) return 'text-yellow-400';
+  return 'text-red-400';
+}
+
+// ── Section Header ──
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="px-2 py-1 border-b border-border/10 bg-[#030303]">
+      <span className="text-[8px] font-black font-mono uppercase tracking-wider text-emerald-400">
+        {title}
+      </span>
+    </div>
+  );
 }
 
 // ── Main Panel ──
 
 export function PrivateCreditPanel() {
   const t = useT();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, isLoading, error } = usePrivateCredit() as { data: any; isLoading: boolean; error: any };
+  const { data, isLoading, error } = usePrivateCredit();
+  const d = data as any;
 
-  if (isLoading && !data) {
+  if (isLoading && !d) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
-      </div>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <div className="h-full flex items-center justify-center bg-black">
-        <span className="text-red-400 text-[9px] font-mono">
-          {tr(t, 'pcError', 'Failed to load private credit data')}
+        <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+        <span className="ml-2 text-[9px] font-mono text-neutral-500 uppercase tracking-wider">
+          {t('loading')}
         </span>
       </div>
     );
   }
 
-  if (!data) return null;
+  if (error && !d) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
+        <span className="text-red-400 text-[9px] font-mono uppercase tracking-wider">
+          FAILED TO LOAD
+        </span>
+      </div>
+    );
+  }
+
+  if (!d) return null;
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden font-mono text-[9px]">
       <div className="flex-1 overflow-y-auto">
-        {/* Market Summary Bar */}
-        <MarketSummaryBar summary={data.marketSummary} t={t} />
+        {/* 1. Direct Lending */}
+        <DirectLendingSection items={d.directLending} />
 
-        {/* Direct Lending Table */}
-        <DirectLendingTable items={data.directLending} t={t} />
+        {/* 2. BDC Monitor */}
+        <BdcMonitorSection items={d.bdcMonitor ?? d.bdcPerformance} />
 
-        {/* BDC Performance Table */}
-        <BdcPerformanceTable items={data.bdcPerformance} t={t} />
+        {/* 3. Market Terms */}
+        <MarketTermsSection terms={d.marketTerms ?? d.marketSummary} />
 
-        {/* Middle Market Table */}
-        <MiddleMarketTable items={data.middleMarket} t={t} />
+        {/* 4. Vintage Performance */}
+        <VintagePerformanceSection items={d.vintagePerformance} />
 
-        {/* Default & Recovery Table */}
-        <DefaultRecoveryTable items={data.defaultAndRecovery} t={t} />
+        {/* 5. Deal Pipeline */}
+        <DealPipelineSection items={d.dealPipeline} />
+
+        {/* 6. Market Stats */}
+        <MarketStatsSection stats={d.marketStats ?? d.marketSummary} />
       </div>
     </div>
   );
 }
 
-// ── Market Summary Bar ──
+// ── 1. Direct Lending ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MarketSummaryBar({ summary, t }: { summary: any; t: TFn }) {
-  const badge = sentimentBadge(summary.sentiment ?? '');
-
-  return (
-    <div className="grid grid-cols-6 border-b border-border/20">
-      <div className="px-2 py-1.5 border-r border-border/20">
-        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'pcTotalAum', 'Total AUM')}
-        </div>
-        <div className="text-[10px] font-bold text-white">
-          {fmtDollarB(summary.totalAUM)}
-        </div>
-      </div>
-      <div className="px-2 py-1.5 border-r border-border/20">
-        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'pcDryPowder', 'Dry Powder')}
-        </div>
-        <div className="text-[10px] font-bold text-white">
-          {fmtDollarB(summary.dryPowder)}
-        </div>
-      </div>
-      <div className="px-2 py-1.5 border-r border-border/20">
-        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'pcAvgSpread', 'Avg Spread')}
-        </div>
-        <div className="text-[10px] font-bold text-purple-400">
-          {fmtBp(summary.avgSpread)} bp
-        </div>
-      </div>
-      <div className="px-2 py-1.5 border-r border-border/20">
-        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'pcAvgLeverage', 'Avg Leverage')}
-        </div>
-        <div className="text-[10px] font-bold text-white">
-          {fmtLeverage(summary.avgLeverage)}
-        </div>
-      </div>
-      <div className="px-2 py-1.5 border-r border-border/20">
-        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'pcDefaultRate', 'Default Rate')}
-        </div>
-        <div className="text-[10px] font-bold text-white">
-          {fmtPct(summary.trailingDefaultRate)}
-        </div>
-      </div>
-      <div className="px-2 py-1.5 flex items-center">
-        <span className={`px-1.5 py-0.5 text-[7px] font-black font-mono uppercase tracking-wider ${badge.text} ${badge.bg}`}>
-          {summary.sentiment}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ── Direct Lending Table ──
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function DirectLendingTable({ items, t }: { items: any[]; t: TFn }) {
+function DirectLendingSection({ items }: { items: any[] | undefined }) {
   if (!items || items.length === 0) return null;
 
   return (
     <div className="border-b border-border/20">
-      <div className="px-2 py-1 border-b border-border/10 bg-[#030303]">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-purple-400">
-          {tr(t, 'pcDirectLending', 'Direct Lending')}
-        </span>
+      <SectionHeader title="Direct Lending" />
+
+      <div className="grid grid-cols-[1fr_56px_60px_48px_56px_48px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Deal Size Tier</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Spread</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">All-In</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">OID</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Lever</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Chg</span>
       </div>
 
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_56px_60px_56px_48px_60px_56px_56px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'pcSegment', 'Segment')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcSpreadBp', 'Spread')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcAllInYield', 'Yield %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcLeverage', 'Lever')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcLtv', 'LTV %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcDealSize', 'Deal $M')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcChange', 'Chg')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcWeekChange', '1W Chg')}
-        </span>
-      </div>
-
-      {/* Table rows */}
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {items.map((item: any, idx: number) => (
         <div
-          key={item.segment ?? idx}
-          className="grid grid-cols-[1fr_56px_60px_56px_48px_60px_56px_56px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-purple-400/[0.02] transition-colors items-center"
+          key={item.segment ?? item.tier ?? idx}
+          className="grid grid-cols-[1fr_56px_60px_48px_56px_48px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-emerald-400/[0.02] transition-colors items-center"
         >
-          <span className="text-[8px] font-mono font-bold text-white truncate">
-            {item.segment}
+          <span className="text-[8px] font-bold text-white truncate">
+            {item.segment ?? item.tier}
           </span>
-          <span className="text-[8px] font-mono font-bold text-purple-400 text-right">
+          <span className="text-[8px] font-bold text-emerald-400 text-right">
             {fmtBp(item.spread)}
           </span>
-          <span className="text-[8px] font-mono font-bold text-white text-right">
+          <span className="text-[8px] font-bold text-white text-right">
             {fmtPct(item.allInYield)}
           </span>
-          <span className="text-[8px] font-mono font-bold text-white text-right">
-            {fmtLeverage(item.leverage)}
+          <span className="text-[8px] text-neutral-400 text-right">
+            {fmtOid(item.oid ?? item.OID ?? 0)}
           </span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right">
-            {fmtNum(item.ltv, 1)}
+          <span className="text-[8px] text-neutral-400 text-right">
+            {fmtX(item.leverage)}
           </span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right">
-            {fmtDollarM(item.dealSize)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${changeColor(item.change)}`}>
-            {fmtChange(item.change)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${changeColor(item.weekChange)}`}>
-            {fmtChange(item.weekChange)}
+          <span className={`text-[8px] font-bold text-right ${(item.change ?? item.weekChange ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {(item.change ?? item.weekChange ?? 0) >= 0 ? '+' : ''}{(item.change ?? item.weekChange ?? 0).toFixed(0)}
           </span>
         </div>
       ))}
@@ -253,78 +166,129 @@ function DirectLendingTable({ items, t }: { items: any[]; t: TFn }) {
   );
 }
 
-// ── BDC Performance Table ──
+// ── 2. BDC Monitor ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function BdcPerformanceTable({ items, t }: { items: any[]; t: TFn }) {
+function BdcMonitorSection({ items }: { items: any[] | undefined }) {
   if (!items || items.length === 0) return null;
 
   return (
     <div className="border-b border-border/20">
-      <div className="px-2 py-1 border-b border-border/10 bg-[#030303]">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-purple-400">
-          {tr(t, 'pcBdcPerformance', 'BDC Performance')}
-        </span>
+      <SectionHeader title="BDC Monitor" />
+
+      <div className="grid grid-cols-[1fr_48px_48px_52px_48px_52px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Name</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">NAV</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Price</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Disc/Pm</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Yield</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">NonAcc</span>
       </div>
 
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_52px_52px_52px_56px_48px_56px_56px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'pcName', 'Name')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcNav', 'NAV')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcPrice', 'Price')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcPremium', 'Prem %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcDivYield', 'Div %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcRoe', 'ROE %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcNonAccruals', 'NonAcc %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcTotalAssets', 'Assets $B')}
-        </span>
+      {items.slice(0, 10).map((item: any, idx: number) => {
+        const discPrem = item.premium ?? item.discountPremium ?? ((item.price / item.nav - 1) * 100);
+        return (
+          <div
+            key={item.name ?? item.ticker ?? idx}
+            className="grid grid-cols-[1fr_48px_48px_52px_48px_52px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-emerald-400/[0.02] transition-colors items-center"
+          >
+            <span className="text-[8px] font-bold text-white truncate">
+              {item.name ?? item.ticker}
+            </span>
+            <span className="text-[8px] font-bold text-white text-right">
+              {item.nav?.toFixed(2)}
+            </span>
+            <span className="text-[8px] font-bold text-white text-right">
+              {item.price?.toFixed(2)}
+            </span>
+            <span className={`text-[8px] font-bold text-right ${premiumDiscountColor(discPrem)}`}>
+              {discPrem >= 0 ? '+' : ''}{discPrem.toFixed(1)}%
+            </span>
+            <span className="text-[8px] text-emerald-400 text-right">
+              {fmtPct(item.dividendYield ?? item.yield ?? 0)}
+            </span>
+            <span className={`text-[8px] font-bold text-right ${(item.nonAccruals ?? 0) > 3 ? 'text-red-400' : (item.nonAccruals ?? 0) > 1.5 ? 'text-yellow-400' : 'text-green-400'}`}>
+              {fmtPct(item.nonAccruals ?? 0, 1)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── 3. Market Terms ──
+
+function MarketTermsSection({ terms }: { terms: any | undefined }) {
+  if (!terms) return null;
+
+  const rows = [
+    { label: 'Avg All-In Yield', value: fmtPct(terms.avgYield ?? terms.avgSpread ?? 0), accent: true },
+    { label: 'Avg Leverage', value: fmtX(terms.avgLeverage ?? 0), accent: false },
+    { label: 'EBITDA Floor', value: terms.ebitdaFloor != null ? fmtDollarM(terms.ebitdaFloor) : 'N/A', accent: false },
+    { label: 'Cov-Lite %', value: fmtPct(terms.covLitePct ?? terms.covLite ?? 0, 0), accent: false },
+    { label: 'Avg OID', value: terms.avgOid != null ? fmtOid(terms.avgOid) : 'N/A', accent: false },
+    { label: 'Avg Spread', value: fmtBp(terms.avgSpread ?? 0), accent: true },
+    { label: 'Default Rate', value: fmtPct(terms.trailingDefaultRate ?? terms.defaultRate ?? 0), accent: false },
+    { label: 'Dry Powder', value: terms.dryPowder != null ? fmtDollarB(terms.dryPowder) : 'N/A', accent: false },
+  ];
+
+  return (
+    <div className="border-b border-border/20">
+      <SectionHeader title="Market Terms" />
+
+      <div className="grid grid-cols-2 gap-0">
+        {rows.map((r, i) => (
+          <div
+            key={r.label}
+            className={`flex items-center justify-between px-2 py-[3px] hover:bg-emerald-400/[0.02] transition-colors ${i < rows.length - 2 ? 'border-b border-border/5' : ''}`}
+          >
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider">{r.label}</span>
+            <span className={`text-[8px] font-bold text-right ${r.accent ? 'text-emerald-400' : 'text-white'}`}>
+              {r.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── 4. Vintage Performance ──
+
+function VintagePerformanceSection({ items }: { items: any[] | undefined }) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <SectionHeader title="Vintage Performance" />
+
+      <div className="grid grid-cols-[56px_52px_52px_52px_52px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Year</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">IRR</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">MOIC</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Def %</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Loss %</span>
       </div>
 
-      {/* Table rows */}
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {items.map((item: any, idx: number) => (
         <div
-          key={item.name ?? idx}
-          className="grid grid-cols-[1fr_52px_52px_52px_56px_48px_56px_56px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-purple-400/[0.02] transition-colors items-center"
+          key={item.year ?? item.vintage ?? idx}
+          className="grid grid-cols-[56px_52px_52px_52px_52px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-emerald-400/[0.02] transition-colors items-center"
         >
-          <span className="text-[8px] font-mono font-bold text-white truncate">
-            {item.name}
+          <span className="text-[8px] font-bold text-white">
+            {item.year ?? item.vintage}
           </span>
-          <span className="text-[8px] font-mono font-bold text-white text-right">
-            {fmtNum(item.nav)}
+          <span className={`text-[8px] font-bold text-right ${perfColor(item.irr ?? item.IRR ?? 0, 10, 6)}`}>
+            {fmtPct(item.irr ?? item.IRR ?? 0, 1)}
           </span>
-          <span className="text-[8px] font-mono font-bold text-white text-right">
-            {fmtNum(item.price)}
+          <span className={`text-[8px] font-bold text-right ${perfColor(item.moic ?? item.MOIC ?? 0, 1.3, 1.1)}`}>
+            {fmtMoic(item.moic ?? item.MOIC ?? 0)}
           </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${premiumColor(item.premium)}`}>
-            {fmtPct(item.premium)}
+          <span className={`text-[8px] font-bold text-right ${lossColor(item.defaultRate ?? item.defaults ?? 0)}`}>
+            {fmtPct(item.defaultRate ?? item.defaults ?? 0, 1)}
           </span>
-          <span className="text-[8px] font-mono text-purple-400 text-right">
-            {fmtPct(item.dividendYield)}
-          </span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right">
-            {fmtPct(item.roe)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${item.nonAccruals > 3 ? 'text-red-400' : item.nonAccruals > 1.5 ? 'text-yellow-400' : 'text-green-400'}`}>
-            {fmtPct(item.nonAccruals)}
-          </span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right">
-            {fmtDollarB(item.totalAssets)}
+          <span className={`text-[8px] font-bold text-right ${lossColor(item.lossRate ?? item.losses ?? 0)}`}>
+            {fmtPct(item.lossRate ?? item.losses ?? 0, 1)}
           </span>
         </div>
       ))}
@@ -332,72 +296,49 @@ function BdcPerformanceTable({ items, t }: { items: any[]; t: TFn }) {
   );
 }
 
-// ── Middle Market Table ──
+// ── 5. Deal Pipeline ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MiddleMarketTable({ items, t }: { items: any[]; t: TFn }) {
+function DealPipelineSection({ items }: { items: any[] | undefined }) {
   if (!items || items.length === 0) return null;
 
   return (
     <div className="border-b border-border/20">
-      <div className="px-2 py-1 border-b border-border/10 bg-[#030303]">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-purple-400">
-          {tr(t, 'pcMiddleMarket', 'Middle Market')}
-        </span>
+      <SectionHeader title="Deal Pipeline" />
+
+      <div className="grid grid-cols-[1fr_56px_56px_52px_56px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Borrower</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Size</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Spread</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Lever</span>
+        <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Status</span>
       </div>
 
-      {/* Table header */}
-      <div className="grid grid-cols-[72px_56px_64px_56px_56px_52px_56px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'pcQuarter', 'Quarter')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcDealCount', 'Deals')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcTotalVol', 'Vol $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcAvgSpreadMm', 'Spread')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcAvgLeverageMm', 'Lever')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcAvgLtv', 'LTV %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcDefaultRateMm', 'Def %')}
-        </span>
-      </div>
-
-      {/* Table rows */}
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {items.map((item: any, idx: number) => (
         <div
-          key={item.quarter ?? idx}
-          className="grid grid-cols-[72px_56px_64px_56px_56px_52px_56px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-purple-400/[0.02] transition-colors items-center"
+          key={item.borrower ?? item.issuer ?? item.name ?? idx}
+          className="grid grid-cols-[1fr_56px_56px_52px_56px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-emerald-400/[0.02] transition-colors items-center"
         >
-          <span className="text-[8px] font-mono font-bold text-white">
-            {item.quarter}
+          <span className="text-[8px] font-bold text-white truncate">
+            {item.borrower ?? item.issuer ?? item.name}
           </span>
-          <span className="text-[8px] font-mono font-bold text-white text-right">
-            {item.dealCount}
+          <span className="text-[8px] text-neutral-400 text-right">
+            {fmtDollarM(item.size ?? item.dealSize ?? 0)}
           </span>
-          <span className="text-[8px] font-mono font-bold text-white text-right">
-            {fmtDollarB(item.totalVolume)}
+          <span className="text-[8px] font-bold text-emerald-400 text-right">
+            {fmtBp(item.spread ?? 0)}
           </span>
-          <span className="text-[8px] font-mono text-purple-400 text-right">
-            {fmtBp(item.avgSpread)}
+          <span className="text-[8px] text-neutral-400 text-right">
+            {fmtX(item.leverage ?? 0)}
           </span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right">
-            {fmtLeverage(item.avgLeverage)}
-          </span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right">
-            {fmtNum(item.avgLTV, 1)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${item.defaultRate > 3 ? 'text-red-400' : item.defaultRate > 1.5 ? 'text-yellow-400' : 'text-green-400'}`}>
-            {fmtPct(item.defaultRate)}
+          <span className="text-right">
+            <span className={`text-[7px] font-bold px-1 py-0 ${
+              (item.status ?? '').toLowerCase() === 'closed' ? 'bg-green-500/15 text-green-400' :
+              (item.status ?? '').toLowerCase() === 'pricing' ? 'bg-yellow-500/15 text-yellow-400' :
+              (item.status ?? '').toLowerCase() === 'in market' ? 'bg-emerald-500/15 text-emerald-400' :
+              'bg-white/10 text-white/50'
+            }`}>
+              {item.status ?? 'TBD'}
+            </span>
           </span>
         </div>
       ))}
@@ -405,69 +346,33 @@ function MiddleMarketTable({ items, t }: { items: any[]; t: TFn }) {
   );
 }
 
-// ── Default & Recovery Table ──
+// ── 6. Market Stats ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function DefaultRecoveryTable({ items, t }: { items: any[]; t: TFn }) {
-  if (!items || items.length === 0) return null;
+function MarketStatsSection({ stats }: { stats: any | undefined }) {
+  if (!stats) return null;
+
+  const rows = [
+    { label: 'Total AUM', value: stats.totalAUM != null ? fmtDollarB(stats.totalAUM) : stats.aum != null ? fmtDollarB(stats.aum) : 'N/A' },
+    { label: 'Fundraising YTD', value: stats.fundraising != null ? fmtDollarB(stats.fundraising) : 'N/A' },
+    { label: 'Deployment YTD', value: stats.deployment != null ? fmtDollarB(stats.deployment) : 'N/A' },
+    { label: 'Dry Powder', value: stats.dryPowder != null ? fmtDollarB(stats.dryPowder) : 'N/A' },
+  ];
 
   return (
     <div className="border-b border-border/20">
-      <div className="px-2 py-1 border-b border-border/10 bg-[#030303]">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-purple-400">
-          {tr(t, 'pcDefaultRecovery', 'Default & Recovery')}
-        </span>
-      </div>
+      <SectionHeader title="Market Stats" />
 
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_64px_60px_64px_64px_52px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'pcCategory', 'Category')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcTrailingDef', 'Trail Def %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcPeakDef', 'Peak Def %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcAvgRecovery', 'Avg Rec %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcVintageStress', 'Vint Str %')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'pcWatchlist', 'Watch')}
-        </span>
+      <div className="grid grid-cols-2 gap-0">
+        {rows.map((r) => (
+          <div
+            key={r.label}
+            className="flex items-center justify-between px-2 py-1 hover:bg-emerald-400/[0.02] transition-colors border-b border-border/5"
+          >
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider">{r.label}</span>
+            <span className="text-[10px] font-bold text-white text-right">{r.value}</span>
+          </div>
+        ))}
       </div>
-
-      {/* Table rows */}
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {items.map((item: any, idx: number) => (
-        <div
-          key={item.category ?? idx}
-          className="grid grid-cols-[1fr_64px_60px_64px_64px_52px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-purple-400/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold text-white truncate">
-            {item.category}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${item.trailingDefault > 3 ? 'text-red-400' : item.trailingDefault > 1.5 ? 'text-yellow-400' : 'text-green-400'}`}>
-            {fmtPct(item.trailingDefault)}
-          </span>
-          <span className="text-[8px] font-mono text-red-400/70 text-right">
-            {fmtPct(item.peakDefault)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${item.avgRecovery > 60 ? 'text-green-400' : item.avgRecovery > 40 ? 'text-yellow-400' : 'text-red-400'}`}>
-            {fmtPct(item.avgRecovery)}
-          </span>
-          <span className={`text-[8px] font-mono text-right ${item.vintageStress > 5 ? 'text-red-400' : 'text-neutral-400'}`}>
-            {fmtPct(item.vintageStress)}
-          </span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right">
-            {item.watchlist}
-          </span>
-        </div>
-      ))}
     </div>
   );
 }

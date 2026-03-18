@@ -1,86 +1,18 @@
-import { useState, useMemo } from 'react';
 import { useCommoditySeasonality } from '../../api/hooks/use-commodity-seasonality';
-import { RefreshCw } from 'lucide-react';
+import { useT } from '../../i18n';
 
 // ── Constants ──
 
-const ACCENT = '#fbbf24';
-const ACCENT_DIM = 'rgba(251,191,36,0.08)';
-
-type TabId = 'overview' | 'monthly' | 'opportunities' | 'tracking';
-
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'monthly', label: 'Monthly' },
-  { id: 'opportunities', label: 'Opportunities' },
-  { id: 'tracking', label: 'Tracking' },
-];
-
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-// ── Types ──
-
-interface MonthlyReturn {
-  month: number;
-  avgReturn: number;
-  winRate: number;
-  bestYear: { year: number; return: number };
-  worstYear: { year: number; return: number };
-}
-
-interface CommodityEntry {
-  name: string;
-  symbol: string;
-  currentSignal: 'Bullish' | 'Bearish' | 'Neutral';
-  monthlyReturns: MonthlyReturn[];
-}
-
-interface Opportunity {
-  commodity: string;
-  direction: 'Long' | 'Short';
-  winRate: number;
-  avgReturn: number;
-  period: string;
-  confidence: 'High' | 'Medium' | 'Low';
-}
-
-interface TrackingEntry {
-  commodity: string;
-  ytdReturn: number;
-  seasonalExpected: number;
-  deviation: number;
-  onTrack: boolean;
-}
-
-interface SeasonalityData {
-  commodities: CommodityEntry[];
-  opportunities: Opportunity[];
-  tracking: TrackingEntry[];
-  summary: {
-    strongestMonth: string;
-    weakestMonth: string;
-    avgSeasonalReturn: number;
-    topOpportunity: string;
-  };
-}
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // ── Helpers ──
 
-function signalBadge(signal: 'Bullish' | 'Bearish' | 'Neutral') {
-  if (signal === 'Bullish') return 'text-green-400 bg-green-500/10 border border-green-500/30';
-  if (signal === 'Bearish') return 'text-red-400 bg-red-500/10 border border-red-500/30';
-  return 'text-neutral-400 bg-neutral-500/10 border border-neutral-500/30';
+function fmtPct(n: number): string {
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
 }
 
-function directionBadge(direction: 'Long' | 'Short') {
-  if (direction === 'Long') return 'text-green-400 bg-green-500/10 border border-green-500/30';
-  return 'text-red-400 bg-red-500/10 border border-red-500/30';
-}
-
-function confidenceBadge(confidence: 'High' | 'Medium' | 'Low') {
-  if (confidence === 'High') return 'text-green-400 bg-green-500/10 border border-green-500/30';
-  if (confidence === 'Medium') return 'text-amber-400 bg-amber-500/10 border border-amber-500/30';
-  return 'text-neutral-400 bg-neutral-500/10 border border-neutral-500/30';
+function fmtPct1(n: number): string {
+  return (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
 }
 
 function returnColor(n: number): string {
@@ -89,442 +21,375 @@ function returnColor(n: number): string {
   return 'text-neutral-500';
 }
 
-function returnBgColor(n: number): string {
-  if (n > 0.5) return 'bg-green-500/20';
-  if (n > 0) return 'bg-green-500/10';
-  if (n < -0.5) return 'bg-red-500/20';
-  if (n < 0) return 'bg-red-500/10';
-  return 'bg-transparent';
+function heatBg(n: number): string {
+  const abs = Math.abs(n);
+  if (n > 0) {
+    if (abs >= 5) return 'bg-green-500/40';
+    if (abs >= 3) return 'bg-green-500/30';
+    if (abs >= 1.5) return 'bg-green-500/20';
+    if (abs > 0) return 'bg-green-500/10';
+  }
+  if (n < 0) {
+    if (abs >= 5) return 'bg-red-500/40';
+    if (abs >= 3) return 'bg-red-500/30';
+    if (abs >= 1.5) return 'bg-red-500/20';
+    if (abs > 0) return 'bg-red-500/10';
+  }
+  return '';
 }
 
-function fmtPct(n: number): string {
-  const sign = n >= 0 ? '+' : '';
-  return `${sign}${n.toFixed(2)}%`;
+function heatText(n: number): string {
+  if (n > 0) return 'text-green-400';
+  if (n < 0) return 'text-red-400';
+  return 'text-neutral-600';
+}
+
+function biasColor(bias: string): string {
+  const b = bias?.toLowerCase() ?? '';
+  if (b === 'bullish' || b === 'long') return 'text-green-400';
+  if (b === 'bearish' || b === 'short') return 'text-red-400';
+  return 'text-neutral-400';
+}
+
+function biasBg(bias: string): string {
+  const b = bias?.toLowerCase() ?? '';
+  if (b === 'bullish' || b === 'long') return 'bg-green-500/10 border border-green-500/30';
+  if (b === 'bearish' || b === 'short') return 'bg-red-500/10 border border-red-500/30';
+  return 'bg-neutral-500/10 border border-neutral-500/30';
+}
+
+function curveColor(state: string): string {
+  const s = state?.toLowerCase() ?? '';
+  if (s === 'contango') return 'text-red-400';
+  if (s === 'backwardation') return 'text-green-400';
+  return 'text-neutral-400';
+}
+
+function curveBg(state: string): string {
+  const s = state?.toLowerCase() ?? '';
+  if (s === 'contango') return 'bg-red-500/10';
+  if (s === 'backwardation') return 'bg-green-500/10';
+  return 'bg-neutral-500/10';
 }
 
 // ── Main Panel ──
 
 export function CommoditySeasonalityPanel() {
-  const { data, isLoading, refetch } = useCommoditySeasonality();
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [selectedCommodity, setSelectedCommodity] = useState<string | null>(null);
+  const t = useT();
+  const { data, isLoading, error } = useCommoditySeasonality();
+  const d = data as any;
 
-  const seasonalityData = data as SeasonalityData | undefined;
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
+        <div className="text-[9px] font-mono text-yellow-400 uppercase tracking-widest animate-pulse">
+          {t('loading')}
+        </div>
+      </div>
+    );
+  }
 
-  // Default to first commodity when data loads
-  const effectiveCommodity = useMemo(() => {
-    if (selectedCommodity) return selectedCommodity;
-    if (seasonalityData?.commodities?.length) return seasonalityData.commodities[0].name;
-    return null;
-  }, [selectedCommodity, seasonalityData]);
+  if (error || !d) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
+        <div className="text-[9px] font-mono text-red-400/60 uppercase tracking-widest">
+          FAILED TO LOAD
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/30 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5" style={{ backgroundColor: ACCENT }} />
-          <span
-            className="text-[9px] font-black font-mono uppercase tracking-tighter"
-            style={{ color: ACCENT }}
-          >
-            Commodity Seasonality
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/20 shrink-0">
+        <div className="w-1.5 h-1.5 bg-yellow-400" />
+        <span className="text-[9px] font-mono font-black text-yellow-400 uppercase tracking-tighter">
+          {t('panelCommoditySeasonality')}
+        </span>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <SeasonalPatterns patterns={d.seasonalPatterns ?? d.commodities ?? []} />
+        <CurrentVsSeasonal items={d.currentVsSeasonal ?? d.tracking ?? []} />
+        <CurveSeasonality curves={d.curveSeasonality ?? []} />
+        <TradingSignals signals={d.tradingSignals ?? d.opportunities ?? []} />
+        <CalendarEffects events={d.calendarEffects ?? []} />
+      </div>
+    </div>
+  );
+}
+
+// ── Section 1: Seasonal Patterns Heatmap ──
+
+function SeasonalPatterns({ patterns }: { patterns: any[] }) {
+  if (!patterns?.length) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <SectionHeader title="SEASONAL PATTERNS" subtitle="AVG MONTHLY RETURNS (%)" />
+      <div className="overflow-x-auto">
+        {/* Column header */}
+        <div className="grid grid-cols-[100px_repeat(12,minmax(42px,1fr))] gap-0 px-2 py-1 border-b border-border/20">
+          <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">
+            Commodity
           </span>
+          {MONTHS.map((m) => (
+            <span key={m} className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right pr-1">
+              {m}
+            </span>
+          ))}
         </div>
-        <button
-          onClick={() => refetch()}
-          className="p-1 text-neutral-500 hover:text-amber-400 transition-colors"
-        >
-          <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border/30 bg-black/40 shrink-0">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-1.5 text-[8px] font-black uppercase tracking-widest border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? 'border-amber-400 text-amber-400'
-                : 'border-transparent text-neutral-500 hover:text-neutral-300'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        {/* Rows */}
+        {patterns.map((row: any, i: number) => {
+          const name = row.name ?? row.commodity ?? `C${i}`;
+          const returns: number[] = row.monthlyReturns
+            ? row.monthlyReturns.map((mr: any) => mr.avgReturn ?? mr.return ?? mr ?? 0)
+            : row.returns ?? [];
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto no-scrollbar">
-        {isLoading && !seasonalityData && (
-          <div
-            className="text-center py-8 text-[9px] font-mono uppercase animate-pulse"
-            style={{ color: ACCENT }}
-          >
-            Loading...
-          </div>
-        )}
-
-        {!seasonalityData && !isLoading && (
-          <div className="text-center py-8 text-neutral-500 text-[9px] font-mono uppercase">
-            No data available
-          </div>
-        )}
-
-        {seasonalityData && (
-          <>
-            {/* Summary bar */}
-            <SummaryBar summary={seasonalityData.summary} />
-
-            {activeTab === 'overview' && (
-              <OverviewTab commodities={seasonalityData.commodities} />
-            )}
-            {activeTab === 'monthly' && (
-              <MonthlyTab
-                commodities={seasonalityData.commodities}
-                selected={effectiveCommodity}
-                onSelect={setSelectedCommodity}
-              />
-            )}
-            {activeTab === 'opportunities' && (
-              <OpportunitiesTab opportunities={seasonalityData.opportunities} />
-            )}
-            {activeTab === 'tracking' && (
-              <TrackingTab tracking={seasonalityData.tracking} />
-            )}
-          </>
-        )}
+          return (
+            <div
+              key={name}
+              className="grid grid-cols-[100px_repeat(12,minmax(42px,1fr))] gap-0 px-2 py-0.5 border-b border-border/10 hover:bg-yellow-400/[0.02] transition-colors items-center"
+            >
+              <span className="text-[8px] font-mono font-bold text-yellow-400 truncate">
+                {name}
+              </span>
+              {MONTHS.map((m, mi) => {
+                const raw = returns[mi] as any;
+                const val: number = typeof raw === 'number'
+                  ? raw
+                  : (typeof raw === 'object' && raw != null ? (raw.avgReturn ?? 0) : 0);
+                return (
+                  <span
+                    key={m}
+                    className={`text-[7px] font-mono font-bold text-right pr-1 py-0.5 ${heatText(val)} ${heatBg(val)}`}
+                  >
+                    {val === 0 ? '0.0' : fmtPct1(val).replace('%', '')}
+                  </span>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// ── Summary Bar ──
+// ── Section 2: Current vs Seasonal ──
 
-function SummaryBar({ summary }: { summary: SeasonalityData['summary'] }) {
+function CurrentVsSeasonal({ items }: { items: any[] }) {
+  if (!items?.length) return null;
+
   return (
-    <div
-      className="grid grid-cols-4 gap-px border-b border-border/20 shrink-0"
-      style={{ backgroundColor: ACCENT_DIM }}
-    >
-      <SummaryCell label="Strongest Month" value={summary.strongestMonth} />
-      <SummaryCell label="Weakest Month" value={summary.weakestMonth} />
-      <SummaryCell
-        label="Avg Seasonal Return"
-        value={fmtPct(summary.avgSeasonalReturn)}
-        color={summary.avgSeasonalReturn >= 0 ? 'text-green-400' : 'text-red-400'}
-      />
-      <SummaryCell label="Top Opportunity" value={summary.topOpportunity} />
-    </div>
-  );
-}
+    <div className="border-b border-border/20">
+      <SectionHeader title="CURRENT VS SEASONAL" subtitle="YTD PERFORMANCE" />
 
-function SummaryCell({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color?: string;
-}) {
-  return (
-    <div className="px-2 py-1.5 bg-black">
-      <div className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">
-        {label}
-      </div>
-      <div
-        className={`text-[9px] font-mono font-bold truncate ${color ?? 'text-white'}`}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-// ── Overview Tab ──
-
-function OverviewTab({ commodities }: { commodities: CommodityEntry[] }) {
-  return (
-    <div className="px-1">
       {/* Column header */}
-      <div className="grid grid-cols-[1fr_70px_repeat(12,minmax(0,1fr))] gap-0 px-2 py-1 border-b border-border/20 text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">
-        <span>Commodity</span>
-        <span className="text-center">Signal</span>
-        {MONTH_LABELS.map((m) => (
-          <span key={m} className="text-center">
+      <div className="grid grid-cols-[1fr_70px_70px_70px_70px] gap-0 px-2 py-1 border-b border-border/20">
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">Commodity</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">YTD</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">Seasonal</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">Deviation</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">Pctile</span>
+      </div>
+
+      {/* Rows */}
+      {items.map((item: any, i: number) => {
+        const name = item.commodity ?? item.name ?? `C${i}`;
+        const ytd = item.ytdReturn ?? item.ytd ?? 0;
+        const seasonal = item.seasonalExpected ?? item.seasonalAvg ?? item.seasonal ?? 0;
+        const deviation = item.deviation ?? (ytd - seasonal);
+        const pctile = item.percentileRank ?? item.percentile ?? item.pctile ?? null;
+
+        return (
+          <div
+            key={name}
+            className="grid grid-cols-[1fr_70px_70px_70px_70px] gap-0 px-2 py-1 border-b border-border/10 hover:bg-yellow-400/[0.02] transition-colors items-center"
+          >
+            <span className="text-[8px] font-mono font-bold text-yellow-400 truncate">{name}</span>
+            <span className={`text-[8px] font-mono font-bold text-right ${returnColor(ytd)}`}>
+              {fmtPct(ytd)}
+            </span>
+            <span className={`text-[8px] font-mono text-right ${returnColor(seasonal)}`}>
+              {fmtPct(seasonal)}
+            </span>
+            <span className={`text-[8px] font-mono font-bold text-right ${returnColor(deviation)}`}>
+              {fmtPct(deviation)}
+            </span>
+            <span className="text-[8px] font-mono text-right text-neutral-300">
+              {pctile != null ? `${typeof pctile === 'number' ? pctile.toFixed(0) : pctile}%` : '--'}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Section 3: Curve Seasonality ──
+
+function CurveSeasonality({ curves }: { curves: any[] }) {
+  if (!curves?.length) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <SectionHeader title="CURVE SEASONALITY" subtitle="CONTANGO / BACKWARDATION" />
+
+      {/* Column header */}
+      <div className="grid grid-cols-[1fr_repeat(12,minmax(36px,1fr))] gap-0 px-2 py-1 border-b border-border/20">
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">Commodity</span>
+        {MONTHS.map((m) => (
+          <span key={m} className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right pr-1">
             {m}
           </span>
         ))}
       </div>
 
       {/* Rows */}
-      {commodities.map((c) => (
-        <div
-          key={c.symbol}
-          className="grid grid-cols-[1fr_70px_repeat(12,minmax(0,1fr))] gap-0 px-2 py-1 border-b border-border/10 hover:bg-white/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold" style={{ color: ACCENT }}>
-            {c.name}
-          </span>
-          <span className="text-center">
-            <span
-              className={`text-[6px] font-mono font-bold px-1.5 py-px uppercase ${signalBadge(c.currentSignal)}`}
-            >
-              {c.currentSignal}
-            </span>
-          </span>
-          {MONTH_LABELS.map((_, mi) => {
-            const mr = c.monthlyReturns.find((r) => r.month === mi + 1);
-            const val = mr?.avgReturn ?? 0;
-            return (
-              <span
-                key={mi}
-                className={`text-center text-[6px] font-mono font-bold py-0.5 ${returnColor(val)} ${returnBgColor(val)}`}
-              >
-                {val >= 0 ? '+' : ''}
-                {val.toFixed(1)}
-              </span>
-            );
-          })}
-        </div>
-      ))}
-    </div>
-  );
-}
+      {curves.map((row: any, i: number) => {
+        const name = row.commodity ?? row.name ?? `C${i}`;
+        const monthly: any[] = row.monthly ?? row.months ?? [];
 
-// ── Monthly Tab ──
-
-function MonthlyTab({
-  commodities,
-  selected,
-  onSelect,
-}: {
-  commodities: CommodityEntry[];
-  selected: string | null;
-  onSelect: (name: string) => void;
-}) {
-  const commodity = commodities.find((c) => c.name === selected);
-
-  const maxAbsReturn = useMemo(() => {
-    if (!commodity) return 1;
-    return Math.max(
-      ...commodity.monthlyReturns.map((r) => Math.abs(r.avgReturn)),
-      0.1
-    );
-  }, [commodity]);
-
-  return (
-    <div className="px-3 py-2">
-      {/* Commodity selector buttons */}
-      <div className="flex flex-wrap gap-1 mb-3">
-        {commodities.map((c) => (
-          <button
-            key={c.symbol}
-            onClick={() => onSelect(c.name)}
-            className={`px-2 py-0.5 text-[7px] font-mono font-bold uppercase tracking-wider transition-colors ${
-              selected === c.name
-                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                : 'text-neutral-500 hover:text-white border border-border/10 hover:bg-white/[0.02]'
-            }`}
+        return (
+          <div
+            key={name}
+            className="grid grid-cols-[1fr_repeat(12,minmax(36px,1fr))] gap-0 px-2 py-0.5 border-b border-border/10 hover:bg-yellow-400/[0.02] transition-colors items-center"
           >
-            {c.name}
-          </button>
-        ))}
-      </div>
+            <span className="text-[8px] font-mono font-bold text-yellow-400 truncate">{name}</span>
+            {MONTHS.map((m, mi) => {
+              const cell = monthly[mi];
+              const state = typeof cell === 'string' ? cell : (cell?.state ?? cell?.type ?? '--');
+              const spread = typeof cell === 'object' ? (cell?.spread ?? null) : null;
 
-      {!commodity && (
-        <div className="text-center py-8 text-neutral-500 text-[9px] font-mono uppercase">
-          Select a commodity
-        </div>
-      )}
-
-      {commodity && (
-        <>
-          {/* Column header */}
-          <div className="grid grid-cols-[60px_1fr_80px_80px_90px_90px] gap-0 pb-1 mb-1 border-b border-border/20 text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">
-            <span>Month</span>
-            <span>Return</span>
-            <span className="text-right">Avg Return</span>
-            <span className="text-right">Win Rate</span>
-            <span className="text-right">Best Year</span>
-            <span className="text-right">Worst Year</span>
-          </div>
-
-          {/* Monthly rows */}
-          {commodity.monthlyReturns
-            .slice()
-            .sort((a, b) => a.month - b.month)
-            .map((mr) => {
-              const barWidth = (Math.abs(mr.avgReturn) / maxAbsReturn) * 100;
               return (
-                <div
-                  key={mr.month}
-                  className="grid grid-cols-[60px_1fr_80px_80px_90px_90px] gap-0 py-1 border-b border-border/10 hover:bg-white/[0.02] transition-colors items-center"
+                <span
+                  key={m}
+                  className={`text-[6px] font-mono font-bold text-right pr-1 py-0.5 ${curveColor(state)} ${curveBg(state)}`}
+                  title={state}
                 >
-                  <span
-                    className="text-[8px] font-mono font-bold"
-                    style={{ color: ACCENT }}
-                  >
-                    {MONTH_LABELS[mr.month - 1]}
-                  </span>
-                  {/* Bar visualization */}
-                  <div className="flex items-center h-full px-1">
-                    <div className="relative w-full h-3">
-                      <div
-                        className={`absolute top-0 h-full ${
-                          mr.avgReturn >= 0 ? 'bg-green-500/30' : 'bg-red-500/30'
-                        }`}
-                        style={{
-                          width: `${barWidth}%`,
-                          [mr.avgReturn >= 0 ? 'left' : 'right']: 0,
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <span
-                    className={`text-[8px] font-mono font-bold text-right ${returnColor(mr.avgReturn)}`}
-                  >
-                    {fmtPct(mr.avgReturn)}
-                  </span>
-                  <span
-                    className={`text-[8px] font-mono text-right ${
-                      mr.winRate >= 50 ? 'text-green-400/70' : 'text-red-400/70'
-                    }`}
-                  >
-                    {mr.winRate.toFixed(1)}%
-                  </span>
-                  <span className="text-[7px] font-mono text-right text-green-400/50">
-                    +{mr.bestYear.return.toFixed(1)}% ({mr.bestYear.year})
-                  </span>
-                  <span className="text-[7px] font-mono text-right text-red-400/50">
-                    {mr.worstYear.return.toFixed(1)}% ({mr.worstYear.year})
-                  </span>
-                </div>
+                  {spread != null ? (typeof spread === 'number' ? spread.toFixed(2) : spread) : state?.slice(0, 3)?.toUpperCase() ?? '--'}
+                </span>
               );
             })}
-        </>
-      )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-// ── Opportunities Tab ──
+// ── Section 4: Trading Signals ──
 
-function OpportunitiesTab({ opportunities }: { opportunities: Opportunity[] }) {
+function TradingSignals({ signals }: { signals: any[] }) {
+  if (!signals?.length) return null;
+
   return (
-    <div className="px-1">
+    <div className="border-b border-border/20">
+      <SectionHeader title="TRADING SIGNALS" subtitle="SEASONAL BIAS NEXT 30/60/90D" />
+
       {/* Column header */}
-      <div className="grid grid-cols-[1fr_60px_60px_70px_1fr_70px] gap-0 px-2 py-1 border-b border-border/20 text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">
-        <span>Commodity</span>
-        <span className="text-center">Direction</span>
-        <span className="text-right">Win Rate</span>
-        <span className="text-right">Avg Return</span>
-        <span className="text-center">Period</span>
-        <span className="text-center">Confidence</span>
+      <div className="grid grid-cols-[1fr_60px_60px_60px_60px_60px] gap-0 px-2 py-1 border-b border-border/20">
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">Commodity</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-center">Bias</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">Period</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">Win%</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">Avg Ret</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">Hist N</span>
       </div>
 
       {/* Rows */}
-      {opportunities.map((o, i) => (
-        <div
-          key={`${o.commodity}-${i}`}
-          className="grid grid-cols-[1fr_60px_60px_70px_1fr_70px] gap-0 px-2 py-1.5 border-b border-border/10 hover:bg-white/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold" style={{ color: ACCENT }}>
-            {o.commodity}
-          </span>
-          <span className="text-center">
-            <span
-              className={`text-[6px] font-mono font-bold px-1.5 py-px uppercase ${directionBadge(o.direction)}`}
-            >
-              {o.direction}
-            </span>
-          </span>
-          <span className="text-[8px] font-mono text-right text-white">
-            {o.winRate.toFixed(1)}%
-          </span>
-          <span
-            className={`text-[8px] font-mono font-bold text-right ${returnColor(o.avgReturn)}`}
-          >
-            {fmtPct(o.avgReturn)}
-          </span>
-          <span className="text-[7px] font-mono text-center text-neutral-400">
-            {o.period}
-          </span>
-          <span className="text-center">
-            <span
-              className={`text-[6px] font-mono font-bold px-1.5 py-px uppercase ${confidenceBadge(o.confidence)}`}
-            >
-              {o.confidence}
-            </span>
-          </span>
-        </div>
-      ))}
+      {signals.map((s: any, i: number) => {
+        const name = s.commodity ?? s.name ?? `S${i}`;
+        const bias = s.bias ?? s.direction ?? s.signal ?? 'Neutral';
+        const period = s.period ?? s.days ?? '--';
+        const winRate = s.winRate ?? s.historicalWinRate ?? null;
+        const avgReturn = s.avgReturn ?? s.expectedReturn ?? null;
+        const histN = s.sampleSize ?? s.historicalN ?? s.n ?? null;
 
-      {opportunities.length === 0 && (
-        <div className="text-center py-8 text-neutral-500 text-[9px] font-mono uppercase">
-          No opportunities available
-        </div>
-      )}
+        return (
+          <div
+            key={`${name}-${i}`}
+            className="grid grid-cols-[1fr_60px_60px_60px_60px_60px] gap-0 px-2 py-1 border-b border-border/10 hover:bg-yellow-400/[0.02] transition-colors items-center"
+          >
+            <span className="text-[8px] font-mono font-bold text-yellow-400 truncate">{name}</span>
+            <span className="text-center">
+              <span className={`text-[6px] font-mono font-bold px-1.5 py-px uppercase ${biasColor(bias)} ${biasBg(bias)}`}>
+                {bias}
+              </span>
+            </span>
+            <span className="text-[8px] font-mono text-right text-neutral-300">
+              {typeof period === 'number' ? `${period}D` : period}
+            </span>
+            <span className={`text-[8px] font-mono font-bold text-right ${winRate != null && winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+              {winRate != null ? `${typeof winRate === 'number' ? winRate.toFixed(1) : winRate}%` : '--'}
+            </span>
+            <span className={`text-[8px] font-mono font-bold text-right ${returnColor(avgReturn ?? 0)}`}>
+              {avgReturn != null ? fmtPct(avgReturn) : '--'}
+            </span>
+            <span className="text-[8px] font-mono text-right text-neutral-500">
+              {histN != null ? histN : '--'}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-// ── Tracking Tab ──
+// ── Section 5: Calendar Effects ──
 
-function TrackingTab({ tracking }: { tracking: TrackingEntry[] }) {
+function CalendarEffects({ events }: { events: any[] }) {
+  if (!events?.length) return null;
+
   return (
-    <div className="px-1">
+    <div className="border-b border-border/20">
+      <SectionHeader title="CALENDAR EFFECTS" subtitle="NOTABLE SEASONAL EVENTS" />
+
       {/* Column header */}
-      <div className="grid grid-cols-[1fr_80px_80px_80px_60px] gap-0 px-2 py-1 border-b border-border/20 text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">
-        <span>Commodity</span>
-        <span className="text-right">YTD Return</span>
-        <span className="text-right">Seasonal Exp</span>
-        <span className="text-right">Deviation</span>
-        <span className="text-center">On Track</span>
+      <div className="grid grid-cols-[1fr_1fr_90px_70px] gap-0 px-2 py-1 border-b border-border/20">
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">Event</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">Commodities</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">Timing</span>
+        <span className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider text-right">Impact</span>
       </div>
 
       {/* Rows */}
-      {tracking.map((t) => (
-        <div
-          key={t.commodity}
-          className="grid grid-cols-[1fr_80px_80px_80px_60px] gap-0 px-2 py-1.5 border-b border-border/10 hover:bg-white/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold" style={{ color: ACCENT }}>
-            {t.commodity}
-          </span>
-          <span
-            className={`text-[8px] font-mono font-bold text-right ${returnColor(t.ytdReturn)}`}
-          >
-            {fmtPct(t.ytdReturn)}
-          </span>
-          <span
-            className={`text-[8px] font-mono text-right ${returnColor(t.seasonalExpected)}`}
-          >
-            {fmtPct(t.seasonalExpected)}
-          </span>
-          <span
-            className={`text-[8px] font-mono font-bold text-right ${returnColor(t.deviation)}`}
-          >
-            {fmtPct(t.deviation)}
-          </span>
-          <span className="text-center text-[9px] font-mono">
-            {t.onTrack ? (
-              <span className="text-green-400">{'\u2713'}</span>
-            ) : (
-              <span className="text-red-400">{'\u2717'}</span>
-            )}
-          </span>
-        </div>
-      ))}
+      {events.map((e: any, i: number) => {
+        const name = e.event ?? e.name ?? `Event ${i + 1}`;
+        const commodities = e.commodities ?? e.affected ?? [];
+        const timing = e.timing ?? e.period ?? e.date ?? '--';
+        const impact = e.impact ?? e.direction ?? e.effect ?? '--';
+        const commodityStr = Array.isArray(commodities) ? commodities.join(', ') : String(commodities);
 
-      {tracking.length === 0 && (
-        <div className="text-center py-8 text-neutral-500 text-[9px] font-mono uppercase">
-          No tracking data available
-        </div>
-      )}
+        return (
+          <div
+            key={`${name}-${i}`}
+            className="grid grid-cols-[1fr_1fr_90px_70px] gap-0 px-2 py-1 border-b border-border/10 hover:bg-yellow-400/[0.02] transition-colors items-center"
+          >
+            <span className="text-[8px] font-mono font-bold text-yellow-400 truncate">{name}</span>
+            <span className="text-[7px] font-mono text-neutral-300 truncate">{commodityStr}</span>
+            <span className="text-[7px] font-mono text-right text-neutral-400">{timing}</span>
+            <span className={`text-[7px] font-mono font-bold text-right ${biasColor(String(impact))}`}>
+              {String(impact).toUpperCase()}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Shared Components ──
+
+function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/20 bg-black">
+      <span className="text-[8px] font-mono font-black text-white uppercase tracking-wider">{title}</span>
+      <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">{subtitle}</span>
     </div>
   );
 }

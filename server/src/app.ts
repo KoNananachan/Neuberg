@@ -263,6 +263,7 @@ import ipoCalendarRouter from './routes/ipo-calendar.js';
 import municipalBondMonitorRouter from './routes/municipal-bond-monitor.js';
 import structuredCreditRouter from './routes/structured-credit.js';
 import currencyOptionsRouter from './routes/currency-options.js';
+import swapCurveMonitorRouter from './routes/swap-curve-monitor.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -627,6 +628,7 @@ export function createApp() {
   app.use('/api/municipal-bond-monitor', municipalBondMonitorRouter);
   app.use('/api/structured-credit', structuredCreditRouter);
   app.use('/api/currency-options', currencyOptionsRouter);
+  app.use('/api/swap-curve-monitor', swapCurveMonitorRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

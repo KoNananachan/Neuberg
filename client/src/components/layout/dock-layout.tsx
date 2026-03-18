@@ -268,6 +268,7 @@ const PortfolioAttributionPanel = lazy(() => import('../panels/portfolio-attribu
 const MunicipalBondMonitorPanel = lazy(() => import('../panels/municipal-bond-monitor-panel').then(m => ({ default: m.MunicipalBondMonitorPanel })));
 const StructuredCreditPanel = lazy(() => import('../panels/structured-credit-panel').then(m => ({ default: m.StructuredCreditPanel })));
 const CurrencyOptionsPanel = lazy(() => import('../panels/currency-options-panel').then(m => ({ default: m.CurrencyOptionsPanel })));
+const SwapCurveMonitorPanel = lazy(() => import('../panels/swap-curve-monitor-panel').then(m => ({ default: m.SwapCurveMonitorPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -548,6 +549,7 @@ export const PANEL_IDS = {
   MUNICIPAL_BOND_MONITOR: 'municipal-bond-monitor',
   STRUCTURED_CREDIT: 'structured-credit',
   CURRENCY_OPTIONS: 'currency-options',
+  SWAP_CURVE_MONITOR: 'swap-curve-monitor',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -812,6 +814,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MUNICIPAL_BOND_MONITOR]: 'MUNICIPAL BOND MONITOR',
   [PANEL_IDS.STRUCTURED_CREDIT]: 'STRUCTURED CREDIT',
   [PANEL_IDS.CURRENCY_OPTIONS]: 'CURRENCY OPTIONS',
+  [PANEL_IDS.SWAP_CURVE_MONITOR]: 'SWAP CURVE MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1077,6 +1080,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MUNICIPAL_BOND_MONITOR]: 'panelMunicipalBondMonitor',
   [PANEL_IDS.STRUCTURED_CREDIT]: 'panelStructuredCredit',
   [PANEL_IDS.CURRENCY_OPTIONS]: 'panelCurrencyOptions',
+  [PANEL_IDS.SWAP_CURVE_MONITOR]: 'panelSwapCurveMonitor',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1638,6 +1642,7 @@ export function DockLayout() {
       case PANEL_IDS.MUNICIPAL_BOND_MONITOR: content = <LazyWrap><MunicipalBondMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.STRUCTURED_CREDIT: content = <LazyWrap><StructuredCreditPanel /></LazyWrap>; break;
       case PANEL_IDS.CURRENCY_OPTIONS: content = <LazyWrap><CurrencyOptionsPanel /></LazyWrap>; break;
+      case PANEL_IDS.SWAP_CURVE_MONITOR: content = <LazyWrap><SwapCurveMonitorPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
