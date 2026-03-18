@@ -277,6 +277,9 @@ import commodityDemandRouter from './routes/commodity-demand.js';
 import globalDividendRouter from './routes/global-dividend.js';
 import cdsIndexMonitorRouter from './routes/cds-index-monitor.js';
 import macroRiskRouter from './routes/macro-risk.js';
+import fiAttributionAnalysisRouter from './routes/fi-attribution-analysis.js';
+import equityStyleRouter from './routes/equity-style.js';
+import currencyForecastRouter from './routes/currency-forecast.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -655,6 +658,9 @@ export function createApp() {
   app.use('/api/global-dividend', globalDividendRouter);
   app.use('/api/cds-index-monitor', cdsIndexMonitorRouter);
   app.use('/api/macro-risk', macroRiskRouter);
+  app.use('/api/fi-attribution-analysis', fiAttributionAnalysisRouter);
+  app.use('/api/equity-style', equityStyleRouter);
+  app.use('/api/currency-forecast', currencyForecastRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
