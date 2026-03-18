@@ -319,6 +319,9 @@ const CreditDefaultIndexPanel = lazy(() => import('../panels/credit-default-inde
 const SovereignWealthFundPanel = lazy(() => import('../panels/sovereign-wealth-fund-panel').then(m => ({ default: m.SovereignWealthFundPanel })));
 const CollateralManagementPanel = lazy(() => import('../panels/collateral-management-panel').then(m => ({ default: m.CollateralManagementPanel })));
 const PrimeBrokeragePanel = lazy(() => import('../panels/prime-brokerage-panel').then(m => ({ default: m.PrimeBrokeragePanel })));
+const ElectionRiskPanel = lazy(() => import('../panels/election-risk-panel').then(m => ({ default: m.ElectionRiskPanel })));
+const CvaMonitorPanel = lazy(() => import('../panels/cva-monitor-panel').then(m => ({ default: m.CvaMonitorPanel })));
+const AlgoExecutionPanel = lazy(() => import('../panels/algo-execution-panel').then(m => ({ default: m.AlgoExecutionPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -650,6 +653,9 @@ export const PANEL_IDS = {
   SOVEREIGN_WEALTH_FUND: 'sovereign-wealth-fund',
   COLLATERAL_MANAGEMENT: 'collateral-management',
   PRIME_BROKERAGE: 'prime-brokerage',
+  ELECTION_RISK: 'election-risk',
+  CVA_MONITOR: 'cva-monitor',
+  ALGO_EXECUTION: 'algo-execution',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -965,6 +971,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SOVEREIGN_WEALTH_FUND]: 'SOVEREIGN WEALTH FUND',
   [PANEL_IDS.COLLATERAL_MANAGEMENT]: 'COLLATERAL MANAGEMENT',
   [PANEL_IDS.PRIME_BROKERAGE]: 'PRIME BROKERAGE',
+  [PANEL_IDS.ELECTION_RISK]: 'ELECTION RISK',
+  [PANEL_IDS.CVA_MONITOR]: 'CVA MONITOR',
+  [PANEL_IDS.ALGO_EXECUTION]: 'ALGO EXECUTION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1281,6 +1290,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SOVEREIGN_WEALTH_FUND]: 'panelSovereignWealthFund',
   [PANEL_IDS.COLLATERAL_MANAGEMENT]: 'panelCollateralManagement',
   [PANEL_IDS.PRIME_BROKERAGE]: 'panelPrimeBrokerage',
+  [PANEL_IDS.ELECTION_RISK]: 'panelElectionRisk',
+  [PANEL_IDS.CVA_MONITOR]: 'panelCvaMonitor',
+  [PANEL_IDS.ALGO_EXECUTION]: 'panelAlgoExecution',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1893,6 +1905,9 @@ export function DockLayout() {
       case PANEL_IDS.SOVEREIGN_WEALTH_FUND: content = <LazyWrap><SovereignWealthFundPanel /></LazyWrap>; break;
       case PANEL_IDS.COLLATERAL_MANAGEMENT: content = <LazyWrap><CollateralManagementPanel /></LazyWrap>; break;
       case PANEL_IDS.PRIME_BROKERAGE: content = <LazyWrap><PrimeBrokeragePanel /></LazyWrap>; break;
+      case PANEL_IDS.ELECTION_RISK: content = <LazyWrap><ElectionRiskPanel /></LazyWrap>; break;
+      case PANEL_IDS.CVA_MONITOR: content = <LazyWrap><CvaMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.ALGO_EXECUTION: content = <LazyWrap><AlgoExecutionPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

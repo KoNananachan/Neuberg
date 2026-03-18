@@ -314,6 +314,9 @@ import creditDefaultIndexRouter from './routes/credit-default-index.js';
 import sovereignWealthFundRouter from './routes/sovereign-wealth-fund.js';
 import collateralManagementRouter from './routes/collateral-management.js';
 import primeBrokerageRouter from './routes/prime-brokerage.js';
+import electionRiskRouter from './routes/election-risk.js';
+import cvaMonitorRouter from './routes/cva-monitor.js';
+import algoExecutionRouter from './routes/algo-execution.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -729,6 +732,9 @@ export function createApp() {
   app.use('/api/sovereign-wealth-fund', sovereignWealthFundRouter);
   app.use('/api/collateral-management', collateralManagementRouter);
   app.use('/api/prime-brokerage', primeBrokerageRouter);
+  app.use('/api/election-risk', electionRiskRouter);
+  app.use('/api/cva-monitor', cvaMonitorRouter);
+  app.use('/api/algo-execution', algoExecutionRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
