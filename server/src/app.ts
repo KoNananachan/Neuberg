@@ -274,6 +274,9 @@ import mergerArbitrageRouter from './routes/merger-arbitrage.js';
 import sovereignDebtRouter from './routes/sovereign-debt.js';
 import etfPremiumRouter from './routes/etf-premium.js';
 import commodityDemandRouter from './routes/commodity-demand.js';
+import globalDividendRouter from './routes/global-dividend.js';
+import cdsIndexMonitorRouter from './routes/cds-index-monitor.js';
+import macroRiskRouter from './routes/macro-risk.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -649,6 +652,9 @@ export function createApp() {
   app.use('/api/sovereign-debt', sovereignDebtRouter);
   app.use('/api/etf-premium', etfPremiumRouter);
   app.use('/api/commodity-demand', commodityDemandRouter);
+  app.use('/api/global-dividend', globalDividendRouter);
+  app.use('/api/cds-index-monitor', cdsIndexMonitorRouter);
+  app.use('/api/macro-risk', macroRiskRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

@@ -279,6 +279,9 @@ const MergerArbitragePanel = lazy(() => import('../panels/merger-arbitrage-panel
 const SovereignDebtPanel = lazy(() => import('../panels/sovereign-debt-panel').then(m => ({ default: m.SovereignDebtPanel })));
 const EtfPremiumPanel = lazy(() => import('../panels/etf-premium-panel').then(m => ({ default: m.EtfPremiumPanel })));
 const CommodityDemandPanel = lazy(() => import('../panels/commodity-demand-panel').then(m => ({ default: m.CommodityDemandPanel })));
+const GlobalDividendPanel = lazy(() => import('../panels/global-dividend-panel').then(m => ({ default: m.GlobalDividendPanel })));
+const CdsIndexMonitorPanel = lazy(() => import('../panels/cds-index-monitor-panel').then(m => ({ default: m.CdsIndexMonitorPanel })));
+const MacroRiskPanel = lazy(() => import('../panels/macro-risk-panel').then(m => ({ default: m.MacroRiskPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -570,6 +573,9 @@ export const PANEL_IDS = {
   SOVEREIGN_DEBT: 'sovereign-debt',
   ETF_PREMIUM: 'etf-premium',
   COMMODITY_DEMAND: 'commodity-demand',
+  GLOBAL_DIVIDEND: 'global-dividend',
+  CDS_INDEX_MONITOR: 'cds-index-monitor',
+  MACRO_RISK: 'macro-risk',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -845,6 +851,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SOVEREIGN_DEBT]: 'SOVEREIGN DEBT',
   [PANEL_IDS.ETF_PREMIUM]: 'ETF PREMIUM/DISCOUNT',
   [PANEL_IDS.COMMODITY_DEMAND]: 'COMMODITY DEMAND',
+  [PANEL_IDS.GLOBAL_DIVIDEND]: 'GLOBAL DIVIDEND',
+  [PANEL_IDS.CDS_INDEX_MONITOR]: 'CDS INDEX MONITOR',
+  [PANEL_IDS.MACRO_RISK]: 'MACRO RISK',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1121,6 +1130,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SOVEREIGN_DEBT]: 'panelSovereignDebt',
   [PANEL_IDS.ETF_PREMIUM]: 'panelEtfPremium',
   [PANEL_IDS.COMMODITY_DEMAND]: 'panelCommodityDemand',
+  [PANEL_IDS.GLOBAL_DIVIDEND]: 'panelGlobalDividend',
+  [PANEL_IDS.CDS_INDEX_MONITOR]: 'panelCdsIndexMonitor',
+  [PANEL_IDS.MACRO_RISK]: 'panelMacroRisk',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1693,6 +1705,9 @@ export function DockLayout() {
       case PANEL_IDS.SOVEREIGN_DEBT: content = <LazyWrap><SovereignDebtPanel /></LazyWrap>; break;
       case PANEL_IDS.ETF_PREMIUM: content = <LazyWrap><EtfPremiumPanel /></LazyWrap>; break;
       case PANEL_IDS.COMMODITY_DEMAND: content = <LazyWrap><CommodityDemandPanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_DIVIDEND: content = <LazyWrap><GlobalDividendPanel /></LazyWrap>; break;
+      case PANEL_IDS.CDS_INDEX_MONITOR: content = <LazyWrap><CdsIndexMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.MACRO_RISK: content = <LazyWrap><MacroRiskPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
