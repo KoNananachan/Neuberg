@@ -205,6 +205,9 @@ const InsuranceLinkedPanel = lazy(() => import('../panels/insurance-linked-panel
 const MetalsForwardPanel = lazy(() => import('../panels/metals-forward-panel').then(m => ({ default: m.MetalsForwardPanel })));
 const CentralBankWatchPanel = lazy(() => import('../panels/central-bank-watch-panel').then(m => ({ default: m.CentralBankWatchPanel })));
 const FreightDerivativesPanel = lazy(() => import('../panels/freight-derivatives-panel').then(m => ({ default: m.FreightDerivativesPanel })));
+const InflationBreakevensPanel = lazy(() => import('../panels/inflation-breakevens-panel').then(m => ({ default: m.InflationBreakevensPanel })));
+const MuniBondAuctionPanel = lazy(() => import('../panels/muni-bond-auction-panel').then(m => ({ default: m.MuniBondAuctionPanel })));
+const CommodityCurveAnalyticsPanel = lazy(() => import('../panels/commodity-curve-analytics-panel').then(m => ({ default: m.CommodityCurveAnalyticsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -422,6 +425,9 @@ export const PANEL_IDS = {
   METALS_FORWARD: 'metals-forward',
   CENTRAL_BANK_WATCH: 'central-bank-watch',
   FREIGHT_DERIVATIVES: 'freight-derivatives',
+  INFLATION_BREAKEVENS: 'inflation-breakevens',
+  MUNI_BOND_AUCTION: 'muni-bond-auction',
+  COMMODITY_CURVE_ANALYTICS: 'commodity-curve-analytics',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -623,6 +629,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.METALS_FORWARD]: 'METALS FORWARD',
   [PANEL_IDS.CENTRAL_BANK_WATCH]: 'CENTRAL BANK WATCH',
   [PANEL_IDS.FREIGHT_DERIVATIVES]: 'FREIGHT DERIVATIVES',
+  [PANEL_IDS.INFLATION_BREAKEVENS]: 'INFLATION BREAKEVENS',
+  [PANEL_IDS.MUNI_BOND_AUCTION]: 'MUNI BOND AUCTION',
+  [PANEL_IDS.COMMODITY_CURVE_ANALYTICS]: 'COMMODITY CURVE ANALYTICS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -825,6 +834,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.METALS_FORWARD]: 'panelMetalsForward',
   [PANEL_IDS.CENTRAL_BANK_WATCH]: 'panelCentralBankWatch',
   [PANEL_IDS.FREIGHT_DERIVATIVES]: 'panelFreightDerivatives',
+  [PANEL_IDS.INFLATION_BREAKEVENS]: 'panelInflationBreakevens',
+  [PANEL_IDS.MUNI_BOND_AUCTION]: 'panelMuniBondAuction',
+  [PANEL_IDS.COMMODITY_CURVE_ANALYTICS]: 'panelCommodityCurveAnalytics',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1323,6 +1335,9 @@ export function DockLayout() {
       case PANEL_IDS.METALS_FORWARD: content = <LazyWrap><MetalsForwardPanel /></LazyWrap>; break;
       case PANEL_IDS.CENTRAL_BANK_WATCH: content = <LazyWrap><CentralBankWatchPanel /></LazyWrap>; break;
       case PANEL_IDS.FREIGHT_DERIVATIVES: content = <LazyWrap><FreightDerivativesPanel /></LazyWrap>; break;
+      case PANEL_IDS.INFLATION_BREAKEVENS: content = <LazyWrap><InflationBreakevensPanel /></LazyWrap>; break;
+      case PANEL_IDS.MUNI_BOND_AUCTION: content = <LazyWrap><MuniBondAuctionPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_CURVE_ANALYTICS: content = <LazyWrap><CommodityCurveAnalyticsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
