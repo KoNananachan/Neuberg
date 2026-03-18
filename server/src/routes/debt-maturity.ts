@@ -2,302 +2,287 @@ import { Router } from 'express';
 
 const router = Router();
 
+// ── Seeded PRNG ──
+
+function hashSeed(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function mulberry32(a: number): () => number {
+  return function () {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
 // ── Types ──
 
-interface RatingBreakdown {
-  aaa_aa: number;
-  a: number;
-  bbb: number;
-  highYield: number;
-}
-
-interface MaturityBucket {
+interface MaturityYear {
   year: number;
-  amount: number;
-  count: number;
-  avgCoupon: number;
-  avgYield: number;
-  ratingBreakdown: RatingBreakdown;
-  refinancingRisk: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
+  investmentGrade: number;
+  highYield: number;
+  leveragedLoans: number;
+  total: number;
+  percentOfOutstanding: number;
 }
 
-interface EntityProfile {
-  entity: string;
-  label: string;
-  totalOutstanding: number;
-  avgMaturity: number;
+interface RatingBucket {
+  rating: string;
+  totalMaturingNext12m: number;
+  totalMaturingNext24m: number;
   avgCoupon: number;
   avgYield: number;
-  nearTermMaturities: number;
-  wallYear: number;
-  wallAmount: number;
+  refiSpread: number;
 }
 
-interface DebtMaturityResponse {
-  buckets: MaturityBucket[];
-  profile: EntityProfile;
-  entities: string[];
-  refinancingCost: number;
+interface SectorExposure {
+  sector: string;
+  maturingNext12m: number;
+  avgRating: string;
+  avgCoupon: number;
+  refiRisk: 'low' | 'medium' | 'high';
+}
+
+interface RefinancingRisk {
+  totalNeedingRefiNext12m: number;
+  estimatedHigherInterestCost: number;
+  distressedIssuersCount: number;
+  potentialDowngradeCandidates: number;
+  maturityWallStressIndex: number;
+}
+
+interface RecentDeal {
+  issuer: string;
+  size: number;
+  coupon: number;
+  oldCoupon: number;
+  maturity: string;
+  rating: string;
+  spread: number;
+  oversubscribed: number;
+}
+
+interface DebtMaturityWallResponse {
+  maturityProfile: MaturityYear[];
+  ratingBreakdown: RatingBucket[];
+  sectorExposure: SectorExposure[];
+  refinancingRisk: RefinancingRisk;
+  recentIssuance: RecentDeal[];
   timestamp: string;
 }
 
 // ── Cache ──
 
-const cache = new Map<string, { data: DebtMaturityResponse; expiresAt: number }>();
-const CACHE_TTL = 15 * 60_000; // 15 minutes
+let cached: { data: DebtMaturityWallResponse; expiresAt: number } | null = null;
+const CACHE_TTL = 5 * 60_000; // 5 minutes
 
-// ── Entity configurations ──
+// ── Helpers ──
 
-const ENTITIES = ['US_IG', 'US_HY', 'EU_IG', 'EM_CORP', 'US_TREASURY'] as const;
-
-interface EntityConfig {
-  label: string;
-  totalOutstanding: number;       // trillions
-  avgMaturity: number;            // years
-  baseCoupon: number;             // %
-  baseYield: number;              // current yield %
-  wallYearOffset: number;         // years from current year to peak wall
-  peakMultiplier: number;         // how much the wall year exceeds avg
-  ratingMix: { aaa_aa: number; a: number; bbb: number; hy: number };
-  nearTermPct: number;            // % of total maturing in next 2 years
-  refinancingSpread: number;      // bps increase if refinanced today
+function randRange(rng: () => number, min: number, max: number): number {
+  return min + rng() * (max - min);
 }
 
-const ENTITY_CONFIGS: Record<string, EntityConfig> = {
-  US_IG: {
-    label: 'US Investment Grade',
-    totalOutstanding: 5.8,
-    avgMaturity: 8.2,
-    baseCoupon: 3.85,
-    baseYield: 5.32,
-    wallYearOffset: 2,
-    peakMultiplier: 1.8,
-    ratingMix: { aaa_aa: 0.12, a: 0.35, bbb: 0.48, hy: 0.05 },
-    nearTermPct: 0.14,
-    refinancingSpread: 148,
-  },
-  US_HY: {
-    label: 'US High Yield',
-    totalOutstanding: 1.35,
-    avgMaturity: 5.1,
-    baseCoupon: 6.25,
-    baseYield: 8.15,
-    wallYearOffset: 1,
-    peakMultiplier: 2.2,
-    ratingMix: { aaa_aa: 0.0, a: 0.0, bbb: 0.12, hy: 0.88 },
-    nearTermPct: 0.22,
-    refinancingSpread: 195,
-  },
-  EU_IG: {
-    label: 'European Investment Grade',
-    totalOutstanding: 3.2,
-    avgMaturity: 6.8,
-    baseCoupon: 2.45,
-    baseYield: 3.85,
-    wallYearOffset: 2,
-    peakMultiplier: 1.6,
-    ratingMix: { aaa_aa: 0.18, a: 0.38, bbb: 0.40, hy: 0.04 },
-    nearTermPct: 0.16,
-    refinancingSpread: 138,
-  },
-  EM_CORP: {
-    label: 'Emerging Market Corporate',
-    totalOutstanding: 2.1,
-    avgMaturity: 5.5,
-    baseCoupon: 5.10,
-    baseYield: 7.45,
-    wallYearOffset: 1,
-    peakMultiplier: 2.0,
-    ratingMix: { aaa_aa: 0.05, a: 0.15, bbb: 0.42, hy: 0.38 },
-    nearTermPct: 0.20,
-    refinancingSpread: 235,
-  },
-  US_TREASURY: {
-    label: 'US Treasury',
-    totalOutstanding: 26.5,
-    avgMaturity: 6.2,
-    baseCoupon: 2.80,
-    baseYield: 4.45,
-    wallYearOffset: 1,
-    peakMultiplier: 1.5,
-    ratingMix: { aaa_aa: 1.0, a: 0.0, bbb: 0.0, hy: 0.0 },
-    nearTermPct: 0.25,
-    refinancingSpread: 165,
-  },
-};
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function pickRating(rng: () => number, pool: string[]): string {
+  return pool[Math.floor(rng() * pool.length)];
+}
 
 // ── Data generation ──
 
-/** Small deterministic jitter based on seed values */
-function jitter(base: number, range: number, seed1: number, seed2: number): number {
-  const hash = Math.sin(seed1 * 12.9898 + seed2 * 78.233) * 43758.5453;
-  const t = hash - Math.floor(hash); // 0..1
-  return base + (t - 0.5) * 2 * range;
-}
+function generate(): DebtMaturityWallResponse {
+  const seed = hashSeed('debt-maturity-wall-' + new Date().toISOString().slice(0, 10));
+  const rng = mulberry32(seed);
 
-function generateBuckets(entity: string, currentYear: number): MaturityBucket[] {
-  const cfg = ENTITY_CONFIGS[entity];
-  if (!cfg) return [];
+  // Total outstanding estimates (approx): ~$10T IG, ~$1.5T HY, ~$1.4T leveraged loans
+  const totalOutstanding = 12900; // $B approximate total corporate debt
 
-  const YEARS = 12; // 2024..2035
-  const startYear = currentYear;
-  const wallYear = currentYear + cfg.wallYearOffset;
-  const totalBillions = cfg.totalOutstanding * 1000; // convert T to B
+  // maturityProfile: years 2025-2034
+  // Realistic: ~$800B-1.2T IG/yr, ~$150-300B HY/yr, ~$100-250B loans/yr
+  // Peaking in 2025-2027
+  const maturityProfile: MaturityYear[] = [];
 
-  // Generate a maturity profile shape: bell curve peaking at wall year
-  const rawWeights: number[] = [];
-  for (let i = 0; i < YEARS; i++) {
-    const year = startYear + i;
-    const distFromWall = Math.abs(year - wallYear);
-    // Bell curve shape with some tail
-    const weight = Math.exp(-0.15 * distFromWall * distFromWall) + 0.08;
-    rawWeights.push(weight);
-  }
+  // Base IG amounts per year (front-loaded wall peaking 2025-2027)
+  const igBase = [1150, 1080, 1020, 920, 870, 840, 810, 790, 800, 830];
+  const hyBase = [285, 260, 240, 210, 185, 170, 160, 155, 150, 165];
+  const llBase = [230, 210, 195, 175, 155, 140, 125, 115, 110, 120];
 
-  // Normalize so total roughly matches outstanding
-  const sumWeights = rawWeights.reduce((s, w) => s + w, 0);
-  // Not all debt matures in the next 12 years -- roughly 60-75%
-  const maturingPct = entity === 'US_HY' ? 0.75 : entity === 'US_TREASURY' ? 0.70 : 0.65;
-  const maturingTotal = totalBillions * maturingPct;
+  for (let i = 0; i < 10; i++) {
+    const year = 2025 + i;
+    const ig = round1(igBase[i] * randRange(rng, 0.92, 1.08));
+    const hy = round1(hyBase[i] * randRange(rng, 0.88, 1.12));
+    const ll = round1(llBase[i] * randRange(rng, 0.85, 1.15));
+    const total = round1(ig + hy + ll);
+    const pctOfOutstanding = round2((total / totalOutstanding) * 100);
 
-  const buckets: MaturityBucket[] = [];
-
-  for (let i = 0; i < YEARS; i++) {
-    const year = startYear + i;
-    const baseAmount = (rawWeights[i] / sumWeights) * maturingTotal;
-    const amount = Math.round(jitter(baseAmount, baseAmount * 0.08, year, entity.length) * 10) / 10;
-
-    // Number of issues scales roughly with amount
-    const issuesPer = entity === 'US_TREASURY' ? 8 : entity === 'US_HY' ? 25 : 15;
-    const count = Math.round(jitter(amount * issuesPer / 100, amount * issuesPer * 0.1 / 100, year, 2));
-
-    // Coupon: older issuance (near-term maturities) have lower coupons
-    const vintageAdj = i < 3 ? -0.8 : i < 6 ? -0.3 : 0.2;
-    const avgCoupon = Math.round(jitter(cfg.baseCoupon + vintageAdj, 0.15, year, 3) * 100) / 100;
-
-    // Yield: current market yield with slight term structure
-    const termAdj = i * 0.03;
-    const avgYield = Math.round(jitter(cfg.baseYield + termAdj, 0.08, year, 4) * 100) / 100;
-
-    // Rating breakdown: varies slightly by year (near-term tends to have more BBB)
-    const nearTermBias = i < 3 ? 0.06 : 0;
-    const rb: RatingBreakdown = {
-      aaa_aa: Math.round(Math.max(0, jitter(cfg.ratingMix.aaa_aa - nearTermBias * 0.5, 0.02, year, 5)) * amount * 10) / 10,
-      a: Math.round(Math.max(0, jitter(cfg.ratingMix.a - nearTermBias * 0.3, 0.03, year, 6)) * amount * 10) / 10,
-      bbb: Math.round(Math.max(0, jitter(cfg.ratingMix.bbb + nearTermBias, 0.03, year, 7)) * amount * 10) / 10,
-      highYield: Math.round(Math.max(0, jitter(cfg.ratingMix.hy + nearTermBias * 0.2, 0.02, year, 8)) * amount * 10) / 10,
-    };
-
-    // Normalize so breakdown sums to amount
-    const rbTotal = rb.aaa_aa + rb.a + rb.bbb + rb.highYield;
-    if (rbTotal > 0) {
-      const scale = amount / rbTotal;
-      rb.aaa_aa = Math.round(rb.aaa_aa * scale * 10) / 10;
-      rb.a = Math.round(rb.a * scale * 10) / 10;
-      rb.bbb = Math.round(rb.bbb * scale * 10) / 10;
-      rb.highYield = Math.round(rb.highYield * scale * 10) / 10;
-    }
-
-    // Refinancing risk: based on amount, year proximity, and HY composition
-    const hyPct = amount > 0 ? rb.highYield / amount : 0;
-    let refinancingRisk: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
-    if (i <= 1 && amount > maturingTotal * 0.12) {
-      refinancingRisk = hyPct > 0.3 ? 'CRITICAL' : 'HIGH';
-    } else if (i <= 1) {
-      refinancingRisk = hyPct > 0.4 ? 'HIGH' : 'MODERATE';
-    } else if (amount > maturingTotal * 0.12) {
-      refinancingRisk = 'MODERATE';
-    } else {
-      refinancingRisk = 'LOW';
-    }
-
-    buckets.push({
+    maturityProfile.push({
       year,
-      amount,
-      count: Math.max(count, 1),
-      avgCoupon,
-      avgYield,
-      ratingBreakdown: rb,
-      refinancingRisk,
+      investmentGrade: ig,
+      highYield: hy,
+      leveragedLoans: ll,
+      total,
+      percentOfOutstanding: pctOfOutstanding,
     });
   }
 
-  return buckets;
-}
+  // ratingBreakdown: BBB, BB, B, CCC/lower
+  const ratingBreakdown: RatingBucket[] = [
+    {
+      rating: 'BBB',
+      totalMaturingNext12m: round1(randRange(rng, 520, 620)),
+      totalMaturingNext24m: round1(randRange(rng, 980, 1120)),
+      avgCoupon: round2(randRange(rng, 3.80, 4.40)),
+      avgYield: round2(randRange(rng, 5.20, 5.80)),
+      refiSpread: 0,
+    },
+    {
+      rating: 'BB',
+      totalMaturingNext12m: round1(randRange(rng, 120, 180)),
+      totalMaturingNext24m: round1(randRange(rng, 230, 340)),
+      avgCoupon: round2(randRange(rng, 5.00, 5.80)),
+      avgYield: round2(randRange(rng, 6.50, 7.40)),
+      refiSpread: 0,
+    },
+    {
+      rating: 'B',
+      totalMaturingNext12m: round1(randRange(rng, 80, 130)),
+      totalMaturingNext24m: round1(randRange(rng, 150, 250)),
+      avgCoupon: round2(randRange(rng, 5.80, 6.80)),
+      avgYield: round2(randRange(rng, 7.80, 9.20)),
+      refiSpread: 0,
+    },
+    {
+      rating: 'CCC/lower',
+      totalMaturingNext12m: round1(randRange(rng, 25, 55)),
+      totalMaturingNext24m: round1(randRange(rng, 50, 100)),
+      avgCoupon: round2(randRange(rng, 7.00, 8.50)),
+      avgYield: round2(randRange(rng, 10.50, 14.00)),
+      refiSpread: 0,
+    },
+  ];
 
-function generateResponse(entity: string): DebtMaturityResponse {
-  const cfg = ENTITY_CONFIGS[entity];
-  if (!cfg) {
-    // Fallback to US_IG
-    return generateResponse('US_IG');
+  // Compute refi spread = avgYield - avgCoupon
+  for (const rb of ratingBreakdown) {
+    rb.refiSpread = round2(rb.avgYield - rb.avgCoupon);
   }
 
-  const currentYear = new Date().getFullYear();
-  const buckets = generateBuckets(entity, currentYear);
+  // sectorExposure: 8 sectors
+  const sectors = [
+    { sector: 'Technology', minAmt: 100, maxAmt: 160, ratings: ['BBB', 'BBB+', 'A-'], couponRange: [3.5, 4.5] as [number, number], riskBias: 0.2 },
+    { sector: 'Healthcare', minAmt: 90, maxAmt: 145, ratings: ['BBB', 'BBB-', 'BB+'], couponRange: [4.0, 5.2] as [number, number], riskBias: 0.4 },
+    { sector: 'Energy', minAmt: 110, maxAmt: 170, ratings: ['BB+', 'BB', 'BBB-'], couponRange: [5.0, 6.5] as [number, number], riskBias: 0.7 },
+    { sector: 'Financials', minAmt: 130, maxAmt: 200, ratings: ['A-', 'BBB+', 'BBB'], couponRange: [3.8, 4.8] as [number, number], riskBias: 0.3 },
+    { sector: 'Consumer', minAmt: 80, maxAmt: 130, ratings: ['BBB-', 'BB+', 'BB'], couponRange: [4.5, 5.8] as [number, number], riskBias: 0.5 },
+    { sector: 'Industrials', minAmt: 75, maxAmt: 125, ratings: ['BBB', 'BBB-', 'A-'], couponRange: [4.0, 5.0] as [number, number], riskBias: 0.35 },
+    { sector: 'Telecom', minAmt: 60, maxAmt: 110, ratings: ['BB+', 'BBB-', 'BB'], couponRange: [5.2, 6.5] as [number, number], riskBias: 0.6 },
+    { sector: 'Utilities', minAmt: 55, maxAmt: 95, ratings: ['A-', 'BBB+', 'BBB'], couponRange: [3.5, 4.5] as [number, number], riskBias: 0.15 },
+  ];
 
-  // Find wall year (peak amount)
-  let wallYear = currentYear;
-  let wallAmount = 0;
-  for (const b of buckets) {
-    if (b.amount > wallAmount) {
-      wallAmount = b.amount;
-      wallYear = b.year;
-    }
-  }
+  const sectorExposure: SectorExposure[] = sectors.map((s) => {
+    const amt = round1(randRange(rng, s.minAmt, s.maxAmt));
+    const riskVal = s.riskBias + randRange(rng, -0.15, 0.15);
+    let refiRisk: 'low' | 'medium' | 'high';
+    if (riskVal < 0.33) refiRisk = 'low';
+    else if (riskVal < 0.66) refiRisk = 'medium';
+    else refiRisk = 'high';
 
-  // Near-term maturities (next 2 years)
-  const nearTermMaturities = buckets
-    .filter((b) => b.year <= currentYear + 1)
-    .reduce((s, b) => s + b.amount, 0);
+    return {
+      sector: s.sector,
+      maturingNext12m: amt,
+      avgRating: pickRating(rng, s.ratings),
+      avgCoupon: round2(randRange(rng, s.couponRange[0], s.couponRange[1])),
+      refiRisk,
+    };
+  });
 
-  const profile: EntityProfile = {
-    entity,
-    label: cfg.label,
-    totalOutstanding: cfg.totalOutstanding,
-    avgMaturity: cfg.avgMaturity,
-    avgCoupon: cfg.baseCoupon,
-    avgYield: cfg.baseYield,
-    nearTermMaturities: Math.round(nearTermMaturities * 10) / 10,
-    wallYear,
-    wallAmount: Math.round(wallAmount * 10) / 10,
+  // refinancingRisk
+  const totalRefi12m = ratingBreakdown.reduce((sum, rb) => sum + rb.totalMaturingNext12m, 0);
+  const avgRefiSpread = ratingBreakdown.reduce((sum, rb) => sum + rb.refiSpread * rb.totalMaturingNext12m, 0) / totalRefi12m;
+  const estimatedCost = round1((totalRefi12m * avgRefiSpread) / 100);
+
+  const refinancingRisk: RefinancingRisk = {
+    totalNeedingRefiNext12m: round1(totalRefi12m),
+    estimatedHigherInterestCost: estimatedCost,
+    distressedIssuersCount: Math.round(randRange(rng, 35, 75)),
+    potentialDowngradeCandidates: Math.round(randRange(rng, 80, 160)),
+    maturityWallStressIndex: round1(randRange(rng, 5.5, 7.8)),
   };
 
+  // recentIssuance: 6 recent bond deals
+  const issuers = [
+    { name: 'Microsoft Corp', rating: 'AAA', oldCoupon: 2.40 },
+    { name: 'Oracle Corp', rating: 'BBB', oldCoupon: 3.25 },
+    { name: 'HCA Healthcare', rating: 'BB+', oldCoupon: 5.25 },
+    { name: 'T-Mobile US', rating: 'BBB-', oldCoupon: 3.75 },
+    { name: 'Ford Motor Credit', rating: 'BB+', oldCoupon: 4.38 },
+    { name: 'Charter Communications', rating: 'BB+', oldCoupon: 4.75 },
+  ];
+
+  const maturityYears = [2029, 2030, 2031, 2032, 2033, 2034];
+
+  const recentIssuance: RecentDeal[] = issuers.map((iss, idx) => {
+    const size = round1(randRange(rng, 1.0, 5.5));
+    const coupon = round2(iss.oldCoupon + randRange(rng, 0.80, 2.20));
+    const spread = Math.round(randRange(rng, 85, 320));
+    const oversubscribed = round1(randRange(rng, 1.8, 5.5));
+    const matYear = maturityYears[idx];
+
+    return {
+      issuer: iss.name,
+      size,
+      coupon,
+      oldCoupon: iss.oldCoupon,
+      maturity: `${matYear}-${String(Math.floor(rng() * 12) + 1).padStart(2, '0')}-15`,
+      rating: iss.rating,
+      spread,
+      oversubscribed,
+    };
+  });
+
   return {
-    buckets,
-    profile,
-    entities: [...ENTITIES],
-    refinancingCost: cfg.refinancingSpread,
+    maturityProfile,
+    ratingBreakdown,
+    sectorExposure,
+    refinancingRisk,
+    recentIssuance,
     timestamp: new Date().toISOString(),
   };
 }
 
 // ── Route ──
 
-router.get('/', (req, res) => {
+router.get('/', (_req, res) => {
   try {
-    const entity = typeof req.query.entity === 'string' ? req.query.entity : 'US_IG';
-    const validEntity = ENTITIES.includes(entity as typeof ENTITIES[number]) ? entity : 'US_IG';
-
     const now = Date.now();
-    const cached = cache.get(validEntity);
     if (cached && now < cached.expiresAt) {
       return res.json(cached.data);
     }
 
-    const data = generateResponse(validEntity);
-    cache.set(validEntity, { data, expiresAt: now + CACHE_TTL });
+    const data = generate();
+    cached = { data, expiresAt: now + CACHE_TTL };
     res.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error('[DebtMaturity] Error:', message);
+    console.error('[DebtMaturityWall] Error:', message);
 
-    // Try to return cached data on error
-    const entity = typeof req.query.entity === 'string' ? req.query.entity : 'US_IG';
-    const cached = cache.get(entity);
     if (cached) {
       return res.json(cached.data);
     }
-    res.status(500).json({ error: 'Failed to generate debt maturity data' });
+    res.status(500).json({ error: 'Failed to generate debt maturity wall data' });
   }
 });
 

@@ -274,6 +274,8 @@ const TradeCostAnalysisPanel = lazy(() => import('../panels/trade-cost-analysis-
 const WarrantConvertiblePanel = lazy(() => import('../panels/warrant-convertible-panel').then(m => ({ default: m.WarrantConvertiblePanel })));
 const GlobalTradeFlowPanel = lazy(() => import('../panels/global-trade-flow-panel').then(m => ({ default: m.GlobalTradeFlowPanel })));
 const RealEstateAnalyticsPanel = lazy(() => import('../panels/real-estate-analytics-panel').then(m => ({ default: m.RealEstateAnalyticsPanel })));
+const InflationMonitorPanel = lazy(() => import('../panels/inflation-monitor-panel').then(m => ({ default: m.InflationMonitorPanel })));
+const MergerArbitragePanel = lazy(() => import('../panels/merger-arbitrage-panel').then(m => ({ default: m.MergerArbitragePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -560,6 +562,8 @@ export const PANEL_IDS = {
   WARRANT_CONVERTIBLE: 'warrant-convertible',
   GLOBAL_TRADE_FLOW: 'global-trade-flow',
   REAL_ESTATE_ANALYTICS: 'real-estate-analytics',
+  INFLATION_MONITOR: 'inflation-monitor',
+  MERGER_ARBITRAGE: 'merger-arbitrage',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -830,6 +834,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.WARRANT_CONVERTIBLE]: 'WARRANT & CONVERTIBLE',
   [PANEL_IDS.GLOBAL_TRADE_FLOW]: 'GLOBAL TRADE FLOW',
   [PANEL_IDS.REAL_ESTATE_ANALYTICS]: 'REAL ESTATE ANALYTICS',
+  [PANEL_IDS.INFLATION_MONITOR]: 'INFLATION MONITOR',
+  [PANEL_IDS.MERGER_ARBITRAGE]: 'MERGER ARBITRAGE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1101,6 +1107,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.WARRANT_CONVERTIBLE]: 'panelWarrantConvertible',
   [PANEL_IDS.GLOBAL_TRADE_FLOW]: 'panelGlobalTradeFlow',
   [PANEL_IDS.REAL_ESTATE_ANALYTICS]: 'panelRealEstateAnalytics',
+  [PANEL_IDS.INFLATION_MONITOR]: 'panelInflationMonitor',
+  [PANEL_IDS.MERGER_ARBITRAGE]: 'panelMergerArbitrage',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1668,6 +1676,8 @@ export function DockLayout() {
       case PANEL_IDS.WARRANT_CONVERTIBLE: content = <LazyWrap><WarrantConvertiblePanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_TRADE_FLOW: content = <LazyWrap><GlobalTradeFlowPanel /></LazyWrap>; break;
       case PANEL_IDS.REAL_ESTATE_ANALYTICS: content = <LazyWrap><RealEstateAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.INFLATION_MONITOR: content = <LazyWrap><InflationMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.MERGER_ARBITRAGE: content = <LazyWrap><MergerArbitragePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
