@@ -233,6 +233,9 @@ import executionAnalyticsRouter from './routes/execution-analytics.js';
 import bondAuctionCalendarRouter from './routes/bond-auction-calendar.js';
 import fxCarryMonitorRouter from './routes/fx-carry-monitor.js';
 import equityCapitalMarketsRouter from './routes/equity-capital-markets.js';
+import debtCapitalMarketsRouter from './routes/debt-capital-markets.js';
+import hedgeFundMonitorRouter from './routes/hedge-fund-monitor.js';
+import riskDashboardRouter from './routes/risk-dashboard.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -567,6 +570,9 @@ export function createApp() {
   app.use('/api/bond-auction-calendar', bondAuctionCalendarRouter);
   app.use('/api/fx-carry-monitor', fxCarryMonitorRouter);
   app.use('/api/equity-capital-markets', equityCapitalMarketsRouter);
+  app.use('/api/debt-capital-markets', debtCapitalMarketsRouter);
+  app.use('/api/hedge-fund-monitor', hedgeFundMonitorRouter);
+  app.use('/api/risk-dashboard', riskDashboardRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
