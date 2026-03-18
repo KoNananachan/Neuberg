@@ -113,6 +113,9 @@ import eventDrivenRouter from './routes/event-driven.js';
 import debtMaturityRouter from './routes/debt-maturity.js';
 import equityRiskPremiumRouter from './routes/equity-risk-premium.js';
 import centralBanksRouter from './routes/central-banks.js';
+import volSkewRouter from './routes/vol-skew.js';
+import globalRatesRouter from './routes/global-rates.js';
+import supplyChainRouter from './routes/supply-chain.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -327,6 +330,9 @@ export function createApp() {
   app.use('/api/debt-maturity', debtMaturityRouter);
   app.use('/api/equity-risk-premium', equityRiskPremiumRouter);
   app.use('/api/central-banks', centralBanksRouter);
+  app.use('/api/vol-skew', volSkewRouter);
+  app.use('/api/global-rates', globalRatesRouter);
+  app.use('/api/supply-chain', supplyChainRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
