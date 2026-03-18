@@ -326,6 +326,9 @@ import insiderTransactionRouter from './routes/insider-transaction.js';
 import shortSqueezeRouter from './routes/short-squeeze.js';
 import spacMonitorRouter from './routes/spac-monitor.js';
 import blockTradeRouter from './routes/block-trade.js';
+import regulatoryFilingRouter from './routes/regulatory-filing.js';
+import taxLossHarvestRouter from './routes/tax-loss-harvest.js';
+import dividendCaptureRouter from './routes/dividend-capture.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -753,6 +756,9 @@ export function createApp() {
   app.use('/api/short-squeeze', shortSqueezeRouter);
   app.use('/api/spac-monitor', spacMonitorRouter);
   app.use('/api/block-trade', blockTradeRouter);
+  app.use('/api/regulatory-filing', regulatoryFilingRouter);
+  app.use('/api/tax-loss-harvest', taxLossHarvestRouter);
+  app.use('/api/dividend-capture', dividendCaptureRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

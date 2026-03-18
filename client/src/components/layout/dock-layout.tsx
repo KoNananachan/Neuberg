@@ -331,6 +331,9 @@ const InsiderTransactionPanel = lazy(() => import('../panels/insider-transaction
 const ShortSqueezePanel = lazy(() => import('../panels/short-squeeze-panel').then(m => ({ default: m.ShortSqueezePanel })));
 const SpacMonitorPanel = lazy(() => import('../panels/spac-monitor-panel').then(m => ({ default: m.SpacMonitorPanel })));
 const BlockTradePanel = lazy(() => import('../panels/block-trade-panel').then(m => ({ default: m.BlockTradePanel })));
+const RegulatoryFilingPanel = lazy(() => import('../panels/regulatory-filing-panel').then(m => ({ default: m.RegulatoryFilingPanel })));
+const TaxLossHarvestPanel = lazy(() => import('../panels/tax-loss-harvest-panel').then(m => ({ default: m.TaxLossHarvestPanel })));
+const DividendCapturePanel = lazy(() => import('../panels/dividend-capture-panel').then(m => ({ default: m.DividendCapturePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -674,6 +677,9 @@ export const PANEL_IDS = {
   SHORT_SQUEEZE: 'short-squeeze',
   SPAC_MONITOR: 'spac-monitor',
   BLOCK_TRADE: 'block-trade',
+  REGULATORY_FILING: 'regulatory-filing',
+  TAX_LOSS_HARVEST: 'tax-loss-harvest',
+  DIVIDEND_CAPTURE: 'dividend-capture',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1001,6 +1007,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SHORT_SQUEEZE]: 'SHORT SQUEEZE',
   [PANEL_IDS.SPAC_MONITOR]: 'SPAC MONITOR',
   [PANEL_IDS.BLOCK_TRADE]: 'BLOCK TRADE',
+  [PANEL_IDS.REGULATORY_FILING]: 'REGULATORY FILING',
+  [PANEL_IDS.TAX_LOSS_HARVEST]: 'TAX LOSS HARVEST',
+  [PANEL_IDS.DIVIDEND_CAPTURE]: 'DIVIDEND CAPTURE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1329,6 +1338,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SHORT_SQUEEZE]: 'panelShortSqueeze',
   [PANEL_IDS.SPAC_MONITOR]: 'panelSpacMonitor',
   [PANEL_IDS.BLOCK_TRADE]: 'panelBlockTrade',
+  [PANEL_IDS.REGULATORY_FILING]: 'panelRegulatoryFiling',
+  [PANEL_IDS.TAX_LOSS_HARVEST]: 'panelTaxLossHarvest',
+  [PANEL_IDS.DIVIDEND_CAPTURE]: 'panelDividendCapture',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1953,6 +1965,9 @@ export function DockLayout() {
       case PANEL_IDS.SHORT_SQUEEZE: content = <LazyWrap><ShortSqueezePanel /></LazyWrap>; break;
       case PANEL_IDS.SPAC_MONITOR: content = <LazyWrap><SpacMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.BLOCK_TRADE: content = <LazyWrap><BlockTradePanel /></LazyWrap>; break;
+      case PANEL_IDS.REGULATORY_FILING: content = <LazyWrap><RegulatoryFilingPanel /></LazyWrap>; break;
+      case PANEL_IDS.TAX_LOSS_HARVEST: content = <LazyWrap><TaxLossHarvestPanel /></LazyWrap>; break;
+      case PANEL_IDS.DIVIDEND_CAPTURE: content = <LazyWrap><DividendCapturePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
