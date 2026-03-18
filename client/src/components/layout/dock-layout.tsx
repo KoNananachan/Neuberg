@@ -352,6 +352,9 @@ const RiskBudgetingPanel = lazy(() => import('../panels/risk-budgeting-panel').t
 const MarketSurveillancePanel = lazy(() => import('../panels/market-surveillance-panel').then(m => ({ default: m.MarketSurveillancePanel })));
 const DurationManagementPanel = lazy(() => import('../panels/duration-management-panel').then(m => ({ default: m.DurationManagementPanel })));
 const SwapPricingPanel = lazy(() => import('../panels/swap-pricing-panel').then(m => ({ default: m.SwapPricingPanel })));
+const OptionStrategyBuilderPanel = lazy(() => import('../panels/option-strategy-builder-panel').then(m => ({ default: m.OptionStrategyBuilderPanel })));
+const CurrencyBasketPanel = lazy(() => import('../panels/currency-basket-panel').then(m => ({ default: m.CurrencyBasketPanel })));
+const LiquidityStressTestPanel = lazy(() => import('../panels/liquidity-stress-test-panel').then(m => ({ default: m.LiquidityStressTestPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -716,6 +719,9 @@ export const PANEL_IDS = {
   MARKET_SURVEILLANCE: 'market-surveillance',
   DURATION_MANAGEMENT: 'duration-management',
   SWAP_PRICING: 'swap-pricing',
+  OPTION_STRATEGY_BUILDER: 'option-strategy-builder',
+  CURRENCY_BASKET: 'currency-basket',
+  LIQUIDITY_STRESS_TEST: 'liquidity-stress-test',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1064,6 +1070,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MARKET_SURVEILLANCE]: 'MARKET SURVEILLANCE',
   [PANEL_IDS.DURATION_MANAGEMENT]: 'DURATION MANAGEMENT',
   [PANEL_IDS.SWAP_PRICING]: 'SWAP PRICING',
+  [PANEL_IDS.OPTION_STRATEGY_BUILDER]: 'OPTION STRATEGY BUILDER',
+  [PANEL_IDS.CURRENCY_BASKET]: 'CURRENCY BASKET',
+  [PANEL_IDS.LIQUIDITY_STRESS_TEST]: 'LIQUIDITY STRESS TEST',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1413,6 +1422,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MARKET_SURVEILLANCE]: 'panelMarketSurveillance',
   [PANEL_IDS.DURATION_MANAGEMENT]: 'panelDurationManagement',
   [PANEL_IDS.SWAP_PRICING]: 'panelSwapPricing',
+  [PANEL_IDS.OPTION_STRATEGY_BUILDER]: 'panelOptionStrategyBuilder',
+  [PANEL_IDS.CURRENCY_BASKET]: 'panelCurrencyBasket',
+  [PANEL_IDS.LIQUIDITY_STRESS_TEST]: 'panelLiquidityStressTest',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2058,6 +2070,9 @@ export function DockLayout() {
       case PANEL_IDS.MARKET_SURVEILLANCE: content = <LazyWrap><MarketSurveillancePanel /></LazyWrap>; break;
       case PANEL_IDS.DURATION_MANAGEMENT: content = <LazyWrap><DurationManagementPanel /></LazyWrap>; break;
       case PANEL_IDS.SWAP_PRICING: content = <LazyWrap><SwapPricingPanel /></LazyWrap>; break;
+      case PANEL_IDS.OPTION_STRATEGY_BUILDER: content = <LazyWrap><OptionStrategyBuilderPanel /></LazyWrap>; break;
+      case PANEL_IDS.CURRENCY_BASKET: content = <LazyWrap><CurrencyBasketPanel /></LazyWrap>; break;
+      case PANEL_IDS.LIQUIDITY_STRESS_TEST: content = <LazyWrap><LiquidityStressTestPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

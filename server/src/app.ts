@@ -347,6 +347,9 @@ import riskBudgetingRouter from './routes/risk-budgeting.js';
 import marketSurveillanceRouter from './routes/market-surveillance.js';
 import durationManagementRouter from './routes/duration-management.js';
 import swapPricingRouter from './routes/swap-pricing.js';
+import optionStrategyBuilderRouter from './routes/option-strategy-builder.js';
+import currencyBasketRouter from './routes/currency-basket.js';
+import liquidityStressTestRouter from './routes/liquidity-stress-test.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -795,6 +798,9 @@ export function createApp() {
   app.use('/api/market-surveillance', marketSurveillanceRouter);
   app.use('/api/duration-management', durationManagementRouter);
   app.use('/api/swap-pricing', swapPricingRouter);
+  app.use('/api/option-strategy-builder', optionStrategyBuilderRouter);
+  app.use('/api/currency-basket', currencyBasketRouter);
+  app.use('/api/liquidity-stress-test', liquidityStressTestRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
