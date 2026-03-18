@@ -1,0 +1,12 @@
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../client';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useDistressedDebt() {
+  return useQuery({
+    queryKey: ['distressed-debt'],
+    queryFn: () => api.get<any>('/distressed-debt'),
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 3 * 60 * 1000,
+  });
+}
