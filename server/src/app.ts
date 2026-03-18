@@ -146,6 +146,9 @@ import esgRatingsRouter from './routes/esg-ratings.js';
 import freightIndicesRouter from './routes/freight-indices.js';
 import alternativeDataRouter from './routes/alternative-data.js';
 import tradeIdeasRouter from './routes/trade-ideas.js';
+import debtIssuanceRouter from './routes/debt-issuance.js';
+import fxOptionsRouter from './routes/fx-options.js';
+import multiFactorRouter from './routes/multi-factor.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -393,6 +396,9 @@ export function createApp() {
   app.use('/api/freight-indices', freightIndicesRouter);
   app.use('/api/alternative-data', alternativeDataRouter);
   app.use('/api/trade-ideas', tradeIdeasRouter);
+  app.use('/api/debt-issuance', debtIssuanceRouter);
+  app.use('/api/fx-options', fxOptionsRouter);
+  app.use('/api/multi-factor', multiFactorRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
