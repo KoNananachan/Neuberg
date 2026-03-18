@@ -78,6 +78,9 @@ const MarketRegimePanel = lazy(() => import('../panels/market-regime-panel').the
 const RelativeValuationPanel = lazy(() => import('../panels/relative-valuation-panel').then(m => ({ default: m.RelativeValuationPanel })));
 const ConfluencePanel = lazy(() => import('../panels/confluence-panel').then(m => ({ default: m.ConfluencePanel })));
 const IVSurfacePanel = lazy(() => import('../panels/iv-surface-panel').then(m => ({ default: m.IVSurfacePanel })));
+const SeasonalityPanel = lazy(() => import('../panels/seasonality-panel').then(m => ({ default: m.SeasonalityPanel })));
+const OrderFlowPanel = lazy(() => import('../panels/order-flow-panel').then(m => ({ default: m.OrderFlowPanel })));
+const PortfolioOptimizerPanel = lazy(() => import('../panels/portfolio-optimizer-panel').then(m => ({ default: m.PortfolioOptimizerPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -168,6 +171,9 @@ export const PANEL_IDS = {
   RELATIVE_VALUATION: 'relative-valuation',
   CONFLUENCE: 'technical-confluence',
   IV_SURFACE: 'iv-surface',
+  SEASONALITY: 'seasonality',
+  ORDER_FLOW: 'order-flow',
+  PORTFOLIO_OPTIMIZER: 'portfolio-optimizer',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -242,6 +248,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.RELATIVE_VALUATION]: 'RELATIVE VALUATION',
   [PANEL_IDS.CONFLUENCE]: 'TECHNICAL CONFLUENCE',
   [PANEL_IDS.IV_SURFACE]: 'IV SURFACE',
+  [PANEL_IDS.SEASONALITY]: 'SEASONALITY',
+  [PANEL_IDS.ORDER_FLOW]: 'ORDER FLOW',
+  [PANEL_IDS.PORTFOLIO_OPTIMIZER]: 'PORTFOLIO OPTIMIZER',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -317,6 +326,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.RELATIVE_VALUATION]: 'panelRelativeValuation',
   [PANEL_IDS.CONFLUENCE]: 'panelConfluence',
   [PANEL_IDS.IV_SURFACE]: 'panelIVSurface',
+  [PANEL_IDS.SEASONALITY]: 'panelSeasonality',
+  [PANEL_IDS.ORDER_FLOW]: 'panelOrderFlow',
+  [PANEL_IDS.PORTFOLIO_OPTIMIZER]: 'panelPortfolioOptimizer',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -688,6 +700,9 @@ export function DockLayout() {
       case PANEL_IDS.RELATIVE_VALUATION: content = <LazyWrap><RelativeValuationPanel /></LazyWrap>; break;
       case PANEL_IDS.CONFLUENCE: content = <LazyWrap><ConfluencePanel /></LazyWrap>; break;
       case PANEL_IDS.IV_SURFACE: content = <LazyWrap><IVSurfacePanel /></LazyWrap>; break;
+      case PANEL_IDS.SEASONALITY: content = <LazyWrap><SeasonalityPanel /></LazyWrap>; break;
+      case PANEL_IDS.ORDER_FLOW: content = <LazyWrap><OrderFlowPanel /></LazyWrap>; break;
+      case PANEL_IDS.PORTFOLIO_OPTIMIZER: content = <LazyWrap><PortfolioOptimizerPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

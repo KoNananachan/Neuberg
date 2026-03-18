@@ -71,6 +71,9 @@ import marketRegimeRouter from './routes/market-regime.js';
 import relativeValuationRouter from './routes/relative-valuation.js';
 import confluenceRouter from './routes/confluence.js';
 import ivSurfaceRouter from './routes/iv-surface.js';
+import seasonalityRouter from './routes/seasonality.js';
+import orderFlowRouter from './routes/order-flow.js';
+import portfolioOptimizerRouter from './routes/portfolio-optimizer.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -243,6 +246,9 @@ export function createApp() {
   app.use('/api/relative-valuation', relativeValuationRouter);
   app.use('/api/confluence', confluenceRouter);
   app.use('/api/iv-surface', ivSurfaceRouter);
+  app.use('/api/seasonality', seasonalityRouter);
+  app.use('/api/order-flow', orderFlowRouter);
+  app.use('/api/portfolio-optimizer', portfolioOptimizerRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
