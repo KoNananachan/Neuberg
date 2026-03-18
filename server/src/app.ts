@@ -185,6 +185,9 @@ import tradeFinanceRouter from './routes/trade-finance.js';
 import repoMarketRouter from './routes/repo-market.js';
 import commodityInventoryRouter from './routes/commodity-inventory.js';
 import sovereignWealthRouter from './routes/sovereign-wealth.js';
+import agencyMbsTbaRouter from './routes/agency-mbs-tba.js';
+import etfFlowsRouter from './routes/etf-flows.js';
+import creditFlowRouter from './routes/credit-flow.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -471,6 +474,9 @@ export function createApp() {
   app.use('/api/repo-market', repoMarketRouter);
   app.use('/api/commodity-inventory', commodityInventoryRouter);
   app.use('/api/sovereign-wealth', sovereignWealthRouter);
+  app.use('/api/agency-mbs-tba', agencyMbsTbaRouter);
+  app.use('/api/etf-flows', etfFlowsRouter);
+  app.use('/api/credit-flow', creditFlowRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
