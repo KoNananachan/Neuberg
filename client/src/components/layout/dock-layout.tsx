@@ -143,6 +143,9 @@ const InsiderSentimentPanel = lazy(() => import('../panels/insider-sentiment-pan
 const CustomIndexPanel = lazy(() => import('../panels/custom-index-panel').then(m => ({ default: m.CustomIndexPanel })));
 const MbsAnalyticsPanel = lazy(() => import('../panels/mbs-analytics-panel').then(m => ({ default: m.MbsAnalyticsPanel })));
 const CdxIndexPanel = lazy(() => import('../panels/cdx-index-panel').then(m => ({ default: m.CdxIndexPanel })));
+const MuniBondsPanel = lazy(() => import('../panels/muni-bonds-panel').then(m => ({ default: m.MuniBondsPanel })));
+const CloAnalyticsPanel = lazy(() => import('../panels/clo-analytics-panel').then(m => ({ default: m.CloAnalyticsPanel })));
+const OnchainAnalyticsPanel = lazy(() => import('../panels/onchain-analytics-panel').then(m => ({ default: m.OnchainAnalyticsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -298,6 +301,9 @@ export const PANEL_IDS = {
   CUSTOM_INDEX: 'custom-index',
   MBS_ANALYTICS: 'mbs-analytics',
   CDX_INDEX: 'cdx-index',
+  MUNI_BONDS: 'muni-bonds',
+  CLO_ANALYTICS: 'clo-analytics',
+  ONCHAIN_ANALYTICS: 'onchain-analytics',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -437,6 +443,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CUSTOM_INDEX]: 'CUSTOM INDEX BUILDER',
   [PANEL_IDS.MBS_ANALYTICS]: 'MBS ANALYTICS',
   [PANEL_IDS.CDX_INDEX]: 'CDX / ITRAXX INDEX',
+  [PANEL_IDS.MUNI_BONDS]: 'MUNICIPAL BONDS',
+  [PANEL_IDS.CLO_ANALYTICS]: 'CLO ANALYTICS',
+  [PANEL_IDS.ONCHAIN_ANALYTICS]: 'ON-CHAIN ANALYTICS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -577,6 +586,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CUSTOM_INDEX]: 'panelCustomIndex',
   [PANEL_IDS.MBS_ANALYTICS]: 'panelMbsAnalytics',
   [PANEL_IDS.CDX_INDEX]: 'panelCdxIndex',
+  [PANEL_IDS.MUNI_BONDS]: 'panelMuniBonds',
+  [PANEL_IDS.CLO_ANALYTICS]: 'panelCloAnalytics',
+  [PANEL_IDS.ONCHAIN_ANALYTICS]: 'panelOnchainAnalytics',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1013,6 +1025,9 @@ export function DockLayout() {
       case PANEL_IDS.CUSTOM_INDEX: content = <LazyWrap><CustomIndexPanel /></LazyWrap>; break;
       case PANEL_IDS.MBS_ANALYTICS: content = <LazyWrap><MbsAnalyticsPanel /></LazyWrap>; break;
       case PANEL_IDS.CDX_INDEX: content = <LazyWrap><CdxIndexPanel /></LazyWrap>; break;
+      case PANEL_IDS.MUNI_BONDS: content = <LazyWrap><MuniBondsPanel /></LazyWrap>; break;
+      case PANEL_IDS.CLO_ANALYTICS: content = <LazyWrap><CloAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.ONCHAIN_ANALYTICS: content = <LazyWrap><OnchainAnalyticsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
