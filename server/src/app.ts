@@ -55,6 +55,7 @@ import pairsRouter from './routes/pairs.js';
 import fibonacciRouter from './routes/fibonacci.js';
 import volatilityRouter from './routes/volatility.js';
 import relativeStrengthRouter from './routes/relative-strength.js';
+import fxCrossRouter from './routes/fx-cross.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -211,6 +212,7 @@ export function createApp() {
   app.use('/api/fibonacci', fibonacciRouter);
   app.use('/api/volatility', volatilityRouter);
   app.use('/api/relative-strength', relativeStrengthRouter);
+  app.use('/api/fx-cross', fxCrossRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

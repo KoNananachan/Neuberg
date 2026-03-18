@@ -57,6 +57,9 @@ const FibonacciPanel = lazy(() => import('../panels/fibonacci-panel').then(m => 
 const MortgageCalcPanel = lazy(() => import('../panels/mortgage-calc-panel').then(m => ({ default: m.MortgageCalcPanel })));
 const InvestmentCalcPanel = lazy(() => import('../panels/investment-calc-panel').then(m => ({ default: m.InvestmentCalcPanel })));
 const RelativeStrengthPanel = lazy(() => import('../panels/relative-strength-panel').then(m => ({ default: m.RelativeStrengthPanel })));
+const WatchlistPanel = lazy(() => import('../panels/watchlist-panel').then(m => ({ default: m.WatchlistPanel })));
+const EconomicIndicatorsPanel = lazy(() => import('../panels/economic-indicators-panel').then(m => ({ default: m.EconomicIndicatorsPanel })));
+const FXCrossPanel = lazy(() => import('../panels/fx-cross-panel').then(m => ({ default: m.FxCrossPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -73,7 +76,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 20; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 21; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -126,6 +129,9 @@ export const PANEL_IDS = {
   MORTGAGE_CALC: 'mortgage-calc',
   INVESTMENT_CALC: 'investment-calc',
   RELATIVE_STRENGTH: 'relative-strength',
+  WATCHLIST: 'watchlist',
+  ECON_INDICATORS: 'econ-indicators',
+  FX_CROSS: 'fx-cross-rates',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -179,6 +185,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MORTGAGE_CALC]: 'MORTGAGE CALC',
   [PANEL_IDS.INVESTMENT_CALC]: 'INVESTMENT CALC',
   [PANEL_IDS.RELATIVE_STRENGTH]: 'RELATIVE STRENGTH',
+  [PANEL_IDS.WATCHLIST]: 'WATCHLIST',
+  [PANEL_IDS.ECON_INDICATORS]: 'ECONOMIC INDICATORS',
+  [PANEL_IDS.FX_CROSS]: 'FX CROSS RATES',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -233,6 +242,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MORTGAGE_CALC]: 'panelMortgage',
   [PANEL_IDS.INVESTMENT_CALC]: 'panelInvestCalc',
   [PANEL_IDS.RELATIVE_STRENGTH]: 'panelRelStrength',
+  [PANEL_IDS.WATCHLIST]: 'panelWatchlist',
+  [PANEL_IDS.ECON_INDICATORS]: 'panelEconIndicators',
+  [PANEL_IDS.FX_CROSS]: 'panelFXCross',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -565,6 +577,9 @@ export function DockLayout() {
       case PANEL_IDS.MORTGAGE_CALC: content = <LazyWrap><MortgageCalcPanel /></LazyWrap>; break;
       case PANEL_IDS.INVESTMENT_CALC: content = <LazyWrap><InvestmentCalcPanel /></LazyWrap>; break;
       case PANEL_IDS.RELATIVE_STRENGTH: content = <LazyWrap><RelativeStrengthPanel /></LazyWrap>; break;
+      case PANEL_IDS.WATCHLIST: content = <LazyWrap><WatchlistPanel /></LazyWrap>; break;
+      case PANEL_IDS.ECON_INDICATORS: content = <LazyWrap><EconomicIndicatorsPanel /></LazyWrap>; break;
+      case PANEL_IDS.FX_CROSS: content = <LazyWrap><FXCrossPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
