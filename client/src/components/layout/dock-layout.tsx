@@ -122,6 +122,9 @@ const CentralBanksPanel = lazy(() => import('../panels/central-banks-panel').the
 const VolSkewPanel = lazy(() => import('../panels/vol-skew-panel').then(m => ({ default: m.VolSkewPanel })));
 const GlobalRatesPanel = lazy(() => import('../panels/global-rates-panel').then(m => ({ default: m.GlobalRatesPanel })));
 const SupplyChainPanel = lazy(() => import('../panels/supply-chain-panel').then(m => ({ default: m.SupplyChainPanel })));
+const GammaExposurePanel = lazy(() => import('../panels/gamma-exposure-panel').then(m => ({ default: m.GammaExposurePanel })));
+const SovereignSpreadsPanel = lazy(() => import('../panels/sovereign-spreads-panel').then(m => ({ default: m.SovereignSpreadsPanel })));
+const EarningsRevisionsPanel = lazy(() => import('../panels/earnings-revisions-panel').then(m => ({ default: m.EarningsRevisionsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -256,6 +259,9 @@ export const PANEL_IDS = {
   VOL_SKEW: 'vol-skew',
   GLOBAL_RATES: 'global-rates',
   SUPPLY_CHAIN: 'supply-chain',
+  GAMMA_EXPOSURE: 'gamma-exposure',
+  SOVEREIGN_SPREADS: 'sovereign-spreads',
+  EARNINGS_REVISIONS: 'earnings-revisions',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -374,6 +380,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.VOL_SKEW]: 'VOL SKEW MONITOR',
   [PANEL_IDS.GLOBAL_RATES]: 'GLOBAL RATES',
   [PANEL_IDS.SUPPLY_CHAIN]: 'SUPPLY CHAIN MONITOR',
+  [PANEL_IDS.GAMMA_EXPOSURE]: 'GAMMA EXPOSURE',
+  [PANEL_IDS.SOVEREIGN_SPREADS]: 'SOVEREIGN SPREADS',
+  [PANEL_IDS.EARNINGS_REVISIONS]: 'EARNINGS REVISIONS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -493,6 +502,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.VOL_SKEW]: 'panelVolSkew',
   [PANEL_IDS.GLOBAL_RATES]: 'panelGlobalRates',
   [PANEL_IDS.SUPPLY_CHAIN]: 'panelSupplyChain',
+  [PANEL_IDS.GAMMA_EXPOSURE]: 'panelGammaExposure',
+  [PANEL_IDS.SOVEREIGN_SPREADS]: 'panelSovereignSpreads',
+  [PANEL_IDS.EARNINGS_REVISIONS]: 'panelEarningsRevisions',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -908,6 +920,9 @@ export function DockLayout() {
       case PANEL_IDS.VOL_SKEW: content = <LazyWrap><VolSkewPanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_RATES: content = <LazyWrap><GlobalRatesPanel /></LazyWrap>; break;
       case PANEL_IDS.SUPPLY_CHAIN: content = <LazyWrap><SupplyChainPanel /></LazyWrap>; break;
+      case PANEL_IDS.GAMMA_EXPOSURE: content = <LazyWrap><GammaExposurePanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_SPREADS: content = <LazyWrap><SovereignSpreadsPanel /></LazyWrap>; break;
+      case PANEL_IDS.EARNINGS_REVISIONS: content = <LazyWrap><EarningsRevisionsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

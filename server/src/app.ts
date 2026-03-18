@@ -116,6 +116,9 @@ import centralBanksRouter from './routes/central-banks.js';
 import volSkewRouter from './routes/vol-skew.js';
 import globalRatesRouter from './routes/global-rates.js';
 import supplyChainRouter from './routes/supply-chain.js';
+import gammaExposureRouter from './routes/gamma-exposure.js';
+import sovereignSpreadsRouter from './routes/sovereign-spreads.js';
+import earningsRevisionsRouter from './routes/earnings-revisions.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -333,6 +336,9 @@ export function createApp() {
   app.use('/api/vol-skew', volSkewRouter);
   app.use('/api/global-rates', globalRatesRouter);
   app.use('/api/supply-chain', supplyChainRouter);
+  app.use('/api/gamma-exposure', gammaExposureRouter);
+  app.use('/api/sovereign-spreads', sovereignSpreadsRouter);
+  app.use('/api/earnings-revisions', earningsRevisionsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
