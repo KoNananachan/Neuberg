@@ -202,6 +202,9 @@ import freightDerivativesRouter from './routes/freight-derivatives.js';
 import inflationBreakevensRouter from './routes/inflation-breakevens.js';
 import muniBondAuctionRouter from './routes/muni-bond-auction.js';
 import commodityCurveAnalyticsRouter from './routes/commodity-curve-analytics.js';
+import collateralMonitorRouter from './routes/collateral-monitor.js';
+import sovereignCdsRouter from './routes/sovereign-cds.js';
+import crossAssetMomentumRouter from './routes/cross-asset-momentum.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -505,6 +508,9 @@ export function createApp() {
   app.use('/api/inflation-breakevens', inflationBreakevensRouter);
   app.use('/api/muni-bond-auction', muniBondAuctionRouter);
   app.use('/api/commodity-curve-analytics', commodityCurveAnalyticsRouter);
+  app.use('/api/collateral-monitor', collateralMonitorRouter);
+  app.use('/api/sovereign-cds', sovereignCdsRouter);
+  app.use('/api/cross-asset-momentum', crossAssetMomentumRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

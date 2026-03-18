@@ -208,6 +208,9 @@ const FreightDerivativesPanel = lazy(() => import('../panels/freight-derivatives
 const InflationBreakevensPanel = lazy(() => import('../panels/inflation-breakevens-panel').then(m => ({ default: m.InflationBreakevensPanel })));
 const MuniBondAuctionPanel = lazy(() => import('../panels/muni-bond-auction-panel').then(m => ({ default: m.MuniBondAuctionPanel })));
 const CommodityCurveAnalyticsPanel = lazy(() => import('../panels/commodity-curve-analytics-panel').then(m => ({ default: m.CommodityCurveAnalyticsPanel })));
+const CollateralMonitorPanel = lazy(() => import('../panels/collateral-monitor-panel').then(m => ({ default: m.CollateralMonitorPanel })));
+const SovereignCdsPanel = lazy(() => import('../panels/sovereign-cds-panel').then(m => ({ default: m.SovereignCdsPanel })));
+const CrossAssetMomentumPanel = lazy(() => import('../panels/cross-asset-momentum-panel').then(m => ({ default: m.CrossAssetMomentumPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -428,6 +431,9 @@ export const PANEL_IDS = {
   INFLATION_BREAKEVENS: 'inflation-breakevens',
   MUNI_BOND_AUCTION: 'muni-bond-auction',
   COMMODITY_CURVE_ANALYTICS: 'commodity-curve-analytics',
+  COLLATERAL_MONITOR: 'collateral-monitor',
+  SOVEREIGN_CDS: 'sovereign-cds',
+  CROSS_ASSET_MOMENTUM: 'cross-asset-momentum',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -632,6 +638,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.INFLATION_BREAKEVENS]: 'INFLATION BREAKEVENS',
   [PANEL_IDS.MUNI_BOND_AUCTION]: 'MUNI BOND AUCTION',
   [PANEL_IDS.COMMODITY_CURVE_ANALYTICS]: 'COMMODITY CURVE ANALYTICS',
+  [PANEL_IDS.COLLATERAL_MONITOR]: 'COLLATERAL MONITOR',
+  [PANEL_IDS.SOVEREIGN_CDS]: 'SOVEREIGN CDS',
+  [PANEL_IDS.CROSS_ASSET_MOMENTUM]: 'CROSS-ASSET MOMENTUM',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -837,6 +846,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.INFLATION_BREAKEVENS]: 'panelInflationBreakevens',
   [PANEL_IDS.MUNI_BOND_AUCTION]: 'panelMuniBondAuction',
   [PANEL_IDS.COMMODITY_CURVE_ANALYTICS]: 'panelCommodityCurveAnalytics',
+  [PANEL_IDS.COLLATERAL_MONITOR]: 'panelCollateralMonitor',
+  [PANEL_IDS.SOVEREIGN_CDS]: 'panelSovereignCds',
+  [PANEL_IDS.CROSS_ASSET_MOMENTUM]: 'panelCrossAssetMomentum',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1338,6 +1350,9 @@ export function DockLayout() {
       case PANEL_IDS.INFLATION_BREAKEVENS: content = <LazyWrap><InflationBreakevensPanel /></LazyWrap>; break;
       case PANEL_IDS.MUNI_BOND_AUCTION: content = <LazyWrap><MuniBondAuctionPanel /></LazyWrap>; break;
       case PANEL_IDS.COMMODITY_CURVE_ANALYTICS: content = <LazyWrap><CommodityCurveAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.COLLATERAL_MONITOR: content = <LazyWrap><CollateralMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_CDS: content = <LazyWrap><SovereignCdsPanel /></LazyWrap>; break;
+      case PANEL_IDS.CROSS_ASSET_MOMENTUM: content = <LazyWrap><CrossAssetMomentumPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
