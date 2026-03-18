@@ -182,6 +182,9 @@ const LoanCdsPanel = lazy(() => import('../panels/loan-cds-panel').then(m => ({ 
 const ConvertibleArbPanel = lazy(() => import('../panels/convertible-arb-panel').then(m => ({ default: m.ConvertibleArbPanel })));
 const ShippingRatesPanel = lazy(() => import('../panels/shipping-rates-panel').then(m => ({ default: m.ShippingRatesPanel })));
 const CreditAuctionPanel = lazy(() => import('../panels/credit-auction-panel').then(m => ({ default: m.CreditAuctionPanel })));
+const MuniYieldCurvesPanel = lazy(() => import('../panels/muni-yield-curves-panel').then(m => ({ default: m.MuniYieldCurvesPanel })));
+const StructuredProductsPanel = lazy(() => import('../panels/structured-products-panel').then(m => ({ default: m.StructuredProductsPanel })));
+const PensionFundPanel = lazy(() => import('../panels/pension-fund-panel').then(m => ({ default: m.PensionFundPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -376,6 +379,9 @@ export const PANEL_IDS = {
   CONVERTIBLE_ARB: 'convertible-arb',
   SHIPPING_RATES: 'shipping-rates',
   CREDIT_AUCTION: 'credit-auction',
+  MUNI_YIELD_CURVES: 'muni-yield-curves',
+  STRUCTURED_PRODUCTS: 'structured-products',
+  PENSION_FUND: 'pension-fund',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -554,6 +560,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CONVERTIBLE_ARB]: 'CONVERTIBLE ARB',
   [PANEL_IDS.SHIPPING_RATES]: 'SHIPPING RATES',
   [PANEL_IDS.CREDIT_AUCTION]: 'CREDIT AUCTION',
+  [PANEL_IDS.MUNI_YIELD_CURVES]: 'MUNI YIELD CURVES',
+  [PANEL_IDS.STRUCTURED_PRODUCTS]: 'STRUCTURED PRODUCTS',
+  [PANEL_IDS.PENSION_FUND]: 'PENSION FUND',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -733,6 +742,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CONVERTIBLE_ARB]: 'panelConvertibleArb',
   [PANEL_IDS.SHIPPING_RATES]: 'panelShippingRates',
   [PANEL_IDS.CREDIT_AUCTION]: 'panelCreditAuction',
+  [PANEL_IDS.MUNI_YIELD_CURVES]: 'panelMuniYieldCurves',
+  [PANEL_IDS.STRUCTURED_PRODUCTS]: 'panelStructuredProducts',
+  [PANEL_IDS.PENSION_FUND]: 'panelPensionFund',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1208,6 +1220,9 @@ export function DockLayout() {
       case PANEL_IDS.CONVERTIBLE_ARB: content = <LazyWrap><ConvertibleArbPanel /></LazyWrap>; break;
       case PANEL_IDS.SHIPPING_RATES: content = <LazyWrap><ShippingRatesPanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_AUCTION: content = <LazyWrap><CreditAuctionPanel /></LazyWrap>; break;
+      case PANEL_IDS.MUNI_YIELD_CURVES: content = <LazyWrap><MuniYieldCurvesPanel /></LazyWrap>; break;
+      case PANEL_IDS.STRUCTURED_PRODUCTS: content = <LazyWrap><StructuredProductsPanel /></LazyWrap>; break;
+      case PANEL_IDS.PENSION_FUND: content = <LazyWrap><PensionFundPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

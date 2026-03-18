@@ -176,6 +176,9 @@ import loanCdsRouter from './routes/loan-cds.js';
 import convertibleArbRouter from './routes/convertible-arb.js';
 import shippingRatesRouter from './routes/shipping-rates.js';
 import creditAuctionRouter from './routes/credit-auction.js';
+import muniYieldCurvesRouter from './routes/muni-yield-curves.js';
+import structuredProductsRouter from './routes/structured-products.js';
+import pensionFundRouter from './routes/pension-fund.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -453,6 +456,9 @@ export function createApp() {
   app.use('/api/convertible-arb', convertibleArbRouter);
   app.use('/api/shipping-rates', shippingRatesRouter);
   app.use('/api/credit-auction', creditAuctionRouter);
+  app.use('/api/muni-yield-curves', muniYieldCurvesRouter);
+  app.use('/api/structured-products', structuredProductsRouter);
+  app.use('/api/pension-fund', pensionFundRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
