@@ -236,6 +236,9 @@ const StructuredNotesPanel = lazy(() => import('../panels/structured-notes-panel
 const SecuritiesFinancePanel = lazy(() => import('../panels/securities-finance-panel').then(m => ({ default: m.SecuritiesFinancePanel })));
 const CreditCurveBuilderPanel = lazy(() => import('../panels/credit-curve-builder-panel').then(m => ({ default: m.CreditCurveBuilderPanel })));
 const ExecutionAnalyticsPanel = lazy(() => import('../panels/execution-analytics-panel').then(m => ({ default: m.ExecutionAnalyticsPanel })));
+const BondAuctionCalendarPanel = lazy(() => import('../panels/bond-auction-calendar-panel').then(m => ({ default: m.BondAuctionCalendarPanel })));
+const FxCarryMonitorPanel = lazy(() => import('../panels/fx-carry-monitor-panel').then(m => ({ default: m.FxCarryMonitorPanel })));
+const EquityCapitalMarketsPanel = lazy(() => import('../panels/equity-capital-markets-panel').then(m => ({ default: m.EquityCapitalMarketsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -484,6 +487,9 @@ export const PANEL_IDS = {
   SECURITIES_FINANCE: 'securities-finance',
   CREDIT_CURVE_BUILDER: 'credit-curve-builder',
   EXECUTION_ANALYTICS: 'execution-analytics',
+  BOND_AUCTION_CALENDAR: 'bond-auction-calendar',
+  FX_CARRY_MONITOR: 'fx-carry-monitor',
+  EQUITY_CAPITAL_MARKETS: 'equity-capital-markets',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -716,6 +722,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SECURITIES_FINANCE]: 'SECURITIES FINANCE',
   [PANEL_IDS.CREDIT_CURVE_BUILDER]: 'CREDIT CURVE BUILDER',
   [PANEL_IDS.EXECUTION_ANALYTICS]: 'EXECUTION ANALYTICS',
+  [PANEL_IDS.BOND_AUCTION_CALENDAR]: 'BOND AUCTION CALENDAR',
+  [PANEL_IDS.FX_CARRY_MONITOR]: 'FX CARRY MONITOR',
+  [PANEL_IDS.EQUITY_CAPITAL_MARKETS]: 'EQUITY CAPITAL MARKETS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -949,6 +958,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SECURITIES_FINANCE]: 'panelSecuritiesFinance',
   [PANEL_IDS.CREDIT_CURVE_BUILDER]: 'panelCreditCurveBuilder',
   [PANEL_IDS.EXECUTION_ANALYTICS]: 'panelExecutionAnalytics',
+  [PANEL_IDS.BOND_AUCTION_CALENDAR]: 'panelBondAuctionCalendar',
+  [PANEL_IDS.FX_CARRY_MONITOR]: 'panelFxCarryMonitor',
+  [PANEL_IDS.EQUITY_CAPITAL_MARKETS]: 'panelEquityCapitalMarkets',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1478,6 +1490,9 @@ export function DockLayout() {
       case PANEL_IDS.SECURITIES_FINANCE: content = <LazyWrap><SecuritiesFinancePanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_CURVE_BUILDER: content = <LazyWrap><CreditCurveBuilderPanel /></LazyWrap>; break;
       case PANEL_IDS.EXECUTION_ANALYTICS: content = <LazyWrap><ExecutionAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.BOND_AUCTION_CALENDAR: content = <LazyWrap><BondAuctionCalendarPanel /></LazyWrap>; break;
+      case PANEL_IDS.FX_CARRY_MONITOR: content = <LazyWrap><FxCarryMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_CAPITAL_MARKETS: content = <LazyWrap><EquityCapitalMarketsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
