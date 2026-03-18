@@ -131,6 +131,9 @@ import globalFlowsRouter from './routes/global-flows.js';
 import regressionAnalysisRouter from './routes/regression-analysis.js';
 import covenantMonitorRouter from './routes/covenant-monitor.js';
 import marketInternalsRouter from './routes/market-internals.js';
+import valuationMultiplesRouter from './routes/valuation-multiples.js';
+import fixedIncomeAnalyticsRouter from './routes/fixed-income-analytics.js';
+import insiderSentimentRouter from './routes/insider-sentiment.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -363,6 +366,9 @@ export function createApp() {
   app.use('/api/regression-analysis', regressionAnalysisRouter);
   app.use('/api/covenant-monitor', covenantMonitorRouter);
   app.use('/api/market-internals', marketInternalsRouter);
+  app.use('/api/valuation-multiples', valuationMultiplesRouter);
+  app.use('/api/fixed-income-analytics', fixedIncomeAnalyticsRouter);
+  app.use('/api/insider-sentiment', insiderSentimentRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
