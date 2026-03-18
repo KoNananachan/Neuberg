@@ -52,6 +52,9 @@ const PivotPointsPanel = lazy(() => import('../panels/pivot-points-panel').then(
 const MarketHoursPanel = lazy(() => import('../panels/market-hours-panel').then(m => ({ default: m.MarketHoursPanel })));
 const MarketCalendarPanel = lazy(() => import('../panels/market-calendar-panel').then(m => ({ default: m.MarketCalendarPanel })));
 const PairsPanel = lazy(() => import('../panels/pairs-panel').then(m => ({ default: m.PairsPanel })));
+const VolatilityPanel = lazy(() => import('../panels/volatility-panel').then(m => ({ default: m.VolatilityPanel })));
+const FibonacciPanel = lazy(() => import('../panels/fibonacci-panel').then(m => ({ default: m.FibonacciPanel })));
+const MortgageCalcPanel = lazy(() => import('../panels/mortgage-calc-panel').then(m => ({ default: m.MortgageCalcPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -68,7 +71,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 18; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 19; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -116,6 +119,9 @@ export const PANEL_IDS = {
   MARKET_HOURS: 'market-hours',
   MARKET_CALENDAR: 'market-calendar',
   PAIRS_TRADING: 'pairs-trading',
+  VOLATILITY: 'volatility',
+  FIBONACCI: 'fibonacci',
+  MORTGAGE_CALC: 'mortgage-calc',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -164,6 +170,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MARKET_HOURS]: 'MARKET HOURS',
   [PANEL_IDS.MARKET_CALENDAR]: 'MARKET CALENDAR',
   [PANEL_IDS.PAIRS_TRADING]: 'PAIRS TRADING',
+  [PANEL_IDS.VOLATILITY]: 'VOLATILITY',
+  [PANEL_IDS.FIBONACCI]: 'FIBONACCI',
+  [PANEL_IDS.MORTGAGE_CALC]: 'MORTGAGE CALC',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -213,6 +222,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MARKET_HOURS]: 'panelMarketHours',
   [PANEL_IDS.MARKET_CALENDAR]: 'panelMarketCalendar',
   [PANEL_IDS.PAIRS_TRADING]: 'panelPairs',
+  [PANEL_IDS.VOLATILITY]: 'panelVolatility',
+  [PANEL_IDS.FIBONACCI]: 'panelFibonacci',
+  [PANEL_IDS.MORTGAGE_CALC]: 'panelMortgage',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -540,6 +552,9 @@ export function DockLayout() {
       case PANEL_IDS.MARKET_HOURS: content = <LazyWrap><MarketHoursPanel /></LazyWrap>; break;
       case PANEL_IDS.MARKET_CALENDAR: content = <LazyWrap><MarketCalendarPanel /></LazyWrap>; break;
       case PANEL_IDS.PAIRS_TRADING: content = <LazyWrap><PairsPanel /></LazyWrap>; break;
+      case PANEL_IDS.VOLATILITY: content = <LazyWrap><VolatilityPanel /></LazyWrap>; break;
+      case PANEL_IDS.FIBONACCI: content = <LazyWrap><FibonacciPanel /></LazyWrap>; break;
+      case PANEL_IDS.MORTGAGE_CALC: content = <LazyWrap><MortgageCalcPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

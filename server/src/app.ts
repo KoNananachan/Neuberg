@@ -52,6 +52,8 @@ import fxConverterRouter from './routes/fx-converter.js';
 import pivotPointsRouter from './routes/pivot-points.js';
 import companyProfileRouter from './routes/company-profile.js';
 import pairsRouter from './routes/pairs.js';
+import fibonacciRouter from './routes/fibonacci.js';
+import volatilityRouter from './routes/volatility.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -205,6 +207,8 @@ export function createApp() {
   app.use('/api/pivot-points', pivotPointsRouter);
   app.use('/api/company-profile', companyProfileRouter);
   app.use('/api/pairs', pairsRouter);
+  app.use('/api/fibonacci', fibonacciRouter);
+  app.use('/api/volatility', volatilityRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
