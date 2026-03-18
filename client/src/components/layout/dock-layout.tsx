@@ -304,6 +304,9 @@ const BasisTradePanel = lazy(() => import('../panels/basis-trade-panel').then(m 
 const FlowOfFundsPanel = lazy(() => import('../panels/flow-of-funds-panel').then(m => ({ default: m.FlowOfFundsPanel })));
 const GlobalSupplyChainPanel = lazy(() => import('../panels/global-supply-chain-panel').then(m => ({ default: m.GlobalSupplyChainPanel })));
 const TreasuryAnalyticsPanel = lazy(() => import('../panels/treasury-analytics-panel').then(m => ({ default: m.TreasuryAnalyticsPanel })));
+const CurveTradePanel = lazy(() => import('../panels/curve-trade-panel').then(m => ({ default: m.CurveTradePanel })));
+const PrivateEquityPanel = lazy(() => import('../panels/private-equity-panel').then(m => ({ default: m.PrivateEquityPanel })));
+const CapitalStructurePanel = lazy(() => import('../panels/capital-structure-panel').then(m => ({ default: m.CapitalStructurePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -620,6 +623,9 @@ export const PANEL_IDS = {
   FLOW_OF_FUNDS: 'flow-of-funds',
   GLOBAL_SUPPLY_CHAIN: 'global-supply-chain',
   TREASURY_ANALYTICS: 'treasury-analytics',
+  CURVE_TRADE: 'curve-trade',
+  PRIVATE_EQUITY: 'private-equity',
+  CAPITAL_STRUCTURE: 'capital-structure',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -920,6 +926,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.FLOW_OF_FUNDS]: 'FLOW OF FUNDS',
   [PANEL_IDS.GLOBAL_SUPPLY_CHAIN]: 'SUPPLY CHAIN',
   [PANEL_IDS.TREASURY_ANALYTICS]: 'TREASURY ANALYTICS',
+  [PANEL_IDS.CURVE_TRADE]: 'CURVE TRADE',
+  [PANEL_IDS.PRIVATE_EQUITY]: 'PRIVATE EQUITY',
+  [PANEL_IDS.CAPITAL_STRUCTURE]: 'CAPITAL STRUCTURE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1221,6 +1230,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.FLOW_OF_FUNDS]: 'panelFlowOfFunds',
   [PANEL_IDS.GLOBAL_SUPPLY_CHAIN]: 'panelGlobalSupplyChain',
   [PANEL_IDS.TREASURY_ANALYTICS]: 'panelTreasuryAnalytics',
+  [PANEL_IDS.CURVE_TRADE]: 'panelCurveTrade',
+  [PANEL_IDS.PRIVATE_EQUITY]: 'panelPrivateEquity',
+  [PANEL_IDS.CAPITAL_STRUCTURE]: 'panelCapitalStructure',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1818,6 +1830,9 @@ export function DockLayout() {
       case PANEL_IDS.FLOW_OF_FUNDS: content = <LazyWrap><FlowOfFundsPanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_SUPPLY_CHAIN: content = <LazyWrap><GlobalSupplyChainPanel /></LazyWrap>; break;
       case PANEL_IDS.TREASURY_ANALYTICS: content = <LazyWrap><TreasuryAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.CURVE_TRADE: content = <LazyWrap><CurveTradePanel /></LazyWrap>; break;
+      case PANEL_IDS.PRIVATE_EQUITY: content = <LazyWrap><PrivateEquityPanel /></LazyWrap>; break;
+      case PANEL_IDS.CAPITAL_STRUCTURE: content = <LazyWrap><CapitalStructurePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

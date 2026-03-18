@@ -299,6 +299,9 @@ import basisTradeRouter from './routes/basis-trade.js';
 import flowOfFundsRouter from './routes/flow-of-funds.js';
 import globalSupplyChainRouter from './routes/global-supply-chain.js';
 import treasuryAnalyticsRouter from './routes/treasury-analytics.js';
+import curveTradeRouter from './routes/curve-trade.js';
+import privateEquityRouter from './routes/private-equity.js';
+import capitalStructureRouter from './routes/capital-structure.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -699,6 +702,9 @@ export function createApp() {
   app.use('/api/flow-of-funds', flowOfFundsRouter);
   app.use('/api/global-supply-chain', globalSupplyChainRouter);
   app.use('/api/treasury-analytics', treasuryAnalyticsRouter);
+  app.use('/api/curve-trade', curveTradeRouter);
+  app.use('/api/private-equity', privateEquityRouter);
+  app.use('/api/capital-structure', capitalStructureRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
