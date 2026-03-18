@@ -245,6 +245,9 @@ import tradeRecapRouter from './routes/trade-recap.js';
 import macroSurpriseTrackerRouter from './routes/macro-surprise-tracker.js';
 import fxVolatilitySurfaceRouter from './routes/fx-volatility-surface.js';
 import commodityFundamentalRouter from './routes/commodity-fundamental.js';
+import etfFlowMonitorRouter from './routes/etf-flow-monitor.js';
+import equityFactorMonitorRouter from './routes/equity-factor-monitor.js';
+import ratesStrategyRouter from './routes/rates-strategy.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -591,6 +594,9 @@ export function createApp() {
   app.use('/api/macro-surprise-tracker', macroSurpriseTrackerRouter);
   app.use('/api/fx-volatility-surface', fxVolatilitySurfaceRouter);
   app.use('/api/commodity-fundamental', commodityFundamentalRouter);
+  app.use('/api/etf-flow-monitor', etfFlowMonitorRouter);
+  app.use('/api/equity-factor-monitor', equityFactorMonitorRouter);
+  app.use('/api/rates-strategy', ratesStrategyRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

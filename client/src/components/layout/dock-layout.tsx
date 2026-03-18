@@ -251,6 +251,9 @@ const TradeRecapPanel = lazy(() => import('../panels/trade-recap-panel').then(m 
 const MacroSurpriseTrackerPanel = lazy(() => import('../panels/macro-surprise-tracker-panel').then(m => ({ default: m.MacroSurpriseTrackerPanel })));
 const FxVolatilitySurfacePanel = lazy(() => import('../panels/fx-volatility-surface-panel').then(m => ({ default: m.FxVolatilitySurfacePanel })));
 const CommodityFundamentalPanel = lazy(() => import('../panels/commodity-fundamental-panel').then(m => ({ default: m.CommodityFundamentalPanel })));
+const EtfFlowMonitorPanel = lazy(() => import('../panels/etf-flow-monitor-panel').then(m => ({ default: m.EtfFlowMonitorPanel })));
+const EquityFactorMonitorPanel = lazy(() => import('../panels/equity-factor-monitor-panel').then(m => ({ default: m.EquityFactorMonitorPanel })));
+const RatesStrategyPanel = lazy(() => import('../panels/rates-strategy-panel').then(m => ({ default: m.RatesStrategyPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -514,6 +517,9 @@ export const PANEL_IDS = {
   MACRO_SURPRISE_TRACKER: 'macro-surprise-tracker',
   FX_VOLATILITY_SURFACE: 'fx-volatility-surface',
   COMMODITY_FUNDAMENTAL: 'commodity-fundamental',
+  ETF_FLOW_MONITOR: 'etf-flow-monitor',
+  EQUITY_FACTOR_MONITOR: 'equity-factor-monitor',
+  RATES_STRATEGY: 'rates-strategy',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -761,6 +767,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MACRO_SURPRISE_TRACKER]: 'MACRO SURPRISE TRACKER',
   [PANEL_IDS.FX_VOLATILITY_SURFACE]: 'FX VOLATILITY SURFACE',
   [PANEL_IDS.COMMODITY_FUNDAMENTAL]: 'COMMODITY FUNDAMENTAL',
+  [PANEL_IDS.ETF_FLOW_MONITOR]: 'ETF FLOW MONITOR',
+  [PANEL_IDS.EQUITY_FACTOR_MONITOR]: 'EQUITY FACTOR MONITOR',
+  [PANEL_IDS.RATES_STRATEGY]: 'RATES STRATEGY',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1009,6 +1018,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MACRO_SURPRISE_TRACKER]: 'panelMacroSurpriseTracker',
   [PANEL_IDS.FX_VOLATILITY_SURFACE]: 'panelFxVolatilitySurface',
   [PANEL_IDS.COMMODITY_FUNDAMENTAL]: 'panelCommodityFundamental',
+  [PANEL_IDS.ETF_FLOW_MONITOR]: 'panelEtfFlowMonitor',
+  [PANEL_IDS.EQUITY_FACTOR_MONITOR]: 'panelEquityFactorMonitor',
+  [PANEL_IDS.RATES_STRATEGY]: 'panelRatesStrategy',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1553,6 +1565,9 @@ export function DockLayout() {
       case PANEL_IDS.MACRO_SURPRISE_TRACKER: content = <LazyWrap><MacroSurpriseTrackerPanel /></LazyWrap>; break;
       case PANEL_IDS.FX_VOLATILITY_SURFACE: content = <LazyWrap><FxVolatilitySurfacePanel /></LazyWrap>; break;
       case PANEL_IDS.COMMODITY_FUNDAMENTAL: content = <LazyWrap><CommodityFundamentalPanel /></LazyWrap>; break;
+      case PANEL_IDS.ETF_FLOW_MONITOR: content = <LazyWrap><EtfFlowMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_FACTOR_MONITOR: content = <LazyWrap><EquityFactorMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.RATES_STRATEGY: content = <LazyWrap><RatesStrategyPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
