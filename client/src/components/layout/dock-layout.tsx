@@ -340,6 +340,9 @@ const MarketMakingPanel = lazy(() => import('../panels/market-making-panel').the
 const RateProbabilityPanel = lazy(() => import('../panels/rate-probability-panel').then(m => ({ default: m.RateProbabilityPanel })));
 const FxForwardPanel = lazy(() => import('../panels/fx-forward-panel').then(m => ({ default: m.FxForwardPanel })));
 const CreditEventPanel = lazy(() => import('../panels/credit-event-panel').then(m => ({ default: m.CreditEventPanel })));
+const PortfolioMarginPanel = lazy(() => import('../panels/portfolio-margin-panel').then(m => ({ default: m.PortfolioMarginPanel })));
+const CorporateGovernancePanel = lazy(() => import('../panels/corporate-governance-panel').then(m => ({ default: m.CorporateGovernancePanel })));
+const TreasuryBillPanel = lazy(() => import('../panels/treasury-bill-panel').then(m => ({ default: m.TreasuryBillPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -692,6 +695,9 @@ export const PANEL_IDS = {
   RATE_PROBABILITY: 'rate-probability',
   FX_FORWARD: 'fx-forward',
   CREDIT_EVENT: 'credit-event',
+  PORTFOLIO_MARGIN: 'portfolio-margin',
+  CORPORATE_GOVERNANCE: 'corporate-governance',
+  TREASURY_BILL: 'treasury-bill',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1028,6 +1034,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.RATE_PROBABILITY]: 'RATE PROBABILITY',
   [PANEL_IDS.FX_FORWARD]: 'FX FORWARD',
   [PANEL_IDS.CREDIT_EVENT]: 'CREDIT EVENT',
+  [PANEL_IDS.PORTFOLIO_MARGIN]: 'PORTFOLIO MARGIN',
+  [PANEL_IDS.CORPORATE_GOVERNANCE]: 'CORPORATE GOVERNANCE',
+  [PANEL_IDS.TREASURY_BILL]: 'TREASURY BILL',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1365,6 +1374,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.RATE_PROBABILITY]: 'panelRateProbability',
   [PANEL_IDS.FX_FORWARD]: 'panelFxForward',
   [PANEL_IDS.CREDIT_EVENT]: 'panelCreditEvent',
+  [PANEL_IDS.PORTFOLIO_MARGIN]: 'panelPortfolioMargin',
+  [PANEL_IDS.CORPORATE_GOVERNANCE]: 'panelCorporateGovernance',
+  [PANEL_IDS.TREASURY_BILL]: 'panelTreasuryBill',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1998,6 +2010,9 @@ export function DockLayout() {
       case PANEL_IDS.RATE_PROBABILITY: content = <LazyWrap><RateProbabilityPanel /></LazyWrap>; break;
       case PANEL_IDS.FX_FORWARD: content = <LazyWrap><FxForwardPanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_EVENT: content = <LazyWrap><CreditEventPanel /></LazyWrap>; break;
+      case PANEL_IDS.PORTFOLIO_MARGIN: content = <LazyWrap><PortfolioMarginPanel /></LazyWrap>; break;
+      case PANEL_IDS.CORPORATE_GOVERNANCE: content = <LazyWrap><CorporateGovernancePanel /></LazyWrap>; break;
+      case PANEL_IDS.TREASURY_BILL: content = <LazyWrap><TreasuryBillPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
