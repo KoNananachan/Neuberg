@@ -38,6 +38,9 @@ import cryptoRouter from './routes/crypto.js';
 import globalMarketsRouter from './routes/global-markets.js';
 import scannerRouter from './routes/scanner.js';
 import screenerRouter from './routes/screener.js';
+import heatMapRouter from './routes/heat-map.js';
+import etfRouter from './routes/etf.js';
+import dividendsRouter from './routes/dividends.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -177,6 +180,9 @@ export function createApp() {
   app.use('/api/global-markets', globalMarketsRouter);
   app.use('/api/scanner', scannerRouter);
   app.use('/api/screener', screenerRouter);
+  app.use('/api/heat-map', heatMapRouter);
+  app.use('/api/etf', etfRouter);
+  app.use('/api/dividends', dividendsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

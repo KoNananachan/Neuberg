@@ -34,6 +34,9 @@ const CryptoPanel = lazy(() => import('../panels/crypto-panel').then(m => ({ def
 const GlobalDashboardPanel = lazy(() => import('../panels/global-dashboard-panel').then(m => ({ default: m.GlobalDashboardPanel })));
 const ScannerPanel = lazy(() => import('../panels/scanner-panel').then(m => ({ default: m.ScannerPanel })));
 const ScreenerPanel = lazy(() => import('../panels/screener-panel').then(m => ({ default: m.ScreenerPanel })));
+const HeatMapPanel = lazy(() => import('../panels/heat-map-panel').then(m => ({ default: m.HeatMapPanel })));
+const ETFPanel = lazy(() => import('../panels/etf-panel').then(m => ({ default: m.ETFPanel })));
+const DividendPanel = lazy(() => import('../panels/dividend-panel').then(m => ({ default: m.DividendPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -50,7 +53,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 12; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 13; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -80,6 +83,9 @@ export const PANEL_IDS = {
   GLOBAL_DASHBOARD: 'global-dashboard',
   SCANNER: 'tech-scanner',
   SCREENER: 'stock-screener',
+  HEAT_MAP: 'heat-map',
+  ETF: 'etf-explorer',
+  DIVIDENDS: 'dividends',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -110,6 +116,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.GLOBAL_DASHBOARD]: 'GLOBAL DASHBOARD',
   [PANEL_IDS.SCANNER]: 'TECHNICAL SCANNER',
   [PANEL_IDS.SCREENER]: 'STOCK SCREENER',
+  [PANEL_IDS.HEAT_MAP]: 'HEAT MAP',
+  [PANEL_IDS.ETF]: 'ETF EXPLORER',
+  [PANEL_IDS.DIVIDENDS]: 'DIVIDENDS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -141,6 +150,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.GLOBAL_DASHBOARD]: 'panelGlobalDashboard',
   [PANEL_IDS.SCANNER]: 'panelScanner',
   [PANEL_IDS.SCREENER]: 'panelScreener',
+  [PANEL_IDS.HEAT_MAP]: 'panelHeatMap',
+  [PANEL_IDS.ETF]: 'panelETF',
+  [PANEL_IDS.DIVIDENDS]: 'panelDividends',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -450,6 +462,9 @@ export function DockLayout() {
       case PANEL_IDS.GLOBAL_DASHBOARD: content = <LazyWrap><GlobalDashboardPanel /></LazyWrap>; break;
       case PANEL_IDS.SCANNER: content = <LazyWrap><ScannerPanel /></LazyWrap>; break;
       case PANEL_IDS.SCREENER: content = <LazyWrap><ScreenerPanel /></LazyWrap>; break;
+      case PANEL_IDS.HEAT_MAP: content = <LazyWrap><HeatMapPanel /></LazyWrap>; break;
+      case PANEL_IDS.ETF: content = <LazyWrap><ETFPanel /></LazyWrap>; break;
+      case PANEL_IDS.DIVIDENDS: content = <LazyWrap><DividendPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
