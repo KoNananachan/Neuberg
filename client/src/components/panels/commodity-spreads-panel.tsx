@@ -1,11 +1,5 @@
-import { useState, useMemo } from 'react';
-import {
-  useCommoditySpreads,
-  type CommoditySpreadsData,
-  type CommoditySpread,
-} from '../../api/hooks/use-commodity-spreads';
+import { useCommoditySpreads } from '../../api/hooks/use-commodity-spreads';
 import { useT } from '../../i18n';
-import { RefreshCw } from 'lucide-react';
 
 // ── i18n fallback helper ──
 
@@ -17,35 +11,20 @@ const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string =
   }
 };
 
-// ── Constants ──
-
-type CategoryFilter = 'all' | 'energy' | 'metals' | 'agriculture';
-
-const ACCENT = '#eab308'; // yellow-500
-
-const CATEGORY_TABS: { key: CategoryFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'energy', label: 'Energy' },
-  { key: 'metals', label: 'Metals' },
-  { key: 'agriculture', label: 'Agriculture' },
-];
-
 // ── Formatting helpers ──
 
-function fmtPrice(n: number): string {
-  if (Math.abs(n) >= 100) return n.toFixed(2);
-  if (Math.abs(n) >= 1) return n.toFixed(2);
-  return n.toFixed(4);
+function fmtNum(n: number, decimals = 2): string {
+  return n.toFixed(decimals);
+}
+
+function fmtSign(n: number, decimals = 2): string {
+  const sign = n >= 0 ? '+' : '';
+  return `${sign}${n.toFixed(decimals)}`;
 }
 
 function fmtPct(n: number): string {
   const sign = n >= 0 ? '+' : '';
   return `${sign}${n.toFixed(2)}%`;
-}
-
-function fmtSpread(n: number, type: 'ratio' | 'absolute'): string {
-  if (type === 'ratio') return n.toFixed(4);
-  return n.toFixed(2);
 }
 
 // ── Color helpers ──
@@ -56,413 +35,341 @@ function changeColor(n: number): string {
   return 'text-neutral-500';
 }
 
-function signalColor(signal: string): string {
-  if (signal === 'cheap') return 'text-green-400';
-  if (signal === 'expensive') return 'text-red-400';
-  return 'text-yellow-400';
+function structureLabel(s: string): { label: string; color: string } {
+  if (s === 'contango') return { label: 'CONTANGO', color: 'text-red-400' };
+  if (s === 'backwardation') return { label: 'BACKWDN', color: 'text-green-400' };
+  return { label: 'FLAT', color: 'text-neutral-500' };
 }
 
-function signalBg(signal: string): string {
-  if (signal === 'cheap') return 'bg-green-500/10 border border-green-500/30';
-  if (signal === 'expensive') return 'bg-red-500/10 border border-red-500/30';
-  return 'bg-yellow-500/10 border border-yellow-500/30';
+function percentileColor(p: number): string {
+  if (p >= 80) return 'text-red-400';
+  if (p >= 60) return 'text-amber-400';
+  if (p <= 20) return 'text-green-400';
+  if (p <= 40) return 'text-blue-400';
+  return 'text-neutral-400';
 }
 
-function directionArrow(direction: string): string {
-  if (direction === 'widening') return '\u2191';
-  if (direction === 'narrowing') return '\u2193';
-  return '\u2194';
+function zScoreColor(z: number): string {
+  if (z >= 2) return 'text-red-400';
+  if (z >= 1) return 'text-amber-400';
+  if (z <= -2) return 'text-green-400';
+  if (z <= -1) return 'text-blue-400';
+  return 'text-neutral-400';
 }
 
-function directionColor(direction: string): string {
-  if (direction === 'widening') return 'text-red-400';
-  if (direction === 'narrowing') return 'text-green-400';
-  return 'text-yellow-400';
+// ── Mock data types / shapes ──
+
+interface CalendarSpread {
+  commodity: string;
+  front: number;
+  secondMonth: number;
+  spread: number;
+  structure: string;
 }
 
-function categoryBadgeStyle(category: string): string {
-  if (category === 'energy') return 'text-orange-400 bg-orange-500/10 border border-orange-500/30';
-  if (category === 'metals') return 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30';
-  return 'text-lime-400 bg-lime-500/10 border border-lime-500/30';
+interface CrackSpread {
+  type: string;
+  value: number;
+  change: number;
+  avg1m: number;
+  percentile: number;
 }
 
-function zScoreBarColor(z: number): string {
-  if (z >= 1.5) return '#ef4444';
-  if (z >= 0.5) return '#f97316';
-  if (z <= -1.5) return '#22c55e';
-  if (z <= -0.5) return '#3b82f6';
-  return '#eab308';
+interface CrushSpread {
+  type: string;
+  value: number;
+  change: number;
+  avg1m: number;
+  percentile: number;
 }
+
+interface InterCommoditySpread {
+  name: string;
+  value: number;
+  historicalAvg: number;
+  zScore: number;
+}
+
+// ── Fallback data ──
+
+const CALENDAR_SPREADS: CalendarSpread[] = [
+  { commodity: 'WTI CRUDE', front: 78.42, secondMonth: 77.85, spread: 0.57, structure: 'backwardation' },
+  { commodity: 'BRENT CRUDE', front: 82.15, secondMonth: 81.72, spread: 0.43, structure: 'backwardation' },
+  { commodity: 'NATURAL GAS', front: 2.34, secondMonth: 2.51, spread: -0.17, structure: 'contango' },
+  { commodity: 'GOLD', front: 2045.60, secondMonth: 2052.30, spread: -6.70, structure: 'contango' },
+  { commodity: 'SILVER', front: 23.18, secondMonth: 23.42, spread: -0.24, structure: 'contango' },
+  { commodity: 'COPPER', front: 3.8450, secondMonth: 3.8620, spread: -0.0170, structure: 'contango' },
+  { commodity: 'CORN', front: 4.52, secondMonth: 4.61, spread: -0.09, structure: 'contango' },
+  { commodity: 'SOYBEANS', front: 12.38, secondMonth: 12.22, spread: 0.16, structure: 'backwardation' },
+  { commodity: 'WHEAT', front: 5.89, secondMonth: 6.02, spread: -0.13, structure: 'contango' },
+];
+
+const CRACK_SPREADS: CrackSpread[] = [
+  { type: '3-2-1 CRACK', value: 28.45, change: 1.23, avg1m: 26.80, percentile: 72 },
+  { type: '5-3-2 CRACK', value: 24.12, change: -0.87, avg1m: 25.10, percentile: 45 },
+  { type: 'GASOLINE CRACK', value: 32.18, change: 2.05, avg1m: 29.40, percentile: 85 },
+  { type: 'HEATING OIL CRACK', value: 22.76, change: -1.42, avg1m: 24.30, percentile: 35 },
+  { type: 'RBOB-BRENT', value: 26.33, change: 0.65, avg1m: 25.80, percentile: 58 },
+];
+
+const CRUSH_SPREADS: CrushSpread[] = [
+  { type: 'SOY CRUSH', value: 1.82, change: 0.04, avg1m: 1.75, percentile: 68 },
+  { type: 'CORN CRUSH (ETHANOL)', value: 0.45, change: -0.02, avg1m: 0.48, percentile: 32 },
+  { type: 'WHEAT CRUSH (FLOUR)', value: 2.15, change: 0.08, avg1m: 2.05, percentile: 74 },
+];
+
+const INTER_COMMODITY_SPREADS: InterCommoditySpread[] = [
+  { name: 'GOLD/SILVER RATIO', value: 88.24, historicalAvg: 80.50, zScore: 1.42 },
+  { name: 'BRENT-WTI SPREAD', value: 3.73, historicalAvg: 4.20, zScore: -0.85 },
+  { name: 'CORN/WHEAT RATIO', value: 0.767, historicalAvg: 0.810, zScore: -0.92 },
+  { name: 'PLAT/GOLD SPREAD', value: -1082.40, historicalAvg: -850.00, zScore: -1.68 },
+  { name: 'HO-RBOB SPREAD', value: -9.42, historicalAvg: -5.30, zScore: -1.24 },
+  { name: 'COPPER/GOLD RATIO', value: 0.00188, historicalAvg: 0.00210, zScore: -1.05 },
+];
 
 // ── Main Panel ──
 
 export function CommoditySpreadsPanel() {
   const t = useT();
-  const { data, isLoading, refetch } = useCommoditySpreads();
-  const [category, setCategory] = useState<CategoryFilter>('all');
+  const { data, isLoading } = useCommoditySpreads();
 
-  const filtered = useMemo(() => {
-    if (!data) return [];
-    if (category === 'all') return data.spreads;
-    return data.spreads.filter((s) => s.category === category);
-  }, [data, category]);
+  const calendarSpreads: CalendarSpread[] = data?.calendarSpreads ?? CALENDAR_SPREADS;
+  const crackSpreads: CrackSpread[] = data?.crackSpreads ?? CRACK_SPREADS;
+  const crushSpreads: CrushSpread[] = data?.crushSpreads ?? CRUSH_SPREADS;
+  const interCommoditySpreads: InterCommoditySpread[] = data?.interCommoditySpreads ?? INTER_COMMODITY_SPREADS;
+
+  if (isLoading && !data) {
+    return (
+      <div className="h-full flex flex-col bg-black">
+        <Header t={t} />
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-[9px] font-mono text-amber-400 uppercase tracking-wider animate-pulse">
+            Loading...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/30 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5" style={{ backgroundColor: ACCENT }} />
-          <span className="text-[9px] font-black font-mono uppercase tracking-tighter text-yellow-500">
-            {tr(t, 'cspCommoditySpreads', 'Commodity Spreads')}
-          </span>
-        </div>
-        <button
-          onClick={() => refetch()}
-          className="p-1 text-neutral-500 hover:text-yellow-500 transition-colors"
-        >
-          <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
+      <Header t={t} />
 
-      {/* Category tabs */}
-      <div className="flex border-b border-border/30 bg-black/40 shrink-0">
-        {CATEGORY_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setCategory(tab.key)}
-            className={`flex-1 py-1.5 text-[8px] font-black uppercase tracking-widest border-b-2 transition-colors ${
-              category === tab.key
-                ? 'border-yellow-500 text-yellow-500'
-                : 'border-transparent text-neutral-500 hover:text-neutral-300'
-            }`}
-          >
-            {tr(t, `csp_${tab.key}`, tab.label)}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
       <div className="flex-1 overflow-auto no-scrollbar">
-        {isLoading && !data && (
-          <div className="text-center py-8 text-yellow-500 text-[9px] font-mono uppercase animate-pulse">
-            {tr(t, 'loading', 'Loading...')}
-          </div>
-        )}
+        {/* Calendar Spreads */}
+        <CalendarSpreadsSection spreads={calendarSpreads} t={t} />
 
-        {!data && !isLoading && (
-          <div className="text-center py-8 text-neutral-500 text-[9px] font-mono uppercase">
-            {tr(t, 'cspNoData', 'No data available')}
-          </div>
-        )}
-
-        {data && filtered.length === 0 && (
-          <div className="text-center py-8 text-neutral-500 text-[9px] font-mono uppercase">
-            {tr(t, 'cspNoSpreads', 'No spreads in this category')}
-          </div>
-        )}
-
-        {filtered.map((spread) => (
-          <SpreadCard key={spread.name} spread={spread} />
-        ))}
-      </div>
-
-      {/* Category summary bar */}
-      {data && <SummaryBar data={data} t={t} />}
-    </div>
-  );
-}
-
-// ── Spread Card ──
-
-function SpreadCard({ spread }: { spread: CommoditySpread }) {
-  const {
-    name,
-    category,
-    signal,
-    longLeg,
-    shortLeg,
-    currentSpread,
-    spreadType,
-    avg20d,
-    avg60d,
-    zScore,
-    percentile,
-    direction,
-    description,
-    history,
-  } = spread;
-
-  return (
-    <div className="border-b border-border/20 px-3 py-2">
-      {/* Row 1: Name + badges */}
-      <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-[9px] font-mono font-bold text-white">{name}</span>
-        <span className={`text-[6px] font-mono font-bold px-1 py-px uppercase ${categoryBadgeStyle(category)}`}>
-          {category}
-        </span>
-        <span className={`text-[6px] font-mono font-bold px-1 py-px uppercase ${signalColor(signal)} ${signalBg(signal)}`}>
-          {signal}
-        </span>
-      </div>
-
-      {/* Row 2: Two legs side by side */}
-      <div className="flex gap-3 mb-1.5">
-        <LegDisplay label="LONG" leg={longLeg} />
-        <LegDisplay label="SHORT" leg={shortLeg} />
-      </div>
-
-      {/* Row 3: Current spread + direction */}
-      <div className="flex items-baseline gap-2 mb-1.5">
-        <span className="text-[12px] font-mono font-bold text-white">
-          {fmtSpread(currentSpread, spreadType)}
-        </span>
-        <span className={`text-[9px] font-mono font-bold ${directionColor(direction)}`}>
-          {directionArrow(direction)} {direction.toUpperCase()}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600">
-          20d: {fmtSpread(avg20d, spreadType)}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600">
-          60d: {fmtSpread(avg60d, spreadType)}
-        </span>
-      </div>
-
-      {/* Row 4: Z-score bar */}
-      <div className="mb-1.5">
-        <div className="flex items-center justify-between mb-0.5">
-          <span className="text-[7px] font-mono text-neutral-600 uppercase">Z-Score</span>
-          <span className="text-[7px] font-mono font-bold text-white">
-            {zScore >= 0 ? '+' : ''}{zScore.toFixed(2)}
-          </span>
-        </div>
-        <ZScoreBar zScore={zScore} />
-      </div>
-
-      {/* Row 5: Percentile bar */}
-      <div className="mb-1.5">
-        <div className="flex items-center justify-between mb-0.5">
-          <span className="text-[7px] font-mono text-neutral-600 uppercase">Percentile</span>
-          <span className="text-[7px] font-mono font-bold text-white">{percentile}%</span>
-        </div>
-        <PercentileBar percentile={percentile} />
-      </div>
-
-      {/* Row 6: Sparkline */}
-      {history.length >= 2 && <SpreadSparkline history={history} direction={direction} />}
-
-      {/* Row 7: Description */}
-      <div className="mt-1">
-        <span className="text-[7px] font-mono text-neutral-600 leading-tight">
-          {description}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ── Leg Display ──
-
-function LegDisplay({ label, leg }: { label: string; leg: CommoditySpread['longLeg'] }) {
-  return (
-    <div className="flex-1">
-      <div className="text-[6px] font-mono font-bold text-neutral-600 uppercase mb-0.5">
-        {label}
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-[8px] font-mono font-bold text-white">{leg.symbol}</span>
-        <span className="text-[8px] font-mono text-white">{fmtPrice(leg.price)}</span>
-        <span className={`text-[7px] font-mono font-bold ${changeColor(leg.changePct)}`}>
-          {fmtPct(leg.changePct)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ── Z-Score Bar (centered at 0) ──
-
-function ZScoreBar({ zScore }: { zScore: number }) {
-  // Clamp to [-3, 3] for display
-  const clamped = Math.max(-3, Math.min(3, zScore));
-  // Center is at 50%, each unit is ~16.67%
-  const center = 50;
-  const offset = (clamped / 3) * 50;
-  const left = offset >= 0 ? center : center + offset;
-  const width = Math.abs(offset);
-  const color = zScoreBarColor(zScore);
-
-  return (
-    <svg viewBox="0 0 200 8" className="w-full" style={{ height: 8 }}>
-      {/* Background */}
-      <rect x="0" y="0" width="200" height="8" fill="rgba(255,255,255,0.03)" />
-      {/* Center line */}
-      <line x1="100" y1="0" x2="100" y2="8" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-      {/* Z-score bar */}
-      <rect
-        x={left * 2}
-        y="1"
-        width={width * 2}
-        height="6"
-        fill={color}
-        opacity="0.7"
-      />
-      {/* Tick marks at -2, -1, 0, +1, +2 */}
-      {[-2, -1, 0, 1, 2].map((tick) => {
-        const x = 100 + (tick / 3) * 100;
-        return (
-          <line
-            key={tick}
-            x1={x}
-            y1="0"
-            x2={x}
-            y2="8"
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth="0.5"
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-// ── Percentile Bar ──
-
-function PercentileBar({ percentile }: { percentile: number }) {
-  const color =
-    percentile >= 80 ? '#ef4444' :
-    percentile >= 60 ? '#f97316' :
-    percentile <= 20 ? '#22c55e' :
-    percentile <= 40 ? '#3b82f6' :
-    '#eab308';
-
-  return (
-    <svg viewBox="0 0 200 6" className="w-full" style={{ height: 6 }}>
-      {/* Background */}
-      <rect x="0" y="0" width="200" height="6" fill="rgba(255,255,255,0.03)" />
-      {/* Fill */}
-      <rect x="0" y="0" width={percentile * 2} height="6" fill={color} opacity="0.5" />
-      {/* Marker */}
-      <rect x={percentile * 2 - 1} y="0" width="2" height="6" fill={color} />
-      {/* Quarter markers */}
-      {[25, 50, 75].map((mark) => (
-        <line
-          key={mark}
-          x1={mark * 2}
-          y1="0"
-          x2={mark * 2}
-          y2="6"
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="0.5"
+        {/* Crack Spreads */}
+        <ProcessingSpreadsSection
+          title={tr(t, 'csCrackSpreads', 'CRACK SPREADS')}
+          spreads={crackSpreads}
         />
-      ))}
-    </svg>
+
+        {/* Crush Spreads */}
+        <ProcessingSpreadsSection
+          title={tr(t, 'csCrushSpreads', 'CRUSH SPREADS')}
+          spreads={crushSpreads}
+        />
+
+        {/* Inter-Commodity Spreads */}
+        <InterCommoditySpreadsSection spreads={interCommoditySpreads} t={t} />
+      </div>
+    </div>
   );
 }
 
-// ── Spread Sparkline ──
+// ── Header ──
 
-function SpreadSparkline({
-  history,
-  direction,
-}: {
-  history: number[];
-  direction: string;
-}) {
-  const W = 200;
-  const H = 40;
-  const PAD_X = 2;
-  const PAD_Y = 4;
-
-  const path = useMemo(() => {
-    if (history.length < 2) return null;
-
-    const minV = Math.min(...history);
-    const maxV = Math.max(...history);
-    const rangeV = maxV - minV || 0.0001;
-
-    const scaleX = (i: number) =>
-      PAD_X + (i / (history.length - 1)) * (W - PAD_X * 2);
-    const scaleY = (v: number) =>
-      PAD_Y + ((maxV - v) / rangeV) * (H - PAD_Y * 2);
-
-    const linePath = history
-      .map((v, i) => `${i === 0 ? 'M' : 'L'} ${scaleX(i).toFixed(1)},${scaleY(v).toFixed(1)}`)
-      .join(' ');
-
-    const fillPath = `${linePath} L ${scaleX(history.length - 1).toFixed(1)},${H} L ${scaleX(0).toFixed(1)},${H} Z`;
-
-    return {
-      linePath,
-      fillPath,
-      lastX: scaleX(history.length - 1),
-      lastY: scaleY(history[history.length - 1]),
-    };
-  }, [history]);
-
-  const lineColor =
-    direction === 'narrowing' ? '#4ade80' :
-    direction === 'widening' ? '#f87171' :
-    '#facc15';
-
-  const fillColor =
-    direction === 'narrowing' ? 'rgba(74,222,128,0.06)' :
-    direction === 'widening' ? 'rgba(248,113,113,0.06)' :
-    'rgba(250,204,21,0.06)';
-
-  if (!path) return null;
-
+function Header({ t }: { t: ReturnType<typeof useT> }) {
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 36 }}>
-      <path d={path.fillPath} fill={fillColor} />
-      <path d={path.linePath} fill="none" stroke={lineColor} strokeWidth={1.2} />
-      <circle cx={path.lastX} cy={path.lastY} r={1.5} fill={lineColor} />
-    </svg>
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-[#050505] border-b border-border/20 shrink-0">
+      <div className="w-0.5 h-3 bg-amber-400" />
+      <span className="text-[9px] font-mono font-black uppercase tracking-wider text-amber-400">
+        {tr(t, 'csCommoditySpreads', 'COMMODITY SPREADS')}
+      </span>
+    </div>
   );
 }
 
-// ── Summary Bar ──
+// ── Calendar Spreads Section ──
 
-function SummaryBar({
-  data,
+function CalendarSpreadsSection({
+  spreads,
   t,
 }: {
-  data: CommoditySpreadsData;
+  spreads: CalendarSpread[];
   t: ReturnType<typeof useT>;
 }) {
-  const { summary } = data;
-
-  const items = [
-    { label: tr(t, 'cspEnergy', 'Energy'), value: summary.energySentiment },
-    { label: tr(t, 'cspMetals', 'Metals'), value: summary.metalsSentiment },
-    { label: tr(t, 'cspAgriculture', 'Agriculture'), value: summary.agSentiment },
-  ];
-
   return (
-    <div className="border-t border-border/30 bg-[#050505] px-3 py-1.5 shrink-0">
-      <div className="grid grid-cols-3 gap-2">
-        {items.map((item) => {
-          const isElevated = item.value.toLowerCase().includes('elevated');
-          const isCompressed = item.value.toLowerCase().includes('compressed');
-          const color = isElevated ? 'text-red-400' : isCompressed ? 'text-green-400' : 'text-yellow-400';
-
-          return (
-            <div key={item.label}>
-              <div className="text-[7px] font-mono font-bold text-neutral-600 uppercase tracking-wider">
-                {item.label}
-              </div>
-              <div className={`text-[7px] font-mono font-bold ${color} truncate`}>
-                {item.value}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-1 pt-1 border-t border-border/10">
-        <span className="text-[7px] font-mono text-neutral-700">
-          {tr(t, 'cspLastUpdate', 'Last update')}: {new Date(data.timestamp).toLocaleTimeString()}
+    <div className="border-b border-border/20">
+      <div className="px-3 py-1 border-b border-border/20 bg-[#030303]">
+        <span className="text-[9px] font-mono font-black uppercase tracking-wider text-neutral-500">
+          {tr(t, 'csCalendarSpreads', 'CALENDAR SPREADS')}
         </span>
       </div>
+
+      {/* Column headers */}
+      <div className="grid grid-cols-[1fr_64px_64px_56px_72px] gap-0 px-3 py-0.5 border-b border-border/20 bg-[#020202]">
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600">
+          COMMODITY
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          FRONT
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          2ND MTH
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          SPREAD
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          STRUCTURE
+        </span>
+      </div>
+
+      {spreads.map((s) => {
+        const struc = structureLabel(s.structure);
+        return (
+          <div
+            key={s.commodity}
+            className="grid grid-cols-[1fr_64px_64px_56px_72px] gap-0 px-3 py-[3px] border-b border-border/20 hover:bg-amber-400/[0.02] transition-colors items-center"
+          >
+            <span className="text-[9px] font-mono font-bold text-white truncate">
+              {s.commodity}
+            </span>
+            <span className="text-[9px] font-mono text-white text-right">
+              {fmtNum(s.front)}
+            </span>
+            <span className="text-[9px] font-mono text-white text-right">
+              {fmtNum(s.secondMonth)}
+            </span>
+            <span className={`text-[9px] font-mono font-bold text-right ${changeColor(s.spread)}`}>
+              {fmtSign(s.spread)}
+            </span>
+            <span className={`text-[9px] font-mono font-bold text-right ${struc.color}`}>
+              {struc.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Crack / Crush Spreads Section (shared layout) ──
+
+function ProcessingSpreadsSection({
+  title,
+  spreads,
+}: {
+  title: string;
+  spreads: (CrackSpread | CrushSpread)[];
+}) {
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-3 py-1 border-b border-border/20 bg-[#030303]">
+        <span className="text-[9px] font-mono font-black uppercase tracking-wider text-neutral-500">
+          {title}
+        </span>
+      </div>
+
+      {/* Column headers */}
+      <div className="grid grid-cols-[1fr_56px_56px_56px_48px] gap-0 px-3 py-0.5 border-b border-border/20 bg-[#020202]">
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600">
+          TYPE
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          VALUE
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          CHG
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          1M AVG
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          PCTL
+        </span>
+      </div>
+
+      {spreads.map((s) => (
+        <div
+          key={s.type}
+          className="grid grid-cols-[1fr_56px_56px_56px_48px] gap-0 px-3 py-[3px] border-b border-border/20 hover:bg-amber-400/[0.02] transition-colors items-center"
+        >
+          <span className="text-[9px] font-mono font-bold text-white truncate">
+            {s.type}
+          </span>
+          <span className="text-[9px] font-mono text-white text-right">
+            {fmtNum(s.value)}
+          </span>
+          <span className={`text-[9px] font-mono font-bold text-right ${changeColor(s.change)}`}>
+            {fmtSign(s.change)}
+          </span>
+          <span className="text-[9px] font-mono text-neutral-500 text-right">
+            {fmtNum(s.avg1m)}
+          </span>
+          <span className={`text-[9px] font-mono font-bold text-right ${percentileColor(s.percentile)}`}>
+            {s.percentile}%
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Inter-Commodity Spreads Section ──
+
+function InterCommoditySpreadsSection({
+  spreads,
+  t,
+}: {
+  spreads: InterCommoditySpread[];
+  t: ReturnType<typeof useT>;
+}) {
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-3 py-1 border-b border-border/20 bg-[#030303]">
+        <span className="text-[9px] font-mono font-black uppercase tracking-wider text-neutral-500">
+          {tr(t, 'csInterCommodity', 'INTER-COMMODITY')}
+        </span>
+      </div>
+
+      {/* Column headers */}
+      <div className="grid grid-cols-[1fr_64px_64px_48px] gap-0 px-3 py-0.5 border-b border-border/20 bg-[#020202]">
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600">
+          RATIO / SPREAD
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          VALUE
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          HIST AVG
+        </span>
+        <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-600 text-right">
+          Z-SCORE
+        </span>
+      </div>
+
+      {spreads.map((s) => (
+        <div
+          key={s.name}
+          className="grid grid-cols-[1fr_64px_64px_48px] gap-0 px-3 py-[3px] border-b border-border/20 hover:bg-amber-400/[0.02] transition-colors items-center"
+        >
+          <span className="text-[9px] font-mono font-bold text-white truncate">
+            {s.name}
+          </span>
+          <span className="text-[9px] font-mono text-white text-right">
+            {fmtNum(s.value, Math.abs(s.value) < 1 ? 5 : 2)}
+          </span>
+          <span className="text-[9px] font-mono text-neutral-500 text-right">
+            {fmtNum(s.historicalAvg, Math.abs(s.historicalAvg) < 1 ? 5 : 2)}
+          </span>
+          <span className={`text-[9px] font-mono font-bold text-right ${zScoreColor(s.zScore)}`}>
+            {fmtSign(s.zScore)}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

@@ -1,384 +1,284 @@
 import { Router } from 'express';
-import { getQuotes, getHistory } from '../services/stocks/yahoo-finance.js';
 
 const router = Router();
 
+// ── Deterministic seeded RNG ──
+
+function mulberry32(a: number) { return function(){let t=(a+=0x6d2b79f5);t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}; }
+function hashSeed(str: string): number { let hash=0;for(let i=0;i<str.length;i++){const char=str.charCodeAt(i);hash=((hash<<5)-hash)+char;hash|=0;}return Math.abs(hash); }
+function seededRandom(tag: string) { const d = new Date().toISOString().slice(0, 10); return mulberry32(hashSeed(tag + d)); }
+
 // ── Types ──
 
-interface AssetConfig {
-  name: string;
-  symbol: string;
-  class: 'equity' | 'bond' | 'commodity' | 'real_estate' | 'cash';
+interface AssetAllocation {
+  assetClass: string;
+  notionalWeightPct: number;
+  riskContributionPct: number;
+  volatilityPct: number;
+  correlationToPortfolio: number;
+  leverageRatio: number;
 }
 
-interface AssetResult {
-  name: string;
-  symbol: string;
-  class: 'equity' | 'bond' | 'commodity' | 'real_estate' | 'cash';
-  price: number;
-  changePct: number;
-  return20d: number;
-  return60d: number;
-  vol20d: number;
-  vol60d: number;
-  sharpe: number;
-  riskParityWeight: number;
-  equalWeight: number;
-  riskContribution: number;
-  sparkline: number[];
+interface PortfolioMetrics {
+  targetVolatilityPct: number;
+  realizedVolatilityPct: number;
+  portfolioSharpe: number;
+  totalLeverage: number;
+  maxDrawdownPct: number;
+  calmarRatio: number;
 }
 
-interface PortfolioStats {
-  vol: number;
-  expectedReturn: number;
-  sharpe: number;
+interface RiskDecomposition {
+  factor: string;
+  contributionPct: number;
+  marginalContribution: number;
 }
 
-interface RiskBudgetEntry {
-  name: string;
-  equalWeightRisk: number;
-  riskParityRisk: number;
+interface HistoricalComparison {
+  period: string;
+  portfolioReturnPct: number;
+  sixtyFortyReturnPct: number;
+  sp500ReturnPct: number;
+  riskParityAlpha: number;
 }
 
 interface RiskParityResponse {
+  assetAllocation: AssetAllocation[];
+  portfolioMetrics: PortfolioMetrics;
+  riskDecomposition: RiskDecomposition[];
+  historicalComparison: HistoricalComparison[];
   timestamp: string;
-  assets: AssetResult[];
-  portfolio: {
-    riskParity: PortfolioStats;
-    equalWeight: PortfolioStats;
-  };
-  correlationMatrix: {
-    symbols: string[];
-    values: number[][];
-  };
-  riskBudget: RiskBudgetEntry[];
-}
-
-// ── Asset Definitions ──
-
-const ASSETS: AssetConfig[] = [
-  { name: 'US Equities', symbol: 'SPY', class: 'equity' },
-  { name: 'Intl Developed', symbol: 'EFA', class: 'equity' },
-  { name: 'Emerging Mkts', symbol: 'EEM', class: 'equity' },
-  { name: 'Long-Term Bonds', symbol: 'TLT', class: 'bond' },
-  { name: 'Interm Bonds', symbol: 'IEF', class: 'bond' },
-  { name: 'Aggregate Bond', symbol: 'AGG', class: 'bond' },
-  { name: 'TIPS', symbol: 'TIP', class: 'bond' },
-  { name: 'Commodities', symbol: 'DBC', class: 'commodity' },
-  { name: 'Gold', symbol: 'GLD', class: 'commodity' },
-  { name: 'Real Estate', symbol: 'VNQ', class: 'real_estate' },
-  { name: 'Cash Proxy', symbol: 'SHV', class: 'cash' },
-];
-
-// ── Math Helpers ──
-
-function mean(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
-
-function stddev(arr: number[]): number {
-  if (arr.length < 2) return 0;
-  const m = mean(arr);
-  const variance = arr.reduce((sum, v) => sum + (v - m) ** 2, 0) / (arr.length - 1);
-  return Math.sqrt(variance);
-}
-
-function dailyReturns(closes: number[]): number[] {
-  const returns: number[] = [];
-  for (let i = 1; i < closes.length; i++) {
-    if (closes[i - 1] !== 0) {
-      returns.push((closes[i] - closes[i - 1]) / closes[i - 1]);
-    }
-  }
-  return returns;
-}
-
-function annualizedVol(dailyRets: number[], window: number): number {
-  const slice = dailyRets.slice(-window);
-  if (slice.length < 2) return 0;
-  return stddev(slice) * Math.sqrt(252) * 100; // as percentage
-}
-
-function periodReturn(closes: number[], days: number): number {
-  if (closes.length < days + 1) return 0;
-  const current = closes[closes.length - 1];
-  const past = closes[closes.length - 1 - days];
-  if (past === 0) return 0;
-  return ((current - past) / past) * 100;
-}
-
-function correlation(a: number[], b: number[]): number {
-  const len = Math.min(a.length, b.length);
-  if (len < 5) return 0;
-  const sliceA = a.slice(-len);
-  const sliceB = b.slice(-len);
-  const mA = mean(sliceA);
-  const mB = mean(sliceB);
-  const sA = stddev(sliceA);
-  const sB = stddev(sliceB);
-  if (sA === 0 || sB === 0) return 0;
-
-  let cov = 0;
-  for (let i = 0; i < len; i++) {
-    cov += (sliceA[i] - mA) * (sliceB[i] - mB);
-  }
-  cov /= len - 1;
-  return Math.max(-1, Math.min(1, cov / (sA * sB)));
-}
-
-function normalizeSparkline(values: number[], count: number): number[] {
-  if (values.length === 0) return Array(count).fill(0.5);
-  const step = Math.max(1, Math.floor(values.length / count));
-  const sampled: number[] = [];
-  for (let i = 0; i < count && i * step < values.length; i++) {
-    sampled.push(values[i * step]);
-  }
-  while (sampled.length < count) {
-    sampled.push(sampled[sampled.length - 1] ?? 0);
-  }
-  const min = Math.min(...sampled);
-  const max = Math.max(...sampled);
-  const range = max - min || 1;
-  return sampled.map((v) => (v - min) / range);
 }
 
 // ── Cache ──
 
-let cache: { data: RiskParityResponse | null; expiresAt: number } = {
-  data: null,
-  expiresAt: 0,
-};
-const CACHE_TTL = 5 * 60_000; // 5 minutes
+let cache: { data: any; ts: number } | null = null;
+const TTL = 5 * 60 * 1000;
+
+// ── Asset class definitions ──
+
+const ASSET_CLASSES = [
+  'US Equities',
+  'Intl Equities',
+  'EM Equities',
+  'US Treasuries',
+  'TIPS',
+  'IG Credit',
+  'HY Credit',
+  'Commodities',
+  'Gold',
+  'Real Estate',
+];
+
+// ── Risk factor definitions ──
+
+const RISK_FACTORS = [
+  'Equity Risk',
+  'Rate Risk',
+  'Credit Risk',
+  'Commodity Risk',
+  'FX Risk',
+  'Residual',
+];
+
+// ── Historical comparison periods ──
+
+const PERIODS = ['1M', '3M', '6M', '1Y', '3Y'];
+
+// ── Data generation ──
+
+function generateAssetAllocation(rng: () => number): AssetAllocation[] {
+  // Base notional weights (sum to ~100% before leverage)
+  const baseWeights = [18, 12, 6, 22, 8, 10, 5, 8, 6, 5];
+  // Base volatilities for each asset class
+  const baseVols = [16.2, 17.5, 22.8, 6.1, 5.8, 6.5, 10.2, 18.5, 16.8, 18.0];
+  // Base correlations to the overall portfolio
+  const baseCorrelations = [0.82, 0.78, 0.65, -0.15, 0.08, 0.25, 0.52, 0.35, 0.12, 0.58];
+
+  const assets = ASSET_CLASSES.map((assetClass, i) => {
+    // Jitter the notional weight
+    const weightJitter = (rng() - 0.5) * baseWeights[i] * 0.15;
+    const notionalWeightPct = Math.round(Math.max(1, baseWeights[i] + weightJitter) * 100) / 100;
+
+    // Jitter volatility
+    const volJitter = (rng() - 0.5) * baseVols[i] * 0.12;
+    const volatilityPct = Math.round(Math.max(1, baseVols[i] + volJitter) * 100) / 100;
+
+    // Jitter correlation
+    const corrJitter = (rng() - 0.5) * 0.12;
+    const correlationToPortfolio = Math.round(Math.max(-1, Math.min(1, baseCorrelations[i] + corrJitter)) * 100) / 100;
+
+    // Leverage ratio: risk parity typically levers low-vol assets
+    const baseLeverage = volatilityPct < 8 ? 2.2 + rng() * 0.8 : volatilityPct < 14 ? 1.2 + rng() * 0.4 : 0.6 + rng() * 0.3;
+    const leverageRatio = Math.round(baseLeverage * 100) / 100;
+
+    return {
+      assetClass,
+      notionalWeightPct,
+      volatilityPct,
+      correlationToPortfolio,
+      leverageRatio,
+      riskContributionPct: 0, // computed after
+    };
+  });
+
+  // Compute risk contributions: proportional to weight * vol * correlation
+  const rawContributions = assets.map((a) =>
+    Math.abs(a.notionalWeightPct * a.volatilityPct * Math.max(0.05, a.correlationToPortfolio + 0.5))
+  );
+  const totalContribution = rawContributions.reduce((sum, c) => sum + c, 0);
+
+  assets.forEach((a, i) => {
+    a.riskContributionPct = Math.round((rawContributions[i] / totalContribution) * 10000) / 100;
+  });
+
+  // Normalize notional weights to sum to 100%
+  const totalWeight = assets.reduce((sum, a) => sum + a.notionalWeightPct, 0);
+  assets.forEach((a) => {
+    a.notionalWeightPct = Math.round((a.notionalWeightPct / totalWeight) * 10000) / 100;
+  });
+
+  return assets;
+}
+
+function generatePortfolioMetrics(rng: () => number, assets: AssetAllocation[]): PortfolioMetrics {
+  const targetVolatilityPct = 10;
+
+  // Realized vol jitters around target
+  const realizedJitter = (rng() - 0.5) * 2.5;
+  const realizedVolatilityPct = Math.round((targetVolatilityPct + realizedJitter) * 100) / 100;
+
+  // Sharpe: typically 0.4 to 1.2 for risk parity
+  const baseSharpe = 0.72 + (rng() - 0.5) * 0.5;
+  const portfolioSharpe = Math.round(Math.max(0.15, baseSharpe) * 100) / 100;
+
+  // Total leverage: sum of individual leveraged notional weights
+  const totalLeverage = Math.round(
+    assets.reduce((sum, a) => sum + (a.notionalWeightPct / 100) * a.leverageRatio, 0) * 100
+  ) / 100;
+
+  // Max drawdown: -8% to -25%
+  const baseDrawdown = -(12 + rng() * 10);
+  const maxDrawdownPct = Math.round(baseDrawdown * 100) / 100;
+
+  // Calmar ratio: annualized return / max drawdown magnitude
+  const annualizedReturn = portfolioSharpe * realizedVolatilityPct;
+  const calmarRatio = Math.round((annualizedReturn / Math.abs(maxDrawdownPct)) * 100) / 100;
+
+  return {
+    targetVolatilityPct,
+    realizedVolatilityPct,
+    portfolioSharpe,
+    totalLeverage,
+    maxDrawdownPct,
+    calmarRatio,
+  };
+}
+
+function generateRiskDecomposition(rng: () => number): RiskDecomposition[] {
+  // Base contribution percentages for each risk factor (sum ~100%)
+  const baseContributions = [35, 25, 15, 12, 8, 5];
+
+  const factors = RISK_FACTORS.map((factor, i) => {
+    const contribJitter = (rng() - 0.5) * baseContributions[i] * 0.25;
+    const rawContrib = Math.max(1, baseContributions[i] + contribJitter);
+    return { factor, rawContrib, contributionPct: 0, marginalContribution: 0 };
+  });
+
+  // Normalize to sum to 100%
+  const totalRaw = factors.reduce((sum, f) => sum + f.rawContrib, 0);
+  factors.forEach((f) => {
+    f.contributionPct = Math.round((f.rawContrib / totalRaw) * 10000) / 100;
+    // Marginal contribution: basis points per 1% increase in factor exposure
+    f.marginalContribution = Math.round((f.rawContrib / totalRaw) * (2.5 + rng() * 1.5) * 100) / 100;
+  });
+
+  // Sort by contribution descending
+  factors.sort((a, b) => b.contributionPct - a.contributionPct);
+
+  return factors.map(({ factor, contributionPct, marginalContribution }) => ({
+    factor,
+    contributionPct,
+    marginalContribution,
+  }));
+}
+
+function generateHistoricalComparison(rng: () => number): HistoricalComparison[] {
+  // Base returns scale with period length
+  const periodMultipliers: Record<string, number> = {
+    '1M': 1,
+    '3M': 2.5,
+    '6M': 4,
+    '1Y': 7,
+    '3Y': 18,
+  };
+
+  return PERIODS.map((period) => {
+    const mult = periodMultipliers[period];
+
+    // Risk parity portfolio return
+    const rpBase = 0.8 * mult + (rng() - 0.5) * 2 * mult;
+    const portfolioReturnPct = Math.round(rpBase * 100) / 100;
+
+    // 60/40 portfolio return (typically slightly lower risk-adjusted)
+    const sixtyFortyBase = 0.7 * mult + (rng() - 0.5) * 2.2 * mult;
+    const sixtyFortyReturnPct = Math.round(sixtyFortyBase * 100) / 100;
+
+    // S&P 500 return (higher vol, higher expected)
+    const sp500Base = 1.0 * mult + (rng() - 0.5) * 3 * mult;
+    const sp500ReturnPct = Math.round(sp500Base * 100) / 100;
+
+    // Alpha = risk parity return minus 60/40 return
+    const riskParityAlpha = Math.round((portfolioReturnPct - sixtyFortyReturnPct) * 100) / 100;
+
+    return {
+      period,
+      portfolioReturnPct,
+      sixtyFortyReturnPct,
+      sp500ReturnPct,
+      riskParityAlpha,
+    };
+  });
+}
+
+// ── Main generator ──
+
+function generateRiskParityData(): RiskParityResponse {
+  const rng = seededRandom('risk-parity');
+
+  const assetAllocation = generateAssetAllocation(rng);
+  const portfolioMetrics = generatePortfolioMetrics(rng, assetAllocation);
+  const riskDecomposition = generateRiskDecomposition(rng);
+  const historicalComparison = generateHistoricalComparison(rng);
+
+  return {
+    assetAllocation,
+    portfolioMetrics,
+    riskDecomposition,
+    historicalComparison,
+    timestamp: new Date().toISOString(),
+  };
+}
 
 // ── Route ──
 
-router.get('/', async (_req, res) => {
+router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-    if (cache.data && now < cache.expiresAt) {
+    if (cache && now - cache.ts < TTL) {
       return res.json(cache.data);
     }
 
-    const symbols = ASSETS.map((a) => a.symbol);
-
-    // Fetch 120 days of daily history and quotes in parallel
-    const [historyResults, quotes] = await Promise.all([
-      Promise.all(symbols.map((s) => getHistory(s, { range: '6mo', interval: '1d' }))),
-      getQuotes(symbols),
-    ]);
-
-    // Build price map from quotes
-    const quoteMap = new Map<string, { price: number; changePct: number }>();
-    for (const q of quotes) {
-      quoteMap.set(q.symbol, {
-        price: q.price,
-        changePct: q.changePercent ?? 0,
-      });
-    }
-
-    // Build closes map: symbol -> array of closing prices (last 120 days)
-    const closesMap = new Map<string, number[]>();
-    const returnsMap = new Map<string, number[]>();
-    const N = ASSETS.length;
-
-    for (let i = 0; i < N; i++) {
-      const sym = symbols[i];
-      const history = (historyResults[i] as { date: string; close: number | null }[]).slice(-120);
-      const closes = history
-        .map((h) => h.close)
-        .filter((c): c is number => c != null);
-      closesMap.set(sym, closes);
-      returnsMap.set(sym, dailyReturns(closes));
-    }
-
-    // Calculate per-asset metrics
-    const vol20dArr: number[] = [];
-    const vol60dArr: number[] = [];
-    const return20dArr: number[] = [];
-    const return60dArr: number[] = [];
-    const sharpeArr: number[] = [];
-    const sparklines: number[][] = [];
-
-    for (let i = 0; i < N; i++) {
-      const sym = symbols[i];
-      const closes = closesMap.get(sym) || [];
-      const rets = returnsMap.get(sym) || [];
-
-      const v20 = annualizedVol(rets, 20);
-      const v60 = annualizedVol(rets, 60);
-      const r20 = periodReturn(closes, 20);
-      const r60 = periodReturn(closes, 60);
-
-      // Sharpe: annualized return / annualized vol
-      const annReturn = r60 * (252 / 60); // annualize the 60d return
-      const sharpe = v60 > 0 ? annReturn / v60 : 0;
-
-      vol20dArr.push(v20);
-      vol60dArr.push(v60);
-      return20dArr.push(r20);
-      return60dArr.push(r60);
-      sharpeArr.push(sharpe);
-      sparklines.push(normalizeSparkline(closes.slice(-20), 20));
-    }
-
-    // Risk parity weights: inversely proportional to volatility
-    const invVols = vol60dArr.map((v) => (v > 0 ? 1 / v : 0));
-    const invVolSum = invVols.reduce((a, b) => a + b, 0);
-    const rpWeights = invVolSum > 0
-      ? invVols.map((iv) => (iv / invVolSum) * 100)
-      : Array(N).fill(100 / N);
-
-    const equalWeight = 100 / N;
-    const ewWeights = Array(N).fill(equalWeight);
-
-    // Build 60d correlation matrix
-    const corrMatrix: number[][] = [];
-    for (let i = 0; i < N; i++) {
-      const row: number[] = [];
-      const retsI = (returnsMap.get(symbols[i]) || []).slice(-60);
-      for (let j = 0; j < N; j++) {
-        if (i === j) {
-          row.push(1);
-        } else {
-          const retsJ = (returnsMap.get(symbols[j]) || []).slice(-60);
-          row.push(correlation(retsI, retsJ));
-        }
-      }
-      corrMatrix.push(row);
-    }
-
-    // Portfolio volatility calculation
-    // vol = sqrt( w^T * Cov * w )
-    // Cov_ij = corr_ij * vol_i * vol_j
-    function portfolioVol(weights: number[]): number {
-      // weights are in %, vols are in %
-      let variance = 0;
-      for (let i = 0; i < N; i++) {
-        for (let j = 0; j < N; j++) {
-          const wi = weights[i] / 100;
-          const wj = weights[j] / 100;
-          const vi = vol60dArr[i] / 100; // convert from % back to decimal
-          const vj = vol60dArr[j] / 100;
-          variance += wi * wj * corrMatrix[i][j] * vi * vj;
-        }
-      }
-      return Math.sqrt(Math.max(0, variance)) * 100; // back to %
-    }
-
-    function portfolioReturn(weights: number[]): number {
-      let ret = 0;
-      for (let i = 0; i < N; i++) {
-        const annRet = return60dArr[i] * (252 / 60);
-        ret += (weights[i] / 100) * annRet;
-      }
-      return ret;
-    }
-
-    const rpVol = portfolioVol(rpWeights);
-    const rpReturn = portfolioReturn(rpWeights);
-    const rpSharpe = rpVol > 0 ? rpReturn / rpVol : 0;
-
-    const ewVol = portfolioVol(ewWeights);
-    const ewReturn = portfolioReturn(ewWeights);
-    const ewSharpe = ewVol > 0 ? ewReturn / ewVol : 0;
-
-    // Risk contribution in equal-weight portfolio
-    // Marginal risk contribution: MRC_i = (Cov * w)_i / portfolio_vol
-    // Risk contribution: RC_i = w_i * MRC_i
-    function riskContributions(weights: number[]): number[] {
-      const pVol = portfolioVol(weights);
-      if (pVol === 0) return Array(N).fill(100 / N);
-
-      const contributions: number[] = [];
-      for (let i = 0; i < N; i++) {
-        let marginal = 0;
-        for (let j = 0; j < N; j++) {
-          const wj = weights[j] / 100;
-          const vi = vol60dArr[i] / 100;
-          const vj = vol60dArr[j] / 100;
-          marginal += wj * corrMatrix[i][j] * vi * vj;
-        }
-        // RC_i = w_i * marginal / pVol
-        contributions.push(((weights[i] / 100) * marginal) / (pVol / 100));
-      }
-
-      // Normalize to sum to 100%
-      const total = contributions.reduce((a, b) => a + b, 0);
-      return total > 0
-        ? contributions.map((c) => (c / total) * 100)
-        : Array(N).fill(100 / N);
-    }
-
-    const ewRiskContribs = riskContributions(ewWeights);
-    const rpRiskContribs = riskContributions(rpWeights);
-
-    // Build asset results
-    const assets: AssetResult[] = ASSETS.map((asset, i) => {
-      const quote = quoteMap.get(asset.symbol);
-      return {
-        name: asset.name,
-        symbol: asset.symbol,
-        class: asset.class,
-        price: quote?.price ?? 0,
-        changePct: Math.round((quote?.changePct ?? 0) * 100) / 100,
-        return20d: Math.round(return20dArr[i] * 100) / 100,
-        return60d: Math.round(return60dArr[i] * 100) / 100,
-        vol20d: Math.round(vol20dArr[i] * 100) / 100,
-        vol60d: Math.round(vol60dArr[i] * 100) / 100,
-        sharpe: Math.round(sharpeArr[i] * 100) / 100,
-        riskParityWeight: Math.round(rpWeights[i] * 100) / 100,
-        equalWeight: Math.round(equalWeight * 100) / 100,
-        riskContribution: Math.round(ewRiskContribs[i] * 100) / 100,
-        sparkline: sparklines[i],
-      };
-    });
-
-    // Sort assets by risk parity weight descending
-    assets.sort((a, b) => b.riskParityWeight - a.riskParityWeight);
-
-    const riskBudget: RiskBudgetEntry[] = ASSETS.map((asset, i) => ({
-      name: asset.name,
-      equalWeightRisk: Math.round(ewRiskContribs[i] * 100) / 100,
-      riskParityRisk: Math.round(rpRiskContribs[i] * 100) / 100,
-    }));
-
-    // Round correlation matrix
-    const roundedCorr = corrMatrix.map((row) =>
-      row.map((v) => Math.round(v * 100) / 100),
-    );
-
-    const result: RiskParityResponse = {
-      timestamp: new Date().toISOString(),
-      assets,
-      portfolio: {
-        riskParity: {
-          vol: Math.round(rpVol * 100) / 100,
-          expectedReturn: Math.round(rpReturn * 100) / 100,
-          sharpe: Math.round(rpSharpe * 100) / 100,
-        },
-        equalWeight: {
-          vol: Math.round(ewVol * 100) / 100,
-          expectedReturn: Math.round(ewReturn * 100) / 100,
-          sharpe: Math.round(ewSharpe * 100) / 100,
-        },
-      },
-      correlationMatrix: {
-        symbols: symbols,
-        values: roundedCorr,
-      },
-      riskBudget,
-    };
-
-    cache = { data: result, expiresAt: now + CACHE_TTL };
-    res.json(result);
+    const data = generateRiskParityData();
+    cache = { data, ts: now };
+    res.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[RiskParity] Error:', message);
-    if (cache.data) {
+    if (cache) {
       return res.json(cache.data);
     }
-    res.status(500).json({ error: 'Failed to fetch risk parity data' });
+    res.status(500).json({ error: 'Failed to generate risk parity data' });
   }
 });
 

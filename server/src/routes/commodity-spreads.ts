@@ -1,364 +1,203 @@
 import { Router } from 'express';
-import { getQuotes, getHistory } from '../services/stocks/yahoo-finance.js';
-
 const router = Router();
 
-// ── Types ──
+function mulberry32(a: number) { return function(){let t=(a+=0x6d2b79f5);t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}; }
+function hashSeed(str: string): number { let hash=0;for(let i=0;i<str.length;i++){const char=str.charCodeAt(i);hash=((hash<<5)-hash)+char;hash|=0;}return Math.abs(hash); }
 
-interface SpreadLeg {
-  symbol: string;
-  name: string;
-  price: number;
-  changePct: number;
-}
-
-interface SpreadEntry {
-  name: string;
-  category: 'energy' | 'agriculture' | 'metals';
-  longLeg: SpreadLeg;
-  shortLeg: SpreadLeg;
-  currentSpread: number;
-  spreadType: 'ratio' | 'absolute';
-  avg20d: number;
-  avg60d: number;
-  zScore: number;
-  percentile: number;
-  direction: 'widening' | 'narrowing' | 'stable';
-  signal: 'cheap' | 'fair' | 'expensive';
-  description: string;
-  history: number[];
-}
-
-interface CommoditySpreadsResponse {
-  timestamp: string;
-  spreads: SpreadEntry[];
-  summary: {
-    energySentiment: string;
-    metalsSentiment: string;
-    agSentiment: string;
-  };
-}
-
-// ── Spread Definitions ──
-
-interface SpreadDef {
-  name: string;
-  category: 'energy' | 'agriculture' | 'metals';
-  longSymbol: string;
-  longName: string;
-  shortSymbol: string;
-  shortName: string;
-  spreadType: 'ratio' | 'absolute';
-  description: string;
-}
-
-const SPREAD_DEFS: SpreadDef[] = [
-  {
-    name: 'Crack Spread',
-    category: 'energy',
-    longSymbol: 'UGA',
-    longName: 'United States Gasoline Fund',
-    shortSymbol: 'USO',
-    shortName: 'United States Oil Fund',
-    spreadType: 'ratio',
-    description: 'Refining margin: gasoline vs crude oil. Widening = higher refining profits.',
-  },
-  {
-    name: 'Gold/Silver Ratio',
-    category: 'metals',
-    longSymbol: 'GLD',
-    longName: 'SPDR Gold Shares',
-    shortSymbol: 'SLV',
-    shortName: 'iShares Silver Trust',
-    spreadType: 'ratio',
-    description: 'Gold relative to silver. High ratio = risk aversion; low = industrial optimism.',
-  },
-  {
-    name: 'Oil/Gas Ratio',
-    category: 'energy',
-    longSymbol: 'CL=F',
-    longName: 'Crude Oil Futures',
-    shortSymbol: 'NG=F',
-    shortName: 'Natural Gas Futures',
-    spreadType: 'ratio',
-    description: 'Energy substitution ratio. High = gas cheap vs oil; mean-reverts historically.',
-  },
-  {
-    name: 'Copper/Gold Ratio',
-    category: 'metals',
-    longSymbol: 'HG=F',
-    longName: 'Copper Futures',
-    shortSymbol: 'GC=F',
-    shortName: 'Gold Futures',
-    spreadType: 'ratio',
-    description: 'Economic sentiment gauge. Rising = growth optimism; falling = risk aversion.',
-  },
-  {
-    name: 'Platinum/Gold Spread',
-    category: 'metals',
-    longSymbol: 'PL=F',
-    longName: 'Platinum Futures',
-    shortSymbol: 'GC=F',
-    shortName: 'Gold Futures',
-    spreadType: 'ratio',
-    description: 'Auto industry demand proxy. Rising = industrial demand; falling = safe haven bid.',
-  },
-  {
-    name: 'Wheat/Corn Ratio',
-    category: 'agriculture',
-    longSymbol: 'ZW=F',
-    longName: 'Wheat Futures',
-    shortSymbol: 'ZC=F',
-    shortName: 'Corn Futures',
-    spreadType: 'ratio',
-    description: 'Feed grain substitution. High = wheat premium; low = corn premium.',
-  },
-  {
-    name: 'Crush Spread',
-    category: 'agriculture',
-    longSymbol: 'ZL=F',
-    longName: 'Soybean Oil Futures',
-    shortSymbol: 'ZS=F',
-    shortName: 'Soybean Futures',
-    spreadType: 'ratio',
-    description: 'Soybean processing margin. Oil vs beans ratio signals crush profitability.',
-  },
-];
-
-// Collect unique symbols for fetching
-const ALL_SYMBOLS = Array.from(
-  new Set(SPREAD_DEFS.flatMap((d) => [d.longSymbol, d.shortSymbol])),
-);
-
-// ── Cache ──
-
-let cache: { data: CommoditySpreadsResponse | null; expiresAt: number } = {
-  data: null,
-  expiresAt: 0,
-};
-const CACHE_TTL = 5 * 60_000; // 5 minutes
+let cache: { data: any; ts: number } | null = null;
+const TTL = 5 * 60 * 1000;
 
 // ── Helpers ──
 
-function computeSpreadHistory(
-  longHistory: { date: string; close: number | null }[],
-  shortHistory: { date: string; close: number | null }[],
-  spreadType: 'ratio' | 'absolute',
-): number[] {
-  const shortMap = new Map<string, number>();
-  for (const d of shortHistory) {
-    if (d.close != null) shortMap.set(d.date, d.close);
-  }
+function r2(v: number): number { return Math.round(v * 100) / 100; }
+function r4(v: number): number { return Math.round(v * 10000) / 10000; }
+function pick<T>(arr: T[], rng: () => number): T { return arr[Math.floor(rng() * arr.length)]; }
 
-  const values: number[] = [];
-  for (const n of longHistory) {
-    if (n.close == null) continue;
-    const dVal = shortMap.get(n.date);
-    if (dVal == null || dVal === 0) continue;
-    if (spreadType === 'ratio') {
-      values.push(Math.round((n.close / dVal) * 10000) / 10000);
-    } else {
-      values.push(Math.round((n.close - dVal) * 100) / 100);
-    }
-  }
+// ── Types ──
 
-  // Keep last 60 values
-  return values.slice(-60);
+interface CalendarSpread {
+  commodity: string;
+  frontMonth: number;
+  secondMonth: number;
+  spread: number;
+  structure: 'CONTANGO' | 'BACKWARDATION';
+  change1W: number;
+  change1M: number;
 }
 
-function computeStats(history: number[]): {
-  avg20d: number;
-  avg60d: number;
-  zScore: number;
+interface CrackSpread {
+  name: string;
+  value: number;
+  change: number;
+  avg1M: number;
   percentile: number;
-  direction: 'widening' | 'narrowing' | 'stable';
-  signal: 'cheap' | 'fair' | 'expensive';
-} {
-  if (history.length < 2) {
-    return { avg20d: 0, avg60d: 0, zScore: 0, percentile: 50, direction: 'stable', signal: 'fair' };
-  }
+}
 
-  const current = history[history.length - 1];
+interface CrushSpread {
+  name: string;
+  value: number;
+  change: number;
+  avg1M: number;
+}
 
-  // 20-day average
-  const last20 = history.slice(-20);
-  const avg20d = last20.reduce((s, v) => s + v, 0) / last20.length;
+interface InterCommoditySpread {
+  name: string;
+  value: number;
+  historicalAvg: number;
+  zScore: number;
+}
 
-  // 60-day average
-  const avg60d = history.reduce((s, v) => s + v, 0) / history.length;
+interface CommoditySpreadsResponse {
+  calendarSpreads: CalendarSpread[];
+  crackSpreads: CrackSpread[];
+  crushSpreads: CrushSpread[];
+  interCommoditySpreads: InterCommoditySpread[];
+  timestamp: string;
+}
 
-  // Standard deviation of 60-day window
-  const variance = history.reduce((s, v) => s + (v - avg60d) ** 2, 0) / history.length;
-  const stdDev = Math.sqrt(variance) || 0.0001;
+// ── Base data configs ──
 
-  // Z-score
-  const zScore = Math.round(((current - avg60d) / stdDev) * 100) / 100;
+interface CalendarCfg {
+  commodity: string;
+  baseFront: number;
+  baseSecond: number;
+  vol: number;
+  bias: 'CONTANGO' | 'BACKWARDATION';
+}
 
-  // Percentile (rank in 60-day range)
-  const sorted = [...history].sort((a, b) => a - b);
-  const rank = sorted.filter((v) => v <= current).length;
-  const percentile = Math.round((rank / sorted.length) * 100);
+const CALENDAR_CFGS: CalendarCfg[] = [
+  { commodity: 'WTI Crude',    baseFront: 78.45, baseSecond: 77.82, vol: 1.8,   bias: 'BACKWARDATION' },
+  { commodity: 'Brent Crude',  baseFront: 82.30, baseSecond: 81.55, vol: 1.6,   bias: 'BACKWARDATION' },
+  { commodity: 'Natural Gas',  baseFront: 2.85,  baseSecond: 3.02,  vol: 0.25,  bias: 'CONTANGO' },
+  { commodity: 'Gold',         baseFront: 2342.0,baseSecond: 2350.5,vol: 18.0,  bias: 'CONTANGO' },
+  { commodity: 'Silver',       baseFront: 28.45, baseSecond: 28.62, vol: 0.60,  bias: 'CONTANGO' },
+  { commodity: 'Copper',       baseFront: 4.52,  baseSecond: 4.48,  vol: 0.08,  bias: 'BACKWARDATION' },
+  { commodity: 'Corn',         baseFront: 445.0, baseSecond: 452.5, vol: 8.0,   bias: 'CONTANGO' },
+  { commodity: 'Wheat',        baseFront: 585.0, baseSecond: 592.0, vol: 10.0,  bias: 'CONTANGO' },
+  { commodity: 'Soybeans',     baseFront: 1185.0,baseSecond: 1172.0,vol: 15.0,  bias: 'BACKWARDATION' },
+];
 
-  // Direction: compare last 5 days average to previous 5 days
-  const recent5 = history.slice(-5);
-  const prev5 = history.slice(-10, -5);
-  const avgRecent = recent5.reduce((s, v) => s + v, 0) / (recent5.length || 1);
-  const avgPrev = prev5.length > 0 ? prev5.reduce((s, v) => s + v, 0) / prev5.length : avgRecent;
-  const dirDiff = avgRecent - avgPrev;
-  const threshold = stdDev * 0.2;
+interface CrackCfg {
+  name: string;
+  baseValue: number;
+  vol: number;
+  baseAvg: number;
+}
 
-  let direction: 'widening' | 'narrowing' | 'stable';
-  if (Math.abs(dirDiff) < threshold) {
-    direction = 'stable';
-  } else if (dirDiff > 0) {
-    direction = 'widening';
-  } else {
-    direction = 'narrowing';
-  }
+const CRACK_CFGS: CrackCfg[] = [
+  { name: '3-2-1 Crack',      baseValue: 28.50, vol: 4.5, baseAvg: 26.80 },
+  { name: '5-3-2 Crack',      baseValue: 24.20, vol: 3.8, baseAvg: 22.90 },
+  { name: 'Gasoline Crack',   baseValue: 22.80, vol: 5.0, baseAvg: 21.50 },
+  { name: 'Heating Oil Crack', baseValue: 35.20, vol: 5.5, baseAvg: 33.40 },
+  { name: 'Jet Fuel Crack',   baseValue: 32.60, vol: 4.8, baseAvg: 30.80 },
+];
 
-  // Signal based on z-score
-  let signal: 'cheap' | 'fair' | 'expensive';
-  if (zScore <= -1) {
-    signal = 'cheap';
-  } else if (zScore >= 1) {
-    signal = 'expensive';
-  } else {
-    signal = 'fair';
-  }
+interface CrushCfg {
+  name: string;
+  baseValue: number;
+  vol: number;
+  baseAvg: number;
+}
+
+const CRUSH_CFGS: CrushCfg[] = [
+  { name: 'Soybean Crush',  baseValue: 1.65, vol: 0.35, baseAvg: 1.48 },
+  { name: 'Corn Ethanol',   baseValue: 0.82, vol: 0.18, baseAvg: 0.75 },
+  { name: 'Sugar Ethanol',  baseValue: 0.45, vol: 0.12, baseAvg: 0.40 },
+];
+
+interface InterCfg {
+  name: string;
+  baseValue: number;
+  vol: number;
+  histAvg: number;
+  stdDev: number;
+}
+
+const INTER_CFGS: InterCfg[] = [
+  { name: 'Gold/Silver Ratio',       baseValue: 82.30, vol: 3.5,  histAvg: 78.0, stdDev: 6.0 },
+  { name: 'WTI/Brent Spread',        baseValue: -3.85, vol: 1.2,  histAvg: -4.50, stdDev: 1.8 },
+  { name: 'Corn/Wheat Ratio',        baseValue: 0.76,  vol: 0.05, histAvg: 0.72, stdDev: 0.08 },
+  { name: 'Natural Gas/Crude Ratio',  baseValue: 0.036, vol: 0.008, histAvg: 0.045, stdDev: 0.012 },
+];
+
+// ── Data generation ──
+
+function generateData(): CommoditySpreadsResponse {
+  const day = new Date().toISOString().slice(0, 10);
+  const rng = mulberry32(hashSeed('commodity-spreads-' + day));
+
+  // Calendar spreads
+  const calendarSpreads: CalendarSpread[] = CALENDAR_CFGS.map(cfg => {
+    const frontJitter = (rng() - 0.5) * cfg.vol * 2;
+    const secondJitter = (rng() - 0.5) * cfg.vol * 2;
+    const frontMonth = r2(cfg.baseFront + frontJitter);
+    const secondMonth = r2(cfg.baseSecond + secondJitter);
+    const spread = r2(frontMonth - secondMonth);
+    const structure: 'CONTANGO' | 'BACKWARDATION' = spread < 0 ? 'CONTANGO' : 'BACKWARDATION';
+    const change1W = r2((rng() - 0.5) * cfg.vol * 0.6);
+    const change1M = r2((rng() - 0.5) * cfg.vol * 1.4);
+    return { commodity: cfg.commodity, frontMonth, secondMonth, spread, structure, change1W, change1M };
+  });
+
+  // Crack spreads
+  const crackSpreads: CrackSpread[] = CRACK_CFGS.map(cfg => {
+    const jitter = (rng() - 0.5) * cfg.vol * 2;
+    const value = r2(cfg.baseValue + jitter);
+    const change = r2((rng() - 0.5) * cfg.vol * 0.5);
+    const avgJitter = (rng() - 0.5) * cfg.vol * 0.3;
+    const avg1M = r2(cfg.baseAvg + avgJitter);
+    const percentile = Math.min(99, Math.max(1, Math.round(rng() * 100)));
+    return { name: cfg.name, value, change, avg1M, percentile };
+  });
+
+  // Crush spreads
+  const crushSpreads: CrushSpread[] = CRUSH_CFGS.map(cfg => {
+    const jitter = (rng() - 0.5) * cfg.vol * 2;
+    const value = r2(cfg.baseValue + jitter);
+    const change = r2((rng() - 0.5) * cfg.vol * 0.5);
+    const avgJitter = (rng() - 0.5) * cfg.vol * 0.3;
+    const avg1M = r2(cfg.baseAvg + avgJitter);
+    return { name: cfg.name, value, change, avg1M };
+  });
+
+  // Inter-commodity spreads
+  const interCommoditySpreads: InterCommoditySpread[] = INTER_CFGS.map(cfg => {
+    const jitter = (rng() - 0.5) * cfg.vol * 2;
+    const value = r4(cfg.baseValue + jitter);
+    const histJitter = (rng() - 0.5) * cfg.vol * 0.2;
+    const historicalAvg = r4(cfg.histAvg + histJitter);
+    const zScore = r2((value - historicalAvg) / cfg.stdDev);
+    return { name: cfg.name, value, historicalAvg, zScore };
+  });
 
   return {
-    avg20d: Math.round(avg20d * 10000) / 10000,
-    avg60d: Math.round(avg60d * 10000) / 10000,
-    zScore,
-    percentile,
-    direction,
-    signal,
+    calendarSpreads,
+    crackSpreads,
+    crushSpreads,
+    interCommoditySpreads,
+    timestamp: new Date().toISOString(),
   };
-}
-
-function deriveSentiment(
-  spreads: SpreadEntry[],
-  category: 'energy' | 'metals' | 'agriculture',
-): string {
-  const catSpreads = spreads.filter((s) => s.category === category);
-  if (catSpreads.length === 0) return 'No data';
-
-  let score = 0;
-  for (const s of catSpreads) {
-    if (s.signal === 'expensive') score += 1;
-    if (s.signal === 'cheap') score -= 1;
-    if (s.direction === 'widening') score += 0.5;
-    if (s.direction === 'narrowing') score -= 0.5;
-  }
-
-  const avg = score / catSpreads.length;
-  if (avg >= 0.5) return 'Elevated - spreads above average';
-  if (avg <= -0.5) return 'Compressed - spreads below average';
-  return 'Neutral - spreads near average';
 }
 
 // ── Route ──
 
-router.get('/', async (_req, res) => {
+router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-    if (cache.data && now < cache.expiresAt) {
+    if (cache && now - cache.ts < TTL) {
       return res.json(cache.data);
     }
 
-    // Fetch quotes and 60-day history for all symbols in parallel
-    const [quotes, ...histories] = await Promise.all([
-      getQuotes(ALL_SYMBOLS),
-      ...ALL_SYMBOLS.map((s) => getHistory(s, { range: '3mo', interval: '1d' })),
-    ]);
-
-    // Build maps
-    const quoteMap = new Map<string, any>();
-    for (const q of quotes) {
-      if (q) quoteMap.set(q.symbol, q);
-    }
-
-    const historyMap = new Map<string, { date: string; close: number | null }[]>();
-    ALL_SYMBOLS.forEach((sym, i) => {
-      historyMap.set(
-        sym,
-        ((histories[i] as any[]) || []).map((h: any) => ({
-          date: typeof h.date === 'string' ? h.date : String(h.date),
-          close: h.close,
-        })),
-      );
-    });
-
-    // Compute spreads
-    const spreads: SpreadEntry[] = [];
-
-    for (const def of SPREAD_DEFS) {
-      const longQuote = quoteMap.get(def.longSymbol);
-      const shortQuote = quoteMap.get(def.shortSymbol);
-
-      const longPrice = longQuote?.price ?? 0;
-      const shortPrice = shortQuote?.price ?? 0;
-
-      const longHistory = historyMap.get(def.longSymbol) || [];
-      const shortHistory = historyMap.get(def.shortSymbol) || [];
-
-      const history = computeSpreadHistory(longHistory, shortHistory, def.spreadType);
-
-      const currentSpread =
-        def.spreadType === 'ratio'
-          ? shortPrice !== 0
-            ? Math.round((longPrice / shortPrice) * 10000) / 10000
-            : 0
-          : Math.round((longPrice - shortPrice) * 100) / 100;
-
-      const stats = computeStats(history);
-
-      spreads.push({
-        name: def.name,
-        category: def.category,
-        longLeg: {
-          symbol: def.longSymbol,
-          name: longQuote?.name || def.longName,
-          price: longPrice,
-          changePct: longQuote?.changePercent ?? 0,
-        },
-        shortLeg: {
-          symbol: def.shortSymbol,
-          name: shortQuote?.name || def.shortName,
-          price: shortPrice,
-          changePct: shortQuote?.changePercent ?? 0,
-        },
-        currentSpread,
-        spreadType: def.spreadType,
-        avg20d: stats.avg20d,
-        avg60d: stats.avg60d,
-        zScore: stats.zScore,
-        percentile: stats.percentile,
-        direction: stats.direction,
-        signal: stats.signal,
-        description: def.description,
-        history,
-      });
-    }
-
-    const result: CommoditySpreadsResponse = {
-      timestamp: new Date().toISOString(),
-      spreads,
-      summary: {
-        energySentiment: deriveSentiment(spreads, 'energy'),
-        metalsSentiment: deriveSentiment(spreads, 'metals'),
-        agSentiment: deriveSentiment(spreads, 'agriculture'),
-      },
-    };
-
-    cache = { data: result, expiresAt: now + CACHE_TTL };
-    res.json(result);
-  } catch (err: any) {
-    console.error('[CommoditySpreads] Error:', err?.message || err);
-    if (cache.data) {
+    const data = generateData();
+    cache = { data, ts: now };
+    res.json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[CommoditySpreads] Error:', message);
+    if (cache) {
       return res.json(cache.data);
     }
-    res.status(500).json({ error: 'Failed to fetch commodity spread data' });
+    res.status(500).json({ error: 'Failed to generate commodity spreads data' });
   }
 });
 
