@@ -44,6 +44,9 @@ import dividendsRouter from './routes/dividends.js';
 import ipoRouter from './routes/ipo.js';
 import breadthRouter from './routes/breadth.js';
 import analystRouter from './routes/analyst.js';
+import financialsRouter from './routes/financials.js';
+import futuresRouter from './routes/futures.js';
+import comparisonRouter from './routes/comparison.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -189,6 +192,9 @@ export function createApp() {
   app.use('/api/ipo', ipoRouter);
   app.use('/api/breadth', breadthRouter);
   app.use('/api/analyst', analystRouter);
+  app.use('/api/financials', financialsRouter);
+  app.use('/api/futures', futuresRouter);
+  app.use('/api/comparison', comparisonRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

@@ -40,6 +40,9 @@ const DividendPanel = lazy(() => import('../panels/dividend-panel').then(m => ({
 const IPOPanel = lazy(() => import('../panels/ipo-panel').then(m => ({ default: m.IPOPanel })));
 const AnalystPanel = lazy(() => import('../panels/analyst-panel').then(m => ({ default: m.AnalystPanel })));
 const BreadthPanel = lazy(() => import('../panels/breadth-panel').then(m => ({ default: m.BreadthPanel })));
+const FinancialsPanel = lazy(() => import('../panels/financials-panel').then(m => ({ default: m.FinancialsPanel })));
+const FuturesPanel = lazy(() => import('../panels/futures-panel').then(m => ({ default: m.FuturesPanel })));
+const ComparisonPanel = lazy(() => import('../panels/comparison-panel').then(m => ({ default: m.ComparisonPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -56,7 +59,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 14; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 15; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -92,6 +95,9 @@ export const PANEL_IDS = {
   IPO: 'ipo-calendar',
   ANALYST: 'analyst-ratings',
   BREADTH: 'market-breadth',
+  FINANCIALS: 'financials',
+  FUTURES: 'futures',
+  PERFORMANCE: 'performance',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -128,6 +134,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.IPO]: 'IPO CALENDAR',
   [PANEL_IDS.ANALYST]: 'ANALYST RATINGS',
   [PANEL_IDS.BREADTH]: 'MARKET BREADTH',
+  [PANEL_IDS.FINANCIALS]: 'FINANCIALS',
+  [PANEL_IDS.FUTURES]: 'FUTURES',
+  [PANEL_IDS.PERFORMANCE]: 'PERFORMANCE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -165,6 +174,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.IPO]: 'panelIPO',
   [PANEL_IDS.ANALYST]: 'panelAnalyst',
   [PANEL_IDS.BREADTH]: 'panelBreadth',
+  [PANEL_IDS.FINANCIALS]: 'panelFinancials',
+  [PANEL_IDS.FUTURES]: 'panelFutures',
+  [PANEL_IDS.PERFORMANCE]: 'panelPerformance',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -480,6 +492,9 @@ export function DockLayout() {
       case PANEL_IDS.IPO: content = <LazyWrap><IPOPanel /></LazyWrap>; break;
       case PANEL_IDS.ANALYST: content = <LazyWrap><AnalystPanel /></LazyWrap>; break;
       case PANEL_IDS.BREADTH: content = <LazyWrap><BreadthPanel /></LazyWrap>; break;
+      case PANEL_IDS.FINANCIALS: content = <LazyWrap><FinancialsPanel /></LazyWrap>; break;
+      case PANEL_IDS.FUTURES: content = <LazyWrap><FuturesPanel /></LazyWrap>; break;
+      case PANEL_IDS.PERFORMANCE: content = <LazyWrap><ComparisonPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
