@@ -1,22 +1,18 @@
-import { useState, useMemo } from 'react';
-import {
-  useInstitutionalOwnership,
-  type StockOwnership,
-  type FlowEntry,
-} from '../../api/hooks/use-institutional-ownership';
-import { RefreshCw } from 'lucide-react';
+import { useInstitutionalOwnership } from '../../api/hooks/use-institutional-ownership';
 import { useT } from '../../i18n';
+
+// -- i18n fallback helper --
 
 type TFn = ReturnType<typeof useT>;
 const tr = (t: TFn, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
+  try {
+    return (t as (k: string) => string)(key) || fallback;
+  } catch {
+    return fallback;
+  }
 };
 
-// ── Views ──
-
-type ViewTab = 'HOLDERS' | 'FLOWS' | 'OVERVIEW';
-
-// ── Formatting ──
+// -- Formatting helpers --
 
 function fmtNumber(n: number): string {
   const abs = Math.abs(n);
@@ -27,23 +23,13 @@ function fmtNumber(n: number): string {
   return n.toFixed(0);
 }
 
-function fmtShares(n: number): string {
-  const abs = Math.abs(n);
-  const prefix = n > 0 ? '+' : '';
-  if (abs >= 1e6) return prefix + (n / 1e6).toFixed(2) + 'M';
-  if (abs >= 1e3) return prefix + (n / 1e3).toFixed(1) + 'K';
-  return prefix + n.toFixed(0);
-}
-
 function fmtValue(n: number): string {
   const abs = Math.abs(n);
-  const prefix = n > 0 ? '+$' : n < 0 ? '-$' : '$';
-  const val = abs;
-  if (val >= 1e12) return prefix + (val / 1e12).toFixed(1) + 'T';
-  if (val >= 1e9) return prefix + (val / 1e9).toFixed(2) + 'B';
-  if (val >= 1e6) return prefix + (val / 1e6).toFixed(1) + 'M';
-  if (val >= 1e3) return prefix + (val / 1e3).toFixed(0) + 'K';
-  return prefix + val.toFixed(0);
+  if (abs >= 1e12) return '$' + (abs / 1e12).toFixed(1) + 'T';
+  if (abs >= 1e9) return '$' + (abs / 1e9).toFixed(2) + 'B';
+  if (abs >= 1e6) return '$' + (abs / 1e6).toFixed(1) + 'M';
+  if (abs >= 1e3) return '$' + (abs / 1e3).toFixed(0) + 'K';
+  return '$' + abs.toFixed(0);
 }
 
 function fmtPct(n: number): string {
@@ -56,390 +42,324 @@ function changeColor(n: number): string {
   return 'text-white/40';
 }
 
-// ── Holdings View ──
-
-function HoldersView({ stock }: { stock: StockOwnership }) {
-  return (
-    <div className="flex-1 overflow-auto">
-      {/* Stock summary bar */}
-      <div className="flex items-center gap-3 px-3 py-1.5 border-b border-fuchsia-500/10 bg-fuchsia-500/[0.02] text-[8px] font-mono">
-        <span className="text-white/40">Inst:</span>
-        <span className="text-fuchsia-400 font-bold">{fmtPct(stock.institutionalOwnership)}</span>
-        <span className="text-white/40">Insider:</span>
-        <span className="text-white/60">{fmtPct(stock.insiderOwnership)}</span>
-        <span className="text-white/40">Institutions:</span>
-        <span className="text-white/60">{stock.totalInstitutions.toLocaleString()}</span>
-        <span className="text-white/40">Top10:</span>
-        <span className="text-fuchsia-400/80">{fmtPct(stock.concentration.top10pct)}</span>
-      </div>
-
-      {/* Activity summary */}
-      <div className="flex items-center gap-3 px-3 py-1 border-b border-white/[0.04] text-[7px] font-mono">
-        <span className="text-emerald-400/80">New: {stock.newPositions}</span>
-        <span className="text-red-400/80">Closed: {stock.closedPositions}</span>
-        <span className="text-emerald-400/60">Increased: {stock.increasedPositions}</span>
-        <span className="text-red-400/60">Decreased: {stock.decreasedPositions}</span>
-      </div>
-
-      {/* Table header */}
-      <div className="flex items-center px-3 py-1 border-b border-white/[0.06] text-[7px] font-mono text-white/30 uppercase tracking-wider">
-        <span className="flex-1 min-w-0">Institution</span>
-        <span className="w-[70px] text-right shrink-0">Shares</span>
-        <span className="w-[70px] text-right shrink-0">Value</span>
-        <span className="w-[50px] text-right shrink-0">% Float</span>
-        <span className="w-[70px] text-right shrink-0">Chg Shares</span>
-        <span className="w-[50px] text-right shrink-0">Chg %</span>
-        <span className="w-[50px] text-right shrink-0">Quarter</span>
-      </div>
-
-      {/* Rows */}
-      {stock.topHolders.map((holder, i) => (
-        <div
-          key={holder.institution + '-' + i}
-          className="flex items-center px-3 py-1 border-b border-white/[0.03] text-[8px] font-mono hover:bg-fuchsia-400/[0.02] transition-colors"
-        >
-          <span className="flex-1 min-w-0 text-white/80 truncate pr-2">
-            <span className="text-fuchsia-400/60 mr-1">{i + 1}.</span>
-            {holder.institution}
-          </span>
-          <span className="w-[70px] text-right text-white/60 tabular-nums shrink-0">
-            {fmtNumber(holder.shares)}
-          </span>
-          <span className="w-[70px] text-right text-white/60 tabular-nums shrink-0">
-            ${fmtNumber(holder.value)}
-          </span>
-          <span className="w-[50px] text-right text-fuchsia-400 font-bold tabular-nums shrink-0">
-            {fmtPct(holder.pctOfFloat)}
-          </span>
-          <span className={`w-[70px] text-right tabular-nums shrink-0 ${changeColor(holder.changeShares)}`}>
-            {fmtShares(holder.changeShares)}
-          </span>
-          <span className={`w-[50px] text-right tabular-nums shrink-0 ${changeColor(holder.changePercent)}`}>
-            {holder.changePercent > 0 ? '+' : ''}{holder.changePercent.toFixed(1)}%
-          </span>
-          <span className="w-[50px] text-right text-white/30 shrink-0">
-            {holder.quarter}
-          </span>
-        </div>
-      ))}
-
-      {/* Concentration footer */}
-      <div className="flex items-center gap-4 px-3 py-1.5 border-t border-white/[0.06] text-[7px] font-mono text-white/30 bg-black/50">
-        <span>Top 10: <span className="text-fuchsia-400/70">{fmtPct(stock.concentration.top10pct)}</span></span>
-        <span>Top 25: <span className="text-fuchsia-400/70">{fmtPct(stock.concentration.top25pct)}</span></span>
-        <span>HHI: <span className="text-white/50">{stock.concentration.herfindahl.toFixed(1)}</span></span>
-      </div>
-    </div>
-  );
+function changePrefix(n: number): string {
+  if (n > 0) return '+';
+  return '';
 }
 
-// ── Flows View ──
-
-function FlowsView({ mostBought, mostSold }: { mostBought: FlowEntry[]; mostSold: FlowEntry[] }) {
-  const maxBuyVal = mostBought.length > 0 ? Math.max(...mostBought.map(e => Math.abs(e.changeValue))) : 1;
-  const maxSellVal = mostSold.length > 0 ? Math.max(...mostSold.map(e => Math.abs(e.changeValue))) : 1;
-
-  return (
-    <div className="flex-1 overflow-auto">
-      <div className="flex gap-0 h-full">
-        {/* Most Bought */}
-        <div className="flex-1 border-r border-white/[0.06]">
-          <div className="px-3 py-1.5 border-b border-white/[0.06] bg-emerald-500/[0.03]">
-            <span className="text-[8px] font-mono font-black uppercase tracking-wider text-emerald-400">
-              Most Bought
-            </span>
-          </div>
-          <div className="flex items-center px-3 py-0.5 border-b border-white/[0.04] text-[6px] font-mono text-white/25 uppercase">
-            <span className="flex-1">Institution</span>
-            <span className="w-10 text-right">Ticker</span>
-            <span className="w-16 text-right">Value</span>
-          </div>
-          {mostBought.map((entry, i) => {
-            const barPct = Math.abs(entry.changeValue) / maxBuyVal * 100;
-            return (
-              <div
-                key={entry.institution + '-' + entry.ticker + '-' + i}
-                className="relative flex items-center px-3 py-1 border-b border-white/[0.02] hover:bg-fuchsia-400/[0.02] transition-colors"
-              >
-                <div
-                  className="absolute left-0 top-0 bottom-0 bg-emerald-500/[0.06]"
-                  style={{ width: `${barPct}%` }}
-                />
-                <span className="relative flex-1 text-[8px] font-mono text-white/70 truncate pr-2">
-                  {entry.institution}
-                </span>
-                <span className="relative w-10 text-right text-[8px] font-mono text-fuchsia-400 font-bold">
-                  {entry.ticker}
-                </span>
-                <span className="relative w-16 text-right text-[8px] font-mono text-emerald-400 tabular-nums font-bold">
-                  {fmtValue(entry.changeValue)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Most Sold */}
-        <div className="flex-1">
-          <div className="px-3 py-1.5 border-b border-white/[0.06] bg-red-500/[0.03]">
-            <span className="text-[8px] font-mono font-black uppercase tracking-wider text-red-400">
-              Most Sold
-            </span>
-          </div>
-          <div className="flex items-center px-3 py-0.5 border-b border-white/[0.04] text-[6px] font-mono text-white/25 uppercase">
-            <span className="flex-1">Institution</span>
-            <span className="w-10 text-right">Ticker</span>
-            <span className="w-16 text-right">Value</span>
-          </div>
-          {mostSold.map((entry, i) => {
-            const barPct = Math.abs(entry.changeValue) / maxSellVal * 100;
-            return (
-              <div
-                key={entry.institution + '-' + entry.ticker + '-' + i}
-                className="relative flex items-center px-3 py-1 border-b border-white/[0.02] hover:bg-fuchsia-400/[0.02] transition-colors"
-              >
-                <div
-                  className="absolute right-0 top-0 bottom-0 bg-red-500/[0.06]"
-                  style={{ width: `${barPct}%` }}
-                />
-                <span className="relative flex-1 text-[8px] font-mono text-white/70 truncate pr-2">
-                  {entry.institution}
-                </span>
-                <span className="relative w-10 text-right text-[8px] font-mono text-fuchsia-400 font-bold">
-                  {entry.ticker}
-                </span>
-                <span className="relative w-16 text-right text-[8px] font-mono text-red-400 tabular-nums font-bold">
-                  {fmtValue(entry.changeValue)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Overview View ──
-
-function OverviewView({
-  stocks,
-  onSelectStock,
-}: {
-  stocks: StockOwnership[];
-  onSelectStock: (ticker: string) => void;
-}) {
-  return (
-    <div className="flex-1 overflow-auto">
-      {/* Table header */}
-      <div className="flex items-center px-3 py-1 border-b border-white/[0.06] text-[7px] font-mono text-white/30 uppercase tracking-wider sticky top-0 bg-black/95 z-10">
-        <span className="w-12 shrink-0">Ticker</span>
-        <span className="flex-1 min-w-0">Name</span>
-        <span className="w-14 text-right shrink-0">Inst %</span>
-        <span className="w-14 text-right shrink-0">Insider %</span>
-        <span className="w-14 text-right shrink-0">Inst #</span>
-        <span className="w-16 text-right shrink-0">Top 10 %</span>
-        <span className="w-14 text-right shrink-0">HHI</span>
-        <span className="w-[72px] text-right shrink-0">Net Activity</span>
-      </div>
-
-      {stocks.map((stock, i) => {
-        const netActivity = stock.increasedPositions + stock.newPositions
-          - stock.decreasedPositions - stock.closedPositions;
-        const instPctColor = stock.institutionalOwnership >= 75
-          ? 'text-fuchsia-400'
-          : stock.institutionalOwnership >= 65
-            ? 'text-fuchsia-400/70'
-            : 'text-white/60';
-
-        return (
-          <div
-            key={stock.ticker + '-' + i}
-            onClick={() => onSelectStock(stock.ticker)}
-            className="flex items-center px-3 py-1 border-b border-white/[0.03] hover:bg-fuchsia-400/[0.02] transition-colors cursor-pointer text-[8px] font-mono"
-          >
-            <span className="w-12 font-black text-fuchsia-400 shrink-0">{stock.ticker}</span>
-            <span className="flex-1 min-w-0 text-white/50 truncate pr-2">{stock.name}</span>
-            <span className={`w-14 text-right font-bold tabular-nums shrink-0 ${instPctColor}`}>
-              {fmtPct(stock.institutionalOwnership)}
-            </span>
-            <span className="w-14 text-right text-white/50 tabular-nums shrink-0">
-              {fmtPct(stock.insiderOwnership)}
-            </span>
-            <span className="w-14 text-right text-white/50 tabular-nums shrink-0">
-              {stock.totalInstitutions.toLocaleString()}
-            </span>
-            <span className="w-16 text-right text-fuchsia-400/60 tabular-nums shrink-0">
-              {fmtPct(stock.concentration.top10pct)}
-            </span>
-            <span className="w-14 text-right text-white/40 tabular-nums shrink-0">
-              {stock.concentration.herfindahl.toFixed(1)}
-            </span>
-            <span className="w-[72px] text-right shrink-0">
-              <span
-                className={`inline-block px-1.5 py-0.5 text-[7px] font-bold ${
-                  netActivity > 0
-                    ? 'text-emerald-400 bg-emerald-500/10'
-                    : netActivity < 0
-                      ? 'text-red-400 bg-red-500/10'
-                      : 'text-white/40 bg-white/[0.03]'
-                }`}
-              >
-                {netActivity > 0 ? '+' : ''}{netActivity}
-              </span>
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Main Panel ──
+// -- Main Panel --
 
 export function InstitutionalOwnershipPanel() {
   const t = useT();
-  const { data, isLoading, refetch } = useInstitutionalOwnership();
-  const [view, setView] = useState<ViewTab>('HOLDERS');
-  const [selectedTicker, setSelectedTicker] = useState<string>('AAPL');
+  const { data, isLoading } = useInstitutionalOwnership();
 
-  const selectedStock = useMemo(() => {
-    if (!data) return null;
-    return data.stocks.find(s => s.ticker === selectedTicker) || data.stocks[0] || null;
-  }, [data, selectedTicker]);
+  if (isLoading && !data) {
+    return (
+      <div className="h-full flex flex-col bg-black overflow-hidden text-[9px] font-mono">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#050505] border-b border-border/20 shrink-0">
+          <div className="w-1 h-3 bg-teal-400" />
+          <span className="text-[9px] font-black font-mono uppercase tracking-wider text-teal-400">
+            {tr(t, 'panelInstitutionalOwnership', 'Institutional Ownership')}
+          </span>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest">
+            Loading...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
-  const viewTabs: { key: ViewTab; label: string }[] = [
-    { key: 'HOLDERS', label: tr(t, 'ioHolders', 'HOLDERS') },
-    { key: 'FLOWS', label: tr(t, 'ioFlows', 'FLOWS') },
-    { key: 'OVERVIEW', label: tr(t, 'ioOverview', 'OVERVIEW') },
-  ];
+  const topHolders = (data?.topHolders ?? []) as Array<{
+    institution: string;
+    shares: number;
+    value: number;
+    portfolioPct: number;
+    outstandingPct: number;
+    change: number;
+  }>;
+
+  const summary = data?.summary as
+    | {
+        institutionalPct: number;
+        totalInstitutions: number;
+        newPositions: number;
+        increasedPositions: number;
+        decreasedPositions: number;
+        soldOutPositions: number;
+      }
+    | undefined;
+
+  const quarterlyTrend = (data?.quarterlyTrend ?? []) as Array<{
+    quarter: string;
+    totalShares: number;
+    totalValue: number;
+    institutions: number;
+  }>;
+
+  const topBuys = (data?.topBuys ?? []) as Array<{
+    institution: string;
+    shares: number;
+    value: number;
+    changePct: number;
+  }>;
+
+  const topSells = (data?.topSells ?? []) as Array<{
+    institution: string;
+    shares: number;
+    value: number;
+    changePct: number;
+  }>;
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden text-[9px] font-mono">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-fuchsia-500/15 shrink-0">
-        <div className="flex items-center gap-2">
-          {/* 13F icon */}
-          <svg viewBox="0 0 16 16" className="w-3.5 h-3.5">
-            <rect x="2" y="1" width="12" height="14" rx="1" fill="none" stroke="#e879f9" strokeWidth="1.2" />
-            <line x1="5" y1="5" x2="11" y2="5" stroke="#e879f9" strokeWidth="0.8" opacity="0.6" />
-            <line x1="5" y1="7.5" x2="11" y2="7.5" stroke="#e879f9" strokeWidth="0.8" opacity="0.4" />
-            <line x1="5" y1="10" x2="9" y2="10" stroke="#e879f9" strokeWidth="0.8" opacity="0.3" />
-          </svg>
-          <span className="text-[9px] font-black uppercase tracking-tighter text-fuchsia-400">
-            {tr(t, 'ioTitle', '13F Institutional')}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* View tabs */}
-          {viewTabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setView(tab.key)}
-              className={`px-1.5 py-0.5 text-[7px] font-mono font-bold uppercase tracking-wider transition-colors ${
-                view === tab.key
-                  ? 'text-fuchsia-400 bg-fuchsia-500/15'
-                  : 'text-white/30 hover:text-white/50 hover:bg-white/[0.03]'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-
-          {data && (
-            <span className="text-[7px] text-white/20 ml-1">
-              {new Date(data.generatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-          <button onClick={() => refetch()} className="p-0.5 text-white/30 hover:text-fuchsia-400 transition-colors">
-            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
+      {/* ── Header ── */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-[#050505] border-b border-border/20 shrink-0">
+        <div className="w-1 h-3 bg-teal-400" />
+        <span className="text-[9px] font-black font-mono uppercase tracking-wider text-teal-400">
+          {tr(t, 'panelInstitutionalOwnership', 'Institutional Ownership')}
+        </span>
       </div>
 
-      {/* Stock selector (for HOLDERS view) */}
-      {view === 'HOLDERS' && data && (
-        <div className="flex items-center gap-2 px-3 py-1 border-b border-white/[0.06] bg-white/[0.01] shrink-0">
-          <span className="text-[7px] text-white/30 uppercase">Stock:</span>
-          <select
-            value={selectedTicker}
-            onChange={(e) => setSelectedTicker(e.target.value)}
-            className="bg-black border border-fuchsia-500/20 text-fuchsia-400 text-[9px] font-mono font-bold px-1.5 py-0.5 focus:outline-none focus:border-fuchsia-500/40 appearance-none cursor-pointer"
-          >
-            {data.stocks.map(s => (
-              <option key={s.ticker} value={s.ticker}>
-                {s.ticker} - {s.name}
-              </option>
-            ))}
-          </select>
-          {selectedStock && (
-            <div className="flex items-center gap-2 ml-auto text-[8px]">
-              <span className="text-white/40">Institutional:</span>
-              <span className="text-fuchsia-400 font-bold">{fmtPct(selectedStock.institutionalOwnership)}</span>
-              <span className="text-white/20">|</span>
-              <span className="text-white/40">Insider:</span>
-              <span className="text-white/60">{fmtPct(selectedStock.insiderOwnership)}</span>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="flex-1 overflow-auto no-scrollbar">
+        {/* ── Section 1: Top Holders ── */}
+        <div className="border-b border-border/20">
+          <div className="px-3 py-1 border-b border-border/20 bg-[#030303]">
+            <span className="text-[8px] font-black font-mono uppercase tracking-wider text-white/30">
+              {tr(t, 'ioTopHolders', 'Top Holders')}
+            </span>
+          </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        {isLoading && !data ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-5 h-5 border-2 border-fuchsia-400/30 border-t-fuchsia-400 rounded-full animate-spin" />
-              <span className="text-[10px] text-white/40 uppercase tracking-widest">
-                {tr(t, 'loading', 'Loading...')}
+          {/* Table header */}
+          <div className="flex items-center px-3 py-0.5 border-b border-border/20 bg-[#030303] text-[7px] font-mono text-white/30 uppercase tracking-wider">
+            <span className="flex-1 min-w-0">Institution</span>
+            <span className="w-[64px] text-right shrink-0">Shares</span>
+            <span className="w-[64px] text-right shrink-0">Value</span>
+            <span className="w-[48px] text-right shrink-0">% Port</span>
+            <span className="w-[48px] text-right shrink-0">% Out</span>
+            <span className="w-[56px] text-right shrink-0">Change</span>
+          </div>
+
+          {/* Rows */}
+          {topHolders.map((holder, i) => (
+            <div
+              key={holder.institution + '-' + i}
+              className="flex items-center px-3 py-1 border-b border-border/20 hover:bg-teal-400/[0.02] transition-colors"
+            >
+              <span className="flex-1 min-w-0 text-white/70 truncate pr-2">
+                <span className="text-teal-400/60 mr-1">{i + 1}.</span>
+                {holder.institution}
+              </span>
+              <span className="w-[64px] text-right text-white/50 tabular-nums shrink-0">
+                {fmtNumber(holder.shares)}
+              </span>
+              <span className="w-[64px] text-right text-white/50 tabular-nums shrink-0">
+                {fmtValue(holder.value)}
+              </span>
+              <span className="w-[48px] text-right text-white/50 tabular-nums shrink-0">
+                {fmtPct(holder.portfolioPct)}
+              </span>
+              <span className="w-[48px] text-right text-teal-400 font-bold tabular-nums shrink-0">
+                {fmtPct(holder.outstandingPct)}
+              </span>
+              <span
+                className={`w-[56px] text-right tabular-nums font-bold shrink-0 ${changeColor(holder.change)}`}
+              >
+                {changePrefix(holder.change)}{fmtPct(holder.change)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Section 2: Ownership Summary ── */}
+        {summary && (
+          <div className="border-b border-border/20">
+            <div className="px-3 py-1 border-b border-border/20 bg-[#030303]">
+              <span className="text-[8px] font-black font-mono uppercase tracking-wider text-white/30">
+                {tr(t, 'ioSummary', 'Ownership Summary')}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-0 divide-x divide-border/20">
+              <div className="px-3 py-2 text-center">
+                <div className="text-[7px] text-white/30 uppercase tracking-wider mb-0.5">
+                  Institutional %
+                </div>
+                <div className="text-[12px] font-bold text-teal-400 tabular-nums">
+                  {fmtPct(summary.institutionalPct)}
+                </div>
+              </div>
+              <div className="px-3 py-2 text-center">
+                <div className="text-[7px] text-white/30 uppercase tracking-wider mb-0.5">
+                  # Institutions
+                </div>
+                <div className="text-[12px] font-bold text-white/80 tabular-nums">
+                  {summary.totalInstitutions.toLocaleString()}
+                </div>
+              </div>
+              <div className="px-3 py-2 text-center">
+                <div className="text-[7px] text-white/30 uppercase tracking-wider mb-0.5">
+                  Activity
+                </div>
+                <div className="flex items-center justify-center gap-2 text-[8px] font-mono">
+                  <span className="text-emerald-400">+{summary.newPositions} new</span>
+                  <span className="text-white/20">|</span>
+                  <span className="text-red-400">-{summary.soldOutPositions} sold</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 px-3 py-1 border-t border-border/20 text-[7px] font-mono text-white/30">
+              <span>
+                Increased:{' '}
+                <span className="text-emerald-400 font-bold">{summary.increasedPositions}</span>
+              </span>
+              <span>
+                Decreased:{' '}
+                <span className="text-red-400 font-bold">{summary.decreasedPositions}</span>
               </span>
             </div>
           </div>
-        ) : data ? (
-          <>
-            {view === 'HOLDERS' && selectedStock && (
-              <HoldersView stock={selectedStock} />
-            )}
-            {view === 'FLOWS' && (
-              <FlowsView mostBought={data.mostBought} mostSold={data.mostSold} />
-            )}
-            {view === 'OVERVIEW' && (
-              <OverviewView
-                stocks={data.stocks}
-                onSelectStock={(ticker) => {
-                  setSelectedTicker(ticker);
-                  setView('HOLDERS');
-                }}
-              />
-            )}
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full text-[10px] text-white/40 uppercase">
-            {tr(t, 'ioNoData', 'No data available')}
+        )}
+
+        {/* ── Section 3: Quarterly Trend ── */}
+        {quarterlyTrend.length > 0 && (
+          <div className="border-b border-border/20">
+            <div className="px-3 py-1 border-b border-border/20 bg-[#030303]">
+              <span className="text-[8px] font-black font-mono uppercase tracking-wider text-white/30">
+                {tr(t, 'ioQuarterlyTrend', 'Quarterly Trend')}
+              </span>
+            </div>
+
+            {/* Table header */}
+            <div className="flex items-center px-3 py-0.5 border-b border-border/20 bg-[#030303] text-[7px] font-mono text-white/30 uppercase tracking-wider">
+              <span className="w-[56px] shrink-0">Quarter</span>
+              <span className="flex-1 text-right">Total Shares</span>
+              <span className="flex-1 text-right">Total Value</span>
+              <span className="w-[64px] text-right shrink-0">Institutions</span>
+            </div>
+
+            {quarterlyTrend.map((q, i) => {
+              const prev = quarterlyTrend[i + 1];
+              const sharesDelta = prev ? q.totalShares - prev.totalShares : 0;
+              return (
+                <div
+                  key={q.quarter + '-' + i}
+                  className="flex items-center px-3 py-1 border-b border-border/20 hover:bg-teal-400/[0.02] transition-colors"
+                >
+                  <span className="w-[56px] shrink-0 text-teal-400 font-bold">{q.quarter}</span>
+                  <span className="flex-1 text-right text-white/60 tabular-nums">
+                    {fmtNumber(q.totalShares)}
+                    {prev && (
+                      <span className={`ml-1 text-[7px] ${changeColor(sharesDelta)}`}>
+                        {changePrefix(sharesDelta)}{fmtNumber(sharesDelta)}
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex-1 text-right text-white/60 tabular-nums">
+                    {fmtValue(q.totalValue)}
+                  </span>
+                  <span className="w-[64px] text-right text-white/40 tabular-nums shrink-0">
+                    {q.institutions.toLocaleString()}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Section 4: Top Buys / Sells ── */}
+        {(topBuys.length > 0 || topSells.length > 0) && (
+          <div>
+            <div className="flex gap-0 h-full">
+              {/* Top Buys */}
+              <div className="flex-1 border-r border-border/20">
+                <div className="px-3 py-1 border-b border-border/20 bg-emerald-500/[0.03]">
+                  <span className="text-[8px] font-black font-mono uppercase tracking-wider text-emerald-400">
+                    {tr(t, 'ioTopBuys', 'Top Buys')}
+                  </span>
+                </div>
+
+                <div className="flex items-center px-3 py-0.5 border-b border-border/20 bg-[#030303] text-[6px] font-mono text-white/25 uppercase tracking-wider">
+                  <span className="flex-1">Institution</span>
+                  <span className="w-[48px] text-right">Shares</span>
+                  <span className="w-[48px] text-right">Value</span>
+                  <span className="w-[40px] text-right">Chg</span>
+                </div>
+
+                {topBuys.map((entry, i) => (
+                  <div
+                    key={entry.institution + '-buy-' + i}
+                    className="flex items-center px-3 py-1 border-b border-border/20 hover:bg-teal-400/[0.02] transition-colors"
+                  >
+                    <span className="flex-1 min-w-0 text-[8px] text-white/60 truncate pr-2">
+                      {entry.institution}
+                    </span>
+                    <span className="w-[48px] text-right text-[8px] text-white/50 tabular-nums">
+                      {fmtNumber(entry.shares)}
+                    </span>
+                    <span className="w-[48px] text-right text-[8px] text-emerald-400 tabular-nums font-bold">
+                      {fmtValue(entry.value)}
+                    </span>
+                    <span className="w-[40px] text-right text-[8px] text-emerald-400 tabular-nums">
+                      +{fmtPct(entry.changePct)}
+                    </span>
+                  </div>
+                ))}
+
+                {topBuys.length === 0 && (
+                  <div className="px-3 py-3 text-center text-[8px] text-white/20 uppercase">
+                    No data
+                  </div>
+                )}
+              </div>
+
+              {/* Top Sells */}
+              <div className="flex-1">
+                <div className="px-3 py-1 border-b border-border/20 bg-red-500/[0.03]">
+                  <span className="text-[8px] font-black font-mono uppercase tracking-wider text-red-400">
+                    {tr(t, 'ioTopSells', 'Top Sells')}
+                  </span>
+                </div>
+
+                <div className="flex items-center px-3 py-0.5 border-b border-border/20 bg-[#030303] text-[6px] font-mono text-white/25 uppercase tracking-wider">
+                  <span className="flex-1">Institution</span>
+                  <span className="w-[48px] text-right">Shares</span>
+                  <span className="w-[48px] text-right">Value</span>
+                  <span className="w-[40px] text-right">Chg</span>
+                </div>
+
+                {topSells.map((entry, i) => (
+                  <div
+                    key={entry.institution + '-sell-' + i}
+                    className="flex items-center px-3 py-1 border-b border-border/20 hover:bg-teal-400/[0.02] transition-colors"
+                  >
+                    <span className="flex-1 min-w-0 text-[8px] text-white/60 truncate pr-2">
+                      {entry.institution}
+                    </span>
+                    <span className="w-[48px] text-right text-[8px] text-white/50 tabular-nums">
+                      {fmtNumber(entry.shares)}
+                    </span>
+                    <span className="w-[48px] text-right text-[8px] text-red-400 tabular-nums font-bold">
+                      {fmtValue(entry.value)}
+                    </span>
+                    <span className="w-[40px] text-right text-[8px] text-red-400 tabular-nums">
+                      -{fmtPct(Math.abs(entry.changePct))}
+                    </span>
+                  </div>
+                ))}
+
+                {topSells.length === 0 && (
+                  <div className="px-3 py-3 text-center text-[8px] text-white/20 uppercase">
+                    No data
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Status bar */}
-      {data && (
-        <div className="flex items-center gap-3 px-3 py-0.5 border-t border-white/[0.04] text-[7px] font-mono text-white/25 bg-black/95 shrink-0">
-          <span>{data.stocks.length} stocks</span>
-          <span>|</span>
-          <span>
-            Avg Inst: {fmtPct(
-              data.stocks.reduce((s, st) => s + st.institutionalOwnership, 0) / data.stocks.length
-            )}
-          </span>
-          <span>|</span>
-          <span>
-            Buys: <span className="text-emerald-400/60">{data.mostBought.length}</span>
-            {' / '}
-            Sells: <span className="text-red-400/60">{data.mostSold.length}</span>
-          </span>
-          <span className="ml-auto text-white/15">13F Data</span>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../client';
 
-export function useInstitutionalOwnership() {
+export function useOrderBook() {
   return useQuery({
-    queryKey: ['institutional-ownership'],
-    queryFn: () => api.get<any>('/institutional-ownership'),
+    queryKey: ['order-book'],
+    queryFn: () => api.get<any>('/order-book'),
     refetchInterval: 5 * 60 * 1000,
     staleTime: 3 * 60 * 1000,
   });

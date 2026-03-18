@@ -2,357 +2,271 @@ import { Router } from 'express';
 
 const router = Router();
 
+function mulberry32(a: number) { return function(){let t=(a+=0x6d2b79f5);t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}; }
+function hashSeed(str: string): number { let hash=0;for(let i=0;i<str.length;i++){const char=str.charCodeAt(i);hash=((hash<<5)-hash)+char;hash|=0;}return Math.abs(hash); }
+
+let cache: { data: any; ts: number } | null = null;
+const TTL = 5 * 60 * 1000;
+
 // ── Types ──
 
 interface TopHolder {
   institution: string;
-  shares: number;
-  value: number;
-  pctOfFloat: number;
+  sharesHeld: number;
+  marketValue: number;       // $M
+  pctOfPortfolio: number;
+  pctSharesOutstanding: number;
   changeShares: number;
-  changePercent: number;
-  quarter: string;
+  changePct: number;
 }
 
-interface Concentration {
-  top10pct: number;
-  top25pct: number;
-  herfindahl: number;
-}
-
-interface StockOwnership {
-  ticker: string;
-  name: string;
-  institutionalOwnership: number;
-  insiderOwnership: number;
+interface OwnershipSummary {
+  institutionalOwnershipPct: number;
   totalInstitutions: number;
   newPositions: number;
-  closedPositions: number;
   increasedPositions: number;
   decreasedPositions: number;
-  topHolders: TopHolder[];
-  concentration: Concentration;
+  soldOut: number;
 }
 
-interface FlowEntry {
+interface QuarterlyChange {
+  quarter: string;           // e.g. "Q1 2025"
+  label: string;             // "Q-4" through "Q0"
+  totalInstitutionalShares: number;
+  numHolders: number;
+  netChange: number;
+}
+
+interface TopActivity {
   institution: string;
   ticker: string;
-  changeShares: number;
-  changeValue: number;
+  shares: number;
+  value: number;             // $M
 }
 
 interface InstitutionalOwnershipResponse {
-  stocks: StockOwnership[];
-  mostBought: FlowEntry[];
-  mostSold: FlowEntry[];
+  topHolders: TopHolder[];
+  ownershipSummary: OwnershipSummary;
+  quarterlyChanges: QuarterlyChange[];
+  topBuys: TopActivity[];
+  topSells: TopActivity[];
   generatedAt: string;
 }
 
-// ── Seeded PRNG ──
+// ── Institutions ──
 
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return s / 2147483647;
-  };
-}
-
-// ── Stock Universe ──
-
-interface StockSeed {
-  ticker: string;
-  name: string;
-  marketCap: number; // in billions
-  instOwnershipBase: number; // base institutional ownership %
-  insiderOwnershipBase: number;
-  totalInstitutionsBase: number;
-}
-
-const STOCK_SEEDS: StockSeed[] = [
-  { ticker: 'AAPL', name: 'Apple Inc.', marketCap: 3200, instOwnershipBase: 74.2, insiderOwnershipBase: 0.07, totalInstitutionsBase: 5400 },
-  { ticker: 'MSFT', name: 'Microsoft Corp.', marketCap: 3100, instOwnershipBase: 72.8, insiderOwnershipBase: 1.38, totalInstitutionsBase: 5200 },
-  { ticker: 'GOOGL', name: 'Alphabet Inc.', marketCap: 2100, instOwnershipBase: 65.4, insiderOwnershipBase: 5.84, totalInstitutionsBase: 4100 },
-  { ticker: 'AMZN', name: 'Amazon.com Inc.', marketCap: 2000, instOwnershipBase: 63.1, insiderOwnershipBase: 9.52, totalInstitutionsBase: 4600 },
-  { ticker: 'NVDA', name: 'NVIDIA Corp.', marketCap: 2800, instOwnershipBase: 68.5, insiderOwnershipBase: 3.92, totalInstitutionsBase: 4800 },
-  { ticker: 'META', name: 'Meta Platforms Inc.', marketCap: 1500, instOwnershipBase: 77.3, insiderOwnershipBase: 13.12, totalInstitutionsBase: 3900 },
-  { ticker: 'TSLA', name: 'Tesla Inc.', marketCap: 800, instOwnershipBase: 66.2, insiderOwnershipBase: 12.88, totalInstitutionsBase: 3500 },
-  { ticker: 'JPM', name: 'JPMorgan Chase & Co.', marketCap: 600, instOwnershipBase: 73.6, insiderOwnershipBase: 0.62, totalInstitutionsBase: 3800 },
-  { ticker: 'JNJ', name: 'Johnson & Johnson', marketCap: 380, instOwnershipBase: 71.4, insiderOwnershipBase: 0.18, totalInstitutionsBase: 3400 },
-  { ticker: 'V', name: 'Visa Inc.', marketCap: 560, instOwnershipBase: 80.1, insiderOwnershipBase: 0.21, totalInstitutionsBase: 3700 },
-  { ticker: 'UNH', name: 'UnitedHealth Group', marketCap: 470, instOwnershipBase: 86.2, insiderOwnershipBase: 0.31, totalInstitutionsBase: 3100 },
-  { ticker: 'XOM', name: 'Exxon Mobil Corp.', marketCap: 510, instOwnershipBase: 62.8, insiderOwnershipBase: 0.05, totalInstitutionsBase: 3600 },
-  { ticker: 'PG', name: 'Procter & Gamble', marketCap: 370, instOwnershipBase: 69.5, insiderOwnershipBase: 0.08, totalInstitutionsBase: 3300 },
-  { ticker: 'HD', name: 'The Home Depot', marketCap: 350, instOwnershipBase: 71.8, insiderOwnershipBase: 0.29, totalInstitutionsBase: 3200 },
-  { ticker: 'MA', name: 'Mastercard Inc.', marketCap: 420, instOwnershipBase: 79.4, insiderOwnershipBase: 0.11, totalInstitutionsBase: 3500 },
+const INSTITUTIONS = [
+  'Vanguard Group',
+  'BlackRock',
+  'State Street',
+  'Fidelity',
+  'Capital Research',
+  'T. Rowe Price',
+  'Berkshire Hathaway',
+  'JP Morgan',
+  'Morgan Stanley',
+  'Goldman Sachs',
+  'Wellington',
+  'Geode Capital',
+  'Northern Trust',
+  'Bank of America',
+  'Invesco',
 ];
 
-// ── Institution Templates ──
+// ── Tickers for top buys/sells ──
 
-interface InstitutionTemplate {
-  name: string;
-  sizeTier: 'mega' | 'large' | 'mid'; // determines typical holding size
-  style: 'passive' | 'active'; // passive = larger, more stable
-}
-
-const INSTITUTION_TEMPLATES: InstitutionTemplate[] = [
-  { name: 'The Vanguard Group', sizeTier: 'mega', style: 'passive' },
-  { name: 'BlackRock Inc.', sizeTier: 'mega', style: 'passive' },
-  { name: 'State Street Corp.', sizeTier: 'large', style: 'passive' },
-  { name: 'Fidelity Management & Research', sizeTier: 'large', style: 'active' },
-  { name: 'Capital Research Global Investors', sizeTier: 'large', style: 'active' },
-  { name: 'T. Rowe Price Associates', sizeTier: 'mid', style: 'active' },
-  { name: 'Berkshire Hathaway Inc.', sizeTier: 'large', style: 'active' },
-  { name: 'JP Morgan Investment Management', sizeTier: 'mid', style: 'active' },
-  { name: 'Geode Capital Management', sizeTier: 'mid', style: 'passive' },
-  { name: 'Northern Trust Corp.', sizeTier: 'mid', style: 'passive' },
-  { name: 'Morgan Stanley Investment', sizeTier: 'mid', style: 'active' },
-  { name: 'Wellington Management Group', sizeTier: 'mid', style: 'active' },
-  { name: 'Bank of America Corp.', sizeTier: 'mid', style: 'active' },
-  { name: 'Goldman Sachs Group', sizeTier: 'mid', style: 'active' },
-  { name: 'Charles Schwab Investment', sizeTier: 'mid', style: 'passive' },
+const TICKERS = [
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA',
+  'JPM', 'V', 'UNH', 'JNJ', 'XOM', 'PG', 'HD', 'MA',
+  'BAC', 'PFE', 'ABBV', 'CRM', 'LLY',
 ];
 
 // ── Helpers ──
 
-function roundTo(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
-function getCurrentQuarter(): string {
-  const now = new Date();
-  const q = Math.ceil((now.getMonth() + 1) / 3);
-  return `Q${q} ${now.getFullYear()}`;
-}
-
-function getPreviousQuarter(): string {
-  const now = new Date();
-  const month = now.getMonth(); // 0-based
-  let q = Math.ceil((month + 1) / 3) - 1;
-  let year = now.getFullYear();
-  if (q <= 0) {
-    q = 4;
-    year -= 1;
-  }
-  return `Q${q} ${year}`;
-}
-
-function buildStockOwnership(seed: StockSeed, rand: () => number): StockOwnership {
-  const quarter = getPreviousQuarter();
-
-  // Jitter base ownership
-  const instOwnership = roundTo(
-    seed.instOwnershipBase + (rand() - 0.5) * 4,
-    1,
-  );
-  const insiderOwnership = roundTo(
-    seed.insiderOwnershipBase + (rand() - 0.3) * seed.insiderOwnershipBase * 0.1,
-    2,
-  );
-  const totalInstitutions = Math.round(
-    seed.totalInstitutionsBase + (rand() - 0.5) * 400,
-  );
-
-  // Activity counts
-  const newPositions = Math.round(80 + rand() * 200);
-  const closedPositions = Math.round(40 + rand() * 120);
-  const increasedPositions = Math.round(300 + rand() * 800);
-  const decreasedPositions = Math.round(250 + rand() * 700);
-
-  // Build top holders
-  const holders: TopHolder[] = [];
-  const totalSharesApprox = (seed.marketCap * 1e9) / (100 + rand() * 200); // rough share price
-
-  // Determine base allocation percentages for each institution tier
-  const picked = new Set<number>();
-  for (let i = 0; i < 10; i++) {
-    // Prefer top institutions first
-    let idx: number;
-    if (i < 3) {
-      // Always pick from mega/large first
-      idx = i;
-    } else {
-      do {
-        idx = 3 + Math.floor(rand() * (INSTITUTION_TEMPLATES.length - 3));
-      } while (picked.has(idx));
-    }
-    picked.add(idx);
-
-    const inst = INSTITUTION_TEMPLATES[idx];
-    let basePct: number;
-    switch (inst.sizeTier) {
-      case 'mega':
-        basePct = 5.0 + rand() * 4.0; // 5-9%
-        break;
-      case 'large':
-        basePct = 2.0 + rand() * 3.0; // 2-5%
-        break;
-      case 'mid':
-        basePct = 0.5 + rand() * 2.0; // 0.5-2.5%
-        break;
-    }
-
-    // Passive funds tend to have more stable (smaller) changes
-    const changeDirection = rand() > 0.5 ? 1 : -1;
-    const changeMagnitude = inst.style === 'passive'
-      ? rand() * 3  // 0-3% change for passive
-      : rand() * 12; // 0-12% change for active
-
-    const pctOfFloat = roundTo(basePct, 2);
-    const shares = Math.round(totalSharesApprox * (pctOfFloat / 100));
-    const pricePerShare = (seed.marketCap * 1e9) / totalSharesApprox;
-    const value = Math.round(shares * pricePerShare);
-    const changePercent = roundTo(changeDirection * changeMagnitude, 2);
-    const changeShares = Math.round(shares * (changePercent / 100));
-
-    holders.push({
-      institution: inst.name,
-      shares,
-      value,
-      pctOfFloat,
-      changeShares,
-      changePercent,
-      quarter,
-    });
-  }
-
-  // Sort by pctOfFloat descending
-  holders.sort((a, b) => b.pctOfFloat - a.pctOfFloat);
-
-  // Concentration metrics
-  const sortedPcts = holders.map(h => h.pctOfFloat).sort((a, b) => b - a);
-  const top10pct = roundTo(
-    sortedPcts.reduce((sum, p) => sum + p, 0),
-    2,
-  );
-  // Estimate top 25 holders (extrapolate from top 10)
-  const top25pct = roundTo(
-    Math.min(top10pct + 8 + rand() * 6, instOwnership * 0.95),
-    2,
-  );
-  // Herfindahl index (sum of squared market shares) - lower = more diversified
-  const herfindahl = roundTo(
-    sortedPcts.reduce((sum, p) => sum + (p / 100) ** 2, 0) * 10000,
-    1,
-  );
-
+function getQuarterLabel(offset: number, baseYear: number, baseQ: number): { quarter: string; label: string } {
+  let q = baseQ + offset;
+  let y = baseYear;
+  while (q < 1) { q += 4; y -= 1; }
+  while (q > 4) { q -= 4; y += 1; }
   return {
-    ticker: seed.ticker,
-    name: seed.name,
-    institutionalOwnership: instOwnership,
-    insiderOwnership,
-    totalInstitutions,
-    newPositions,
-    closedPositions,
-    increasedPositions,
-    decreasedPositions,
-    topHolders: holders,
-    concentration: { top10pct, top25pct, herfindahl },
+    quarter: `Q${q} ${y}`,
+    label: `Q${offset}`,
   };
 }
 
-function buildFlowLists(
-  stocks: StockOwnership[],
-  rand: () => number,
-): { mostBought: FlowEntry[]; mostSold: FlowEntry[] } {
-  const allBuys: FlowEntry[] = [];
-  const allSells: FlowEntry[] = [];
+// ── Data Generation ──
 
-  for (const stock of stocks) {
-    for (const holder of stock.topHolders) {
-      if (holder.changeShares > 0) {
-        allBuys.push({
-          institution: holder.institution,
-          ticker: stock.ticker,
-          changeShares: holder.changeShares,
-          changeValue: Math.round(holder.changeShares * (holder.value / holder.shares)),
-        });
-      } else if (holder.changeShares < 0) {
-        allSells.push({
-          institution: holder.institution,
-          ticker: stock.ticker,
-          changeShares: holder.changeShares,
-          changeValue: Math.round(holder.changeShares * (holder.value / holder.shares)),
-        });
-      }
-    }
+function generateData(): InstitutionalOwnershipResponse {
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const seed = hashSeed('institutional-ownership-' + dateStr);
+  const rng = mulberry32(seed);
+
+  // ── Top Holders Table ──
+  const topHolders: TopHolder[] = INSTITUTIONS.map((institution, i) => {
+    // Mega holders (Vanguard, BlackRock, State Street) get larger allocations
+    const isMega = i < 3;
+    const isLarge = i >= 3 && i < 7;
+
+    const baseShares = isMega
+      ? 150_000_000 + rng() * 200_000_000
+      : isLarge
+        ? 40_000_000 + rng() * 80_000_000
+        : 10_000_000 + rng() * 40_000_000;
+
+    const sharesHeld = Math.round(baseShares);
+
+    // Approximate price per share around $150-250 range for a broad market average
+    const impliedPrice = 150 + rng() * 100;
+    const marketValue = round2((sharesHeld * impliedPrice) / 1_000_000); // $M
+
+    const pctOfPortfolio = round2(
+      isMega ? 2.0 + rng() * 4.0
+        : isLarge ? 0.5 + rng() * 2.5
+          : 0.1 + rng() * 1.5
+    );
+
+    const pctSharesOutstanding = round2(
+      isMega ? 5.0 + rng() * 4.0
+        : isLarge ? 2.0 + rng() * 3.0
+          : 0.5 + rng() * 2.0
+    );
+
+    const direction = rng() > 0.5 ? 1 : -1;
+    const changeMagnitude = isMega
+      ? rng() * 5_000_000
+      : isLarge
+        ? rng() * 3_000_000
+        : rng() * 2_000_000;
+    const changeShares = Math.round(direction * changeMagnitude);
+    const changePct = sharesHeld > 0 ? round2((changeShares / sharesHeld) * 100) : 0;
+
+    return {
+      institution,
+      sharesHeld,
+      marketValue,
+      pctOfPortfolio,
+      pctSharesOutstanding,
+      changeShares,
+      changePct,
+    };
+  });
+
+  // Sort by pctSharesOutstanding descending
+  topHolders.sort((a, b) => b.pctSharesOutstanding - a.pctSharesOutstanding);
+
+  // ── Ownership Summary ──
+  const totalPctOutstanding = topHolders.reduce((s, h) => s + h.pctSharesOutstanding, 0);
+  // Top holders represent ~60-70% of total institutional ownership
+  const institutionalOwnershipPct = round2(Math.min(95, totalPctOutstanding * (1.4 + rng() * 0.4)));
+  const totalInstitutions = Math.round(2800 + rng() * 2400);
+  const newPositions = Math.round(80 + rng() * 180);
+  const increasedPositions = Math.round(400 + rng() * 600);
+  const decreasedPositions = Math.round(300 + rng() * 500);
+  const soldOut = Math.round(30 + rng() * 90);
+
+  const ownershipSummary: OwnershipSummary = {
+    institutionalOwnershipPct,
+    totalInstitutions,
+    newPositions,
+    increasedPositions,
+    decreasedPositions,
+    soldOut,
+  };
+
+  // ── Quarterly Changes (Q-4 through Q0) ──
+  const now = new Date();
+  const currentQ = Math.ceil((now.getMonth() + 1) / 3);
+  const currentYear = now.getFullYear();
+
+  const baseShares = 4_000_000_000 + rng() * 2_000_000_000;
+  const baseHolders = 3000 + rng() * 2000;
+
+  const quarterlyChanges: QuarterlyChange[] = [];
+  for (let offset = -4; offset <= 0; offset++) {
+    const { quarter, label } = getQuarterLabel(offset, currentYear, currentQ);
+    const drift = offset * (rng() * 200_000_000 - 80_000_000);
+    const totalInstitutionalShares = Math.round(baseShares + drift);
+    const holderDrift = offset * Math.round(rng() * 200 - 80);
+    const numHolders = Math.round(baseHolders + holderDrift);
+    const netChange = offset === -4
+      ? 0
+      : Math.round((rng() - 0.4) * 300_000_000);
+
+    quarterlyChanges.push({
+      quarter,
+      label,
+      totalInstitutionalShares,
+      numHolders,
+      netChange,
+    });
   }
 
-  // Sort buys by value descending, sells by value ascending (most negative)
-  allBuys.sort((a, b) => b.changeValue - a.changeValue);
-  allSells.sort((a, b) => a.changeValue - b.changeValue);
+  // ── Top Buys This Quarter ──
+  const usedBuyInst = new Set<string>();
+  const topBuys: TopActivity[] = [];
+  for (let i = 0; i < 8; i++) {
+    let inst: string;
+    do {
+      inst = INSTITUTIONS[Math.floor(rng() * INSTITUTIONS.length)];
+    } while (usedBuyInst.has(inst) && usedBuyInst.size < INSTITUTIONS.length);
+    usedBuyInst.add(inst);
 
-  // Deduplicate by institution (keep largest move per institution)
-  const seenBuy = new Set<string>();
-  const uniqueBuys: FlowEntry[] = [];
-  for (const entry of allBuys) {
-    const key = entry.institution;
-    if (!seenBuy.has(key) && uniqueBuys.length < 10) {
-      seenBuy.add(key);
-      uniqueBuys.push(entry);
-    }
+    const ticker = TICKERS[Math.floor(rng() * TICKERS.length)];
+    const shares = Math.round((500_000 + rng() * 10_000_000) / 1000) * 1000;
+    const value = round2((shares * (120 + rng() * 180)) / 1_000_000);
+
+    topBuys.push({ institution: inst, ticker, shares, value });
   }
+  topBuys.sort((a, b) => b.value - a.value);
 
-  const seenSell = new Set<string>();
-  const uniqueSells: FlowEntry[] = [];
-  for (const entry of allSells) {
-    const key = entry.institution;
-    if (!seenSell.has(key) && uniqueSells.length < 10) {
-      seenSell.add(key);
-      uniqueSells.push(entry);
-    }
+  // ── Top Sells This Quarter ──
+  const usedSellInst = new Set<string>();
+  const topSells: TopActivity[] = [];
+  for (let i = 0; i < 8; i++) {
+    let inst: string;
+    do {
+      inst = INSTITUTIONS[Math.floor(rng() * INSTITUTIONS.length)];
+    } while (usedSellInst.has(inst) && usedSellInst.size < INSTITUTIONS.length);
+    usedSellInst.add(inst);
+
+    const ticker = TICKERS[Math.floor(rng() * TICKERS.length)];
+    const shares = Math.round((500_000 + rng() * 8_000_000) / 1000) * 1000;
+    const value = round2((shares * (120 + rng() * 180)) / 1_000_000);
+
+    topSells.push({ institution: inst, ticker, shares, value });
   }
+  topSells.sort((a, b) => b.value - a.value);
 
-  return { mostBought: uniqueBuys, mostSold: uniqueSells };
+  return {
+    topHolders,
+    ownershipSummary,
+    quarterlyChanges,
+    topBuys,
+    topSells,
+    generatedAt: new Date().toISOString(),
+  };
 }
-
-// ── Cache ──
-
-let cache: { data: InstitutionalOwnershipResponse | null; expiresAt: number } = {
-  data: null,
-  expiresAt: 0,
-};
-const CACHE_TTL = 5 * 60_000; // 5 minutes
 
 // ── Route ──
 
 router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-    if (cache.data && now < cache.expiresAt) {
+    if (cache && now - cache.ts < TTL) {
       return res.json(cache.data);
     }
 
-    // Seed based on current date for deterministic daily data
-    const dateStr = new Date().toISOString().split('T')[0];
-    const seed = hashSeed('institutional-ownership-' + dateStr);
-    const rand = seededRandom(seed);
-
-    const stocks = STOCK_SEEDS.map((s) => buildStockOwnership(s, rand));
-    const { mostBought, mostSold } = buildFlowLists(stocks, rand);
-
-    const result: InstitutionalOwnershipResponse = {
-      stocks,
-      mostBought,
-      mostSold,
-      generatedAt: new Date().toISOString(),
-    };
-
-    cache = { data: result, expiresAt: now + CACHE_TTL };
-    res.json(result);
+    const data = generateData();
+    cache = { data, ts: now };
+    res.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[InstitutionalOwnership] Error:', message);
-    if (cache.data) {
+    if (cache) {
       return res.json(cache.data);
     }
     res.status(500).json({ error: 'Failed to fetch institutional ownership data' });

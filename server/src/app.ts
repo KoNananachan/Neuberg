@@ -363,6 +363,8 @@ import benchmarkAnalyticsRouter from './routes/benchmark-analytics.js';
 import counterpartyRiskRouter from './routes/counterparty-risk.js';
 import equityValuationRouter from './routes/equity-valuation.js';
 import macroIndicatorsRouter from './routes/macro-indicators.js';
+import volatilitySkewRouter from './routes/volatility-skew.js';
+import orderBookRouter from './routes/order-book.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -827,6 +829,8 @@ export function createApp() {
   app.use('/api/counterparty-risk', counterpartyRiskRouter);
   app.use('/api/equity-valuation', equityValuationRouter);
   app.use('/api/macro-indicators', macroIndicatorsRouter);
+  app.use('/api/volatility-skew', volatilitySkewRouter);
+  app.use('/api/order-book', orderBookRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

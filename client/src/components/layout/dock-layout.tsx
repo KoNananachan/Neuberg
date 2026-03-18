@@ -368,6 +368,8 @@ const BenchmarkAnalyticsPanel = lazy(() => import('../panels/benchmark-analytics
 const CounterpartyRiskPanel = lazy(() => import('../panels/counterparty-risk-panel').then(m => ({ default: m.CounterpartyRiskPanel })));
 const EquityValuationPanel = lazy(() => import('../panels/equity-valuation-panel').then(m => ({ default: m.EquityValuationPanel })));
 const MacroIndicatorsPanel = lazy(() => import('../panels/macro-indicators-panel').then(m => ({ default: m.MacroIndicatorsPanel })));
+const VolatilitySkewPanel = lazy(() => import('../panels/volatility-skew-panel').then(m => ({ default: m.VolatilitySkewPanel })));
+const OrderBookPanel = lazy(() => import('../panels/order-book-panel').then(m => ({ default: m.OrderBookPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -748,6 +750,8 @@ export const PANEL_IDS = {
   COUNTERPARTY_RISK: 'counterparty-risk',
   EQUITY_VALUATION: 'equity-valuation',
   MACRO_INDICATORS: 'macro-indicators',
+  VOLATILITY_SKEW: 'volatility-skew',
+  ORDER_BOOK: 'order-book',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1112,6 +1116,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.COUNTERPARTY_RISK]: 'COUNTERPARTY RISK',
   [PANEL_IDS.EQUITY_VALUATION]: 'EQUITY VALUATION',
   [PANEL_IDS.MACRO_INDICATORS]: 'MACRO INDICATORS',
+  [PANEL_IDS.VOLATILITY_SKEW]: 'VOLATILITY SKEW',
+  [PANEL_IDS.ORDER_BOOK]: 'ORDER BOOK',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1477,6 +1483,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.COUNTERPARTY_RISK]: 'panelCounterpartyRisk',
   [PANEL_IDS.EQUITY_VALUATION]: 'panelEquityValuation',
   [PANEL_IDS.MACRO_INDICATORS]: 'panelMacroIndicators',
+  [PANEL_IDS.VOLATILITY_SKEW]: 'panelVolatilitySkew',
+  [PANEL_IDS.ORDER_BOOK]: 'panelOrderBook',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2138,6 +2146,8 @@ export function DockLayout() {
       case PANEL_IDS.COUNTERPARTY_RISK: content = <LazyWrap><CounterpartyRiskPanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_VALUATION: content = <LazyWrap><EquityValuationPanel /></LazyWrap>; break;
       case PANEL_IDS.MACRO_INDICATORS: content = <LazyWrap><MacroIndicatorsPanel /></LazyWrap>; break;
+      case PANEL_IDS.VOLATILITY_SKEW: content = <LazyWrap><VolatilitySkewPanel /></LazyWrap>; break;
+      case PANEL_IDS.ORDER_BOOK: content = <LazyWrap><OrderBookPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
