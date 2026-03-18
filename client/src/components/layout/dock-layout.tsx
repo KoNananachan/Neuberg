@@ -66,6 +66,9 @@ const SentimentHeatmapPanel = lazy(() => import('../panels/sentiment-heatmap-pan
 const YieldCurvePanel = lazy(() => import('../panels/yield-curve-panel').then(m => ({ default: m.YieldCurvePanel })));
 const CurrencyStrengthPanel = lazy(() => import('../panels/currency-strength-panel').then(m => ({ default: m.CurrencyStrengthPanel })));
 const MoneyFlowPanel = lazy(() => import('../panels/money-flow-panel').then(m => ({ default: m.MoneyFlowPanel })));
+const TechnicalChartPanel = lazy(() => import('../panels/technical-chart-panel').then(m => ({ default: m.TechnicalChartPanel })));
+const EarningsEstimatesPanel = lazy(() => import('../panels/earnings-estimates-panel').then(m => ({ default: m.EarningsEstimatesPanel })));
+const WorldEconomyPanel = lazy(() => import('../panels/world-economy-panel').then(m => ({ default: m.WorldEconomyPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -144,6 +147,9 @@ export const PANEL_IDS = {
   YIELD_CURVE: 'yield-curve',
   CURRENCY_STRENGTH: 'currency-strength',
   MONEY_FLOW: 'money-flow',
+  TECHNICAL_CHART: 'technical-chart',
+  EARNINGS_ESTIMATES: 'earnings-estimates',
+  WORLD_ECONOMY: 'world-economy',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -206,6 +212,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.YIELD_CURVE]: 'YIELD CURVE',
   [PANEL_IDS.CURRENCY_STRENGTH]: 'CURRENCY STRENGTH',
   [PANEL_IDS.MONEY_FLOW]: 'MONEY FLOW',
+  [PANEL_IDS.TECHNICAL_CHART]: 'TECHNICAL CHART',
+  [PANEL_IDS.EARNINGS_ESTIMATES]: 'EARNINGS ESTIMATES',
+  [PANEL_IDS.WORLD_ECONOMY]: 'WORLD ECONOMY',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -269,6 +278,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.YIELD_CURVE]: 'panelYieldCurve',
   [PANEL_IDS.CURRENCY_STRENGTH]: 'panelCurrencyStrength',
   [PANEL_IDS.MONEY_FLOW]: 'panelMoneyFlow',
+  [PANEL_IDS.TECHNICAL_CHART]: 'panelTechnicalChart',
+  [PANEL_IDS.EARNINGS_ESTIMATES]: 'panelEarningsEstimates',
+  [PANEL_IDS.WORLD_ECONOMY]: 'panelWorldEconomy',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -613,6 +625,9 @@ export function DockLayout() {
       case PANEL_IDS.YIELD_CURVE: content = <LazyWrap><YieldCurvePanel /></LazyWrap>; break;
       case PANEL_IDS.CURRENCY_STRENGTH: content = <LazyWrap><CurrencyStrengthPanel /></LazyWrap>; break;
       case PANEL_IDS.MONEY_FLOW: content = <LazyWrap><MoneyFlowPanel /></LazyWrap>; break;
+      case PANEL_IDS.TECHNICAL_CHART: content = <LazyWrap><TechnicalChartPanel /></LazyWrap>; break;
+      case PANEL_IDS.EARNINGS_ESTIMATES: content = <LazyWrap><EarningsEstimatesPanel /></LazyWrap>; break;
+      case PANEL_IDS.WORLD_ECONOMY: content = <LazyWrap><WorldEconomyPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

@@ -1233,6 +1233,9 @@ const en = {
   panelYieldCurve: 'YIELD CURVE',
   panelCurrencyStrength: 'CURRENCY STRENGTH',
   panelMoneyFlow: 'MONEY FLOW',
+  panelTechnicalChart: 'TECHNICAL CHART',
+  panelEarningsEstimates: 'EARNINGS ESTIMATES',
+  panelWorldEconomy: 'WORLD ECONOMY',
 };
 
 export type TranslationKey = keyof typeof en;
@@ -2324,6 +2327,9 @@ const zh: Record<TranslationKey, string> = {
   panelYieldCurve: '收益率曲线',
   panelCurrencyStrength: '货币强弱',
   panelMoneyFlow: '资金流向',
+  panelTechnicalChart: '技术图表',
+  panelEarningsEstimates: '盈利预估',
+  panelWorldEconomy: '世界经济',
 };
 
 const ja: Record<TranslationKey, string> = {
@@ -3410,6 +3416,9 @@ const ja: Record<TranslationKey, string> = {
   panelYieldCurve: 'イールドカーブ',
   panelCurrencyStrength: '通貨強弱',
   panelMoneyFlow: 'マネーフロー',
+  panelTechnicalChart: 'テクニカルチャート',
+  panelEarningsEstimates: '業績予想',
+  panelWorldEconomy: '世界経済',
 };
 
 const ko: Record<TranslationKey, string> = {
@@ -4496,6 +4505,9 @@ const ko: Record<TranslationKey, string> = {
   panelYieldCurve: '수익률 곡선',
   panelCurrencyStrength: '통화 강도',
   panelMoneyFlow: '자금 흐름',
+  panelTechnicalChart: '기술적 차트',
+  panelEarningsEstimates: '실적 추정',
+  panelWorldEconomy: '세계 경제',
 };
 
 const es: Record<TranslationKey, string> = {
@@ -5582,6 +5594,9 @@ const es: Record<TranslationKey, string> = {
   panelYieldCurve: 'CURVA DE RENDIMIENTO',
   panelCurrencyStrength: 'FUERZA DE DIVISAS',
   panelMoneyFlow: 'FLUJO DE DINERO',
+  panelTechnicalChart: 'GRAFICO TECNICO',
+  panelEarningsEstimates: 'ESTIMACIONES',
+  panelWorldEconomy: 'ECONOMIA MUNDIAL',
 };
 
 const fr: Record<TranslationKey, string> = {
@@ -6668,6 +6683,9 @@ const fr: Record<TranslationKey, string> = {
   panelYieldCurve: 'COURBE DES TAUX',
   panelCurrencyStrength: 'FORCE DES DEVISES',
   panelMoneyFlow: 'FLUX MONETAIRE',
+  panelTechnicalChart: 'GRAPHIQUE TECHNIQUE',
+  panelEarningsEstimates: 'ESTIMATIONS',
+  panelWorldEconomy: 'ECONOMIE MONDIALE',
 };
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
