@@ -1,216 +1,348 @@
-import { useState, useMemo } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useCloAnalytics } from '../../api/hooks/use-clo-analytics';
 import { useT } from '../../i18n';
 
 type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => { try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; } };
+const tr = (_t: TFn, _key: string, fallback: string): string => {
+  try { return (_t as (k: string) => string)(_key) || fallback; } catch { return fallback; }
+};
 
-type View = 'DEALS' | 'TRANCHES' | 'CASHFLOW';
+const ACCENT = '#34d399'; // emerald-400
 
-interface Tranche {
-  name: string; rating: string; pctOfDeal: number; notional: number;
-  spread: number; price: number; yield: number; subordination: number; wal: number;
+// ── Formatting helpers ──
+
+function fmtNum(n: number | null | undefined, decimals = 2): string {
+  if (n == null || isNaN(n)) return '-';
+  return n.toFixed(decimals);
 }
 
-interface Deal {
-  id: string; manager: string; vintage: number;
-  collateralBalance: number; numLoans: number; wal: number;
-  tests: { warf: number; diversityScore: number; cccBucket: number; defaultRate: number; recoveryRate: number; ocRatioAAA: number; ocRatioAA: number; icRatio: number };
-  reinvestEndDate: string;
-  tranches: Tranche[];
-  cashflowHistory: { date: string; interest: number; principal: number; defaults: number; recoveries: number }[];
+function fmtBp(n: number | null | undefined): string {
+  if (n == null || isNaN(n)) return '-';
+  return n.toFixed(0);
 }
+
+function fmtPct(n: number | null | undefined, decimals = 2): string {
+  if (n == null || isNaN(n)) return '-';
+  return `${n.toFixed(decimals)}%`;
+}
+
+function fmtDollarB(n: number | null | undefined): string {
+  if (n == null || isNaN(n)) return '-';
+  return `$${n.toFixed(1)}B`;
+}
+
+function fmtChange(n: number | null | undefined): string {
+  if (n == null || isNaN(n)) return '-';
+  const sign = n >= 0 ? '+' : '';
+  return `${sign}${n.toFixed(0)}`;
+}
+
+// ── Color helpers ──
+
+function changeColor(n: number | null | undefined): string {
+  if (n == null) return 'text-neutral-500';
+  if (n > 0) return 'text-red-400';   // spread widening = negative
+  if (n < 0) return 'text-green-400'; // spread tightening = positive
+  return 'text-neutral-500';
+}
+
+function cushionColor(n: number | null | undefined): string {
+  if (n == null) return 'text-neutral-500';
+  if (n > 0) return 'text-green-400';
+  if (n < 0) return 'text-red-400';
+  return 'text-neutral-500';
+}
+
+function trendBadge(trend: string | null | undefined): { text: string; cls: string } {
+  const t = trend?.toLowerCase() ?? '';
+  if (t === 'improving') return { text: 'IMPROVING', cls: 'text-green-400 bg-green-500/15 border-green-500/30' };
+  if (t === 'stable') return { text: 'STABLE', cls: 'text-yellow-400 bg-yellow-500/15 border-yellow-500/30' };
+  if (t === 'deteriorating') return { text: 'DETER.', cls: 'text-red-400 bg-red-500/15 border-red-500/30' };
+  if (t === 'tightening') return { text: 'TIGHTEN', cls: 'text-green-400 bg-green-500/15 border-green-500/30' };
+  if (t === 'widening') return { text: 'WIDEN', cls: 'text-red-400 bg-red-500/15 border-red-500/30' };
+  return { text: (trend ?? '-').toUpperCase(), cls: 'text-neutral-500 bg-neutral-500/10 border-neutral-500/20' };
+}
+
+function passFailBadge(status: string | null | undefined): { text: string; cls: string } {
+  const s = status?.toLowerCase() ?? '';
+  if (s === 'pass') return { text: 'PASS', cls: 'text-green-400 bg-green-500/15 border-green-500/30' };
+  if (s === 'warning') return { text: 'WARN', cls: 'text-yellow-400 bg-yellow-500/15 border-yellow-500/30' };
+  if (s === 'fail') return { text: 'FAIL', cls: 'text-red-400 bg-red-500/15 border-red-500/30' };
+  return { text: (status ?? '-').toUpperCase(), cls: 'text-neutral-500 bg-neutral-500/10 border-neutral-500/20' };
+}
+
+// ── Main Panel ──
 
 export function CloAnalyticsPanel() {
   const t = useT();
-  const { data, isLoading, refetch } = useCloAnalytics();
-  const [view, setView] = useState<View>('DEALS');
-  const [selectedDeal, setSelectedDeal] = useState('ARES-CLO-2024-1');
+  const { data, isLoading, error } = useCloAnalytics();
 
-  const deals = useMemo(() => (data?.deals ?? []) as Deal[], [data]);
-  const selected = useMemo(() => deals.find(d => d.id === selectedDeal) ?? deals[0], [deals, selectedDeal]);
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
+        <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+      </div>
+    );
+  }
 
-  const fmtM = (v: number) => {
-    if (v >= 1e9) return '$' + (v / 1e9).toFixed(1) + 'B';
-    if (v >= 1e6) return '$' + (v / 1e6).toFixed(0) + 'M';
-    return '$' + (v / 1e3).toFixed(0) + 'K';
-  };
-
-  const VIEWS: View[] = ['DEALS', 'TRANCHES', 'CASHFLOW'];
-
-  return (
-    <div className="h-full flex flex-col bg-black overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/30 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 bg-pink-400" />
-          <span className="text-[9px] font-black font-mono uppercase tracking-tighter text-pink-400">
-            {tr(t, 'panelCloAnalytics', 'CLO Analytics')}
-          </span>
-          <span className="text-[7px] font-mono text-neutral-500">{deals.length} deals</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {VIEWS.map(v => (
-            <button key={v} onClick={() => setView(v)}
-              className={`px-1.5 py-0.5 text-[7px] font-mono font-bold uppercase tracking-wider transition-colors ${view === v ? 'text-pink-400 bg-pink-400/10' : 'text-neutral-600 hover:text-neutral-400'}`}
-            >{v}</button>
-          ))}
-          <button onClick={() => refetch()} className="p-1 text-neutral-500 hover:text-pink-400 transition-colors">
-            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+  if (error || !data) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
+        <div className="text-[9px] font-mono text-red-400 uppercase tracking-widest">
+          {tr(t, 'error.loadFailed', 'Failed to load CLO analytics data')}
         </div>
       </div>
+    );
+  }
 
-      {(view === 'TRANCHES' || view === 'CASHFLOW') && (
-        <div className="flex items-center gap-1 px-3 py-1 border-b border-border/20 shrink-0 overflow-x-auto no-scrollbar">
-          {deals.map(d => (
-            <button key={d.id} onClick={() => setSelectedDeal(d.id)}
-              className={`px-1.5 py-0.5 text-[7px] font-mono font-bold uppercase whitespace-nowrap transition-colors ${selectedDeal === d.id ? 'text-pink-400 bg-pink-400/10' : 'text-neutral-600 hover:text-neutral-400'}`}
-            >{d.id.split('-').slice(0, 2).join('-')}</button>
-          ))}
+  return (
+    <div className="h-full flex flex-col bg-black text-white overflow-hidden">
+      {/* Market Summary Bar */}
+      {data.marketSummary && (
+        <div className="flex items-center gap-0 border-b border-border/20 px-3 py-2 shrink-0">
+          <SummaryItem label="Total Issuance YTD" value={fmtDollarB(data.marketSummary.totalIssuanceYTD)} />
+          <SummaryItem label="New Deal Volume" value={fmtDollarB(data.marketSummary.newDealVolume)} />
+          <SummaryItem
+            label="Avg AAA Spread"
+            value={`${fmtBp(data.marketSummary.avgAAA_spread)} bp`}
+            color={ACCENT}
+          />
+          <SummaryItem
+            label="Avg Equity IRR"
+            value={fmtPct(data.marketSummary.avgEquityIRR)}
+            color={ACCENT}
+          />
+          <SummaryItem
+            label="CCC Bucket Avg"
+            value={fmtPct(data.marketSummary.cccBucketAvg)}
+          />
+          <SummaryItem
+            label="Managers"
+            value={String(data.marketSummary.managerCount ?? '-')}
+          />
         </div>
       )}
 
-      <div className="flex-1 overflow-auto no-scrollbar">
-        {isLoading && !data && (
-          <div className="text-center py-8 text-pink-400 text-[9px] font-mono uppercase animate-pulse">
-            {tr(t, 'loading', 'Loading...')}
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+
+        {/* Tranche Spreads Table */}
+        {data.trancheSpreads && data.trancheSpreads.length > 0 && (
+          <div>
+            <div className="px-3 py-1.5 border-b border-border/20">
+              <span className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color: ACCENT }}>
+                Tranche Spreads
+              </span>
+            </div>
+            <table className="w-full text-[9px] font-mono">
+              <thead>
+                <tr className="border-b border-border/20 text-neutral-500">
+                  <th className="text-left px-3 py-1 font-normal">Tranche</th>
+                  <th className="text-right px-2 py-1 font-normal">Spread (bp)</th>
+                  <th className="text-right px-2 py-1 font-normal">Change</th>
+                  <th className="text-right px-2 py-1 font-normal">Week Chg</th>
+                  <th className="text-right px-2 py-1 font-normal">New Issue DM</th>
+                  <th className="text-right px-2 py-1 font-normal">Secondary DM</th>
+                  <th className="text-right px-2 py-1 font-normal">Bid-Ask</th>
+                  <th className="text-right px-3 py-1 font-normal">WAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.trancheSpreads.map((row: Record<string, unknown>, i: number) => (
+                  <tr
+                    key={i}
+                    className="border-b border-border/[0.06] hover:bg-emerald-400/[0.02] transition-colors"
+                  >
+                    <td className="px-3 py-1 text-white font-bold">{String(row.tranche ?? '-')}</td>
+                    <td className="text-right px-2 py-1 text-white">{fmtBp(row.spread as number)}</td>
+                    <td className={`text-right px-2 py-1 font-bold ${changeColor(row.change as number)}`}>
+                      {fmtChange(row.change as number)}
+                    </td>
+                    <td className={`text-right px-2 py-1 ${changeColor(row.weekChange as number)}`}>
+                      {fmtChange(row.weekChange as number)}
+                    </td>
+                    <td className="text-right px-2 py-1 text-neutral-400">{fmtBp(row.newIssueDM as number)}</td>
+                    <td className="text-right px-2 py-1 text-neutral-400">{fmtBp(row.secondaryDM as number)}</td>
+                    <td className="text-right px-2 py-1 text-neutral-500">{fmtBp(row.bidAskSpread as number)}</td>
+                    <td className="text-right px-3 py-1 text-neutral-400">{fmtNum(row.weightedAvgLife as number, 1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-        {view === 'DEALS' && data && <DealsView deals={deals} overview={data.marketOverview} fmtM={fmtM} onSelect={setSelectedDeal} setView={setView} />}
-        {view === 'TRANCHES' && selected && <TranchesView deal={selected} fmtM={fmtM} />}
-        {view === 'CASHFLOW' && selected && <CashflowView deal={selected} fmtM={fmtM} />}
+
+        {/* Manager Rankings Table */}
+        {data.managerRankings && data.managerRankings.length > 0 && (
+          <div>
+            <div className="px-3 py-1.5 border-b border-border/20">
+              <span className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color: ACCENT }}>
+                Manager Rankings
+              </span>
+            </div>
+            <table className="w-full text-[9px] font-mono">
+              <thead>
+                <tr className="border-b border-border/20 text-neutral-500">
+                  <th className="text-left px-3 py-1 font-normal">Manager</th>
+                  <th className="text-right px-2 py-1 font-normal">AUM ($B)</th>
+                  <th className="text-right px-2 py-1 font-normal">Deals</th>
+                  <th className="text-right px-2 py-1 font-normal">Avg WARS</th>
+                  <th className="text-right px-2 py-1 font-normal">Avg OC%</th>
+                  <th className="text-right px-2 py-1 font-normal">Avg IC%</th>
+                  <th className="text-right px-2 py-1 font-normal">Default%</th>
+                  <th className="text-right px-3 py-1 font-normal">Ann. Ret%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.managerRankings.map((row: Record<string, unknown>, i: number) => (
+                  <tr
+                    key={i}
+                    className="border-b border-border/[0.06] hover:bg-emerald-400/[0.02] transition-colors"
+                  >
+                    <td className="px-3 py-1 text-white font-bold truncate max-w-[140px]">{String(row.manager ?? '-')}</td>
+                    <td className="text-right px-2 py-1 text-white">{fmtNum(row.aum as number, 1)}</td>
+                    <td className="text-right px-2 py-1 text-neutral-400">{row.dealsActive != null ? String(row.dealsActive) : '-'}</td>
+                    <td className="text-right px-2 py-1 text-neutral-400">{fmtNum(row.avgWARS as number)}</td>
+                    <td className="text-right px-2 py-1 text-neutral-400">{fmtPct(row.avgOC as number)}</td>
+                    <td className="text-right px-2 py-1 text-neutral-400">{fmtPct(row.avgIC as number)}</td>
+                    <td className={`text-right px-2 py-1 ${(row.defaultRate as number) > 2 ? 'text-red-400' : 'text-neutral-400'}`}>
+                      {fmtPct(row.defaultRate as number)}
+                    </td>
+                    <td className={`text-right px-3 py-1 font-bold ${(row.annualizedReturn as number) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {fmtPct(row.annualizedReturn as number)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Collateral Quality Table */}
+        {data.collateralQuality && data.collateralQuality.length > 0 && (
+          <div>
+            <div className="px-3 py-1.5 border-b border-border/20">
+              <span className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color: ACCENT }}>
+                Collateral Quality
+              </span>
+            </div>
+            <table className="w-full text-[9px] font-mono">
+              <thead>
+                <tr className="border-b border-border/20 text-neutral-500">
+                  <th className="text-left px-3 py-1 font-normal">Metric</th>
+                  <th className="text-right px-2 py-1 font-normal">Current</th>
+                  <th className="text-right px-2 py-1 font-normal">Limit</th>
+                  <th className="text-right px-2 py-1 font-normal">Cushion</th>
+                  <th className="text-center px-2 py-1 font-normal">Trend</th>
+                  <th className="text-right px-3 py-1 font-normal">Percentile</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.collateralQuality.map((row: Record<string, unknown>, i: number) => {
+                  const badge = trendBadge(row.trend as string);
+                  return (
+                    <tr
+                      key={i}
+                      className="border-b border-border/[0.06] hover:bg-emerald-400/[0.02] transition-colors"
+                    >
+                      <td className="px-3 py-1 text-white font-bold">{String(row.metric ?? '-')}</td>
+                      <td className="text-right px-2 py-1 text-white">{fmtNum(row.currentValue as number)}</td>
+                      <td className="text-right px-2 py-1 text-neutral-500">{fmtNum(row.limit as number)}</td>
+                      <td className={`text-right px-2 py-1 font-bold ${cushionColor(row.cushion as number)}`}>
+                        {fmtNum(row.cushion as number)}
+                      </td>
+                      <td className="text-center px-2 py-1">
+                        <span className={`inline-block px-1.5 py-px text-[7px] font-bold uppercase border ${badge.cls}`}>
+                          {badge.text}
+                        </span>
+                      </td>
+                      <td className="text-right px-3 py-1 text-neutral-400">
+                        {row.percentile != null ? `${fmtNum(row.percentile as number, 0)}th` : '-'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Coverage Tests Table */}
+        {data.coverageTests && data.coverageTests.length > 0 && (
+          <div>
+            <div className="px-3 py-1.5 border-b border-border/20">
+              <span className="text-[8px] font-mono font-bold uppercase tracking-wider" style={{ color: ACCENT }}>
+                Coverage Tests
+              </span>
+            </div>
+            <table className="w-full text-[9px] font-mono">
+              <thead>
+                <tr className="border-b border-border/20 text-neutral-500">
+                  <th className="text-left px-3 py-1 font-normal">Test</th>
+                  <th className="text-right px-2 py-1 font-normal">Current</th>
+                  <th className="text-right px-2 py-1 font-normal">Trigger</th>
+                  <th className="text-right px-2 py-1 font-normal">Cushion</th>
+                  <th className="text-center px-2 py-1 font-normal">Pass/Fail</th>
+                  <th className="text-center px-3 py-1 font-normal">Trend</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.coverageTests.map((row: Record<string, unknown>, i: number) => {
+                  const pfBadge = passFailBadge(row.passFail as string);
+                  const tBadge = trendBadge(row.trend as string);
+                  return (
+                    <tr
+                      key={i}
+                      className="border-b border-border/[0.06] hover:bg-emerald-400/[0.02] transition-colors"
+                    >
+                      <td className="px-3 py-1 text-white font-bold">{String(row.test ?? '-')}</td>
+                      <td className="text-right px-2 py-1 text-white">{fmtPct(row.currentLevel as number)}</td>
+                      <td className="text-right px-2 py-1 text-neutral-500">{fmtPct(row.trigger as number)}</td>
+                      <td className={`text-right px-2 py-1 font-bold ${cushionColor(row.cushion as number)}`}>
+                        {fmtNum(row.cushion as number)}
+                      </td>
+                      <td className="text-center px-2 py-1">
+                        <span className={`inline-block px-1.5 py-px text-[7px] font-bold uppercase border ${pfBadge.cls}`}>
+                          {pfBadge.text}
+                        </span>
+                      </td>
+                      <td className="text-center px-3 py-1">
+                        <span className={`inline-block px-1.5 py-px text-[7px] font-bold uppercase border ${tBadge.cls}`}>
+                          {tBadge.text}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
 
-function DealsView({ deals, overview, fmtM, onSelect, setView }: {
-  deals: Deal[];
-  overview: { totalIssuance: number; avgAAASpread: number; avgEquityYield: number; avgWAL: number; avgDefaultRate: number; avgRecovery: number };
-  fmtM: (v: number) => string;
-  onSelect: (id: string) => void;
-  setView: (v: 'TRANCHES') => void;
+// ── Summary Item (for Market Summary bar) ──
+
+function SummaryItem({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string;
+  color?: string;
 }) {
   return (
-    <div>
-      <div className="grid grid-cols-6 gap-2 p-2">
-        {[
-          { label: 'YTD ISSUANCE', value: '$' + overview.totalIssuance.toFixed(0) + 'B' },
-          { label: 'AVG AAA SPREAD', value: overview.avgAAASpread + ' bp' },
-          { label: 'AVG EQ YIELD', value: overview.avgEquityYield.toFixed(1) + '%' },
-          { label: 'AVG WAL', value: overview.avgWAL.toFixed(1) + 'Y' },
-          { label: 'AVG DEFAULT', value: overview.avgDefaultRate.toFixed(2) + '%' },
-          { label: 'AVG RECOVERY', value: overview.avgRecovery.toFixed(1) + '%' },
-        ].map(s => (
-          <div key={s.label} className="bg-[#050505] border border-border/10 px-2 py-1.5">
-            <div className="text-[6px] font-mono text-neutral-600 uppercase">{s.label}</div>
-            <div className="text-[10px] font-mono font-bold text-pink-400">{s.value}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-center px-2 py-0.5 border-b border-border/10 bg-[#030303]">
-        <span className="w-[88px] text-[7px] font-mono text-neutral-600 uppercase">DEAL</span>
-        <span className="w-[52px] text-[7px] font-mono text-neutral-600 uppercase text-right">SIZE</span>
-        <span className="w-[28px] text-[7px] font-mono text-neutral-600 uppercase text-right">WAL</span>
-        <span className="w-[32px] text-[7px] font-mono text-neutral-600 uppercase text-right">WARF</span>
-        <span className="w-[28px] text-[7px] font-mono text-neutral-600 uppercase text-right">DIV</span>
-        <span className="w-[32px] text-[7px] font-mono text-neutral-600 uppercase text-right">CCC%</span>
-        <span className="w-[36px] text-[7px] font-mono text-neutral-600 uppercase text-right">OC AAA</span>
-        <span className="w-[28px] text-[7px] font-mono text-neutral-600 uppercase text-right pr-1">IC</span>
-      </div>
-      {deals.map(d => (
-        <div key={d.id} onClick={() => { onSelect(d.id); setView('TRANCHES'); }}
-          className="flex items-center px-2 py-[3px] border-b border-border/5 hover:bg-pink-400/[0.02] transition-colors cursor-pointer">
-          <span className="w-[88px] text-[7px] font-mono font-bold text-white truncate">{d.id}</span>
-          <span className="w-[52px] text-[8px] font-mono text-right text-neutral-300">{fmtM(d.collateralBalance)}</span>
-          <span className="w-[28px] text-[8px] font-mono text-right text-neutral-300">{d.wal.toFixed(1)}</span>
-          <span className="w-[32px] text-[8px] font-mono text-right text-neutral-300">{d.tests.warf}</span>
-          <span className="w-[28px] text-[8px] font-mono text-right text-neutral-300">{d.tests.diversityScore}</span>
-          <span className={`w-[32px] text-[8px] font-mono text-right ${d.tests.cccBucket > 7 ? 'text-red-400' : 'text-neutral-300'}`}>{d.tests.cccBucket.toFixed(1)}</span>
-          <span className={`w-[36px] text-[8px] font-mono text-right ${d.tests.ocRatioAAA < 120 ? 'text-red-400' : 'text-green-400'}`}>{d.tests.ocRatioAAA.toFixed(0)}</span>
-          <span className="w-[28px] text-[8px] font-mono text-right text-neutral-300 pr-1">{d.tests.icRatio.toFixed(0)}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TranchesView({ deal, fmtM }: { deal: Deal; fmtM: (v: number) => string }) {
-  const maxNotional = Math.max(...deal.tranches.map(t => t.notional), 1);
-
-  return (
-    <div className="p-2 space-y-3">
-      <div className="bg-[#050505] border border-border/10 px-3 py-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] font-mono font-bold text-white">{deal.id}</span>
-          <span className="text-[8px] font-mono text-neutral-500">{deal.manager}</span>
-        </div>
-        <div className="flex items-center gap-4 mt-1 text-[7px] font-mono text-neutral-500">
-          <span>Size: {fmtM(deal.collateralBalance)}</span>
-          <span>Loans: {deal.numLoans}</span>
-          <span>WAL: {deal.wal.toFixed(1)}Y</span>
-          <span>Reinvest End: {deal.reinvestEndDate}</span>
-        </div>
-      </div>
-
-      <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">Capital Structure (Waterfall)</div>
-      {deal.tranches.map(tr => (
-        <div key={tr.name} className="flex items-center px-2 py-1.5 border-b border-border/5 hover:bg-pink-400/[0.02] transition-colors">
-          <div className="w-[44px]">
-            <span className="text-[9px] font-mono font-bold text-white">{tr.name}</span>
-            <div className="text-[6px] font-mono text-neutral-600">{tr.rating}</div>
-          </div>
-          <span className="w-[48px] text-[8px] font-mono text-right text-neutral-300">{fmtM(tr.notional)}</span>
-          <span className="w-[32px] text-[8px] font-mono text-right text-pink-400 font-bold">{tr.pctOfDeal}%</span>
-          <span className="w-[40px] text-[8px] font-mono text-right text-neutral-300">{tr.spread > 0 ? tr.spread + 'bp' : '-'}</span>
-          <span className="w-[40px] text-[8px] font-mono text-right text-neutral-300">{tr.price.toFixed(1)}</span>
-          <span className="w-[36px] text-[8px] font-mono text-right text-neutral-300">{tr.yield.toFixed(1)}%</span>
-          <span className="w-[28px] text-[7px] font-mono text-right text-neutral-500">{tr.subordination > 0 ? tr.subordination + '%' : '-'}</span>
-          <div className="flex-1 px-2">
-            <div className="h-2.5 bg-neutral-900 relative">
-              <div className="absolute left-0 top-0 h-full bg-pink-400/30" style={{ width: `${(tr.notional / maxNotional) * 100}%` }} />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function CashflowView({ deal, fmtM }: { deal: Deal; fmtM: (v: number) => string }) {
-  const maxCF = Math.max(...deal.cashflowHistory.map(h => h.interest + h.principal), 1);
-
-  return (
-    <div className="p-2 space-y-3">
-      <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">Quarterly Cash Flow History</div>
-      <div className="flex items-center px-2 py-0.5 border-b border-border/10 bg-[#030303]">
-        <span className="w-[48px] text-[7px] font-mono text-neutral-600 uppercase">PERIOD</span>
-        <span className="w-[52px] text-[7px] font-mono text-neutral-600 uppercase text-right">INTEREST</span>
-        <span className="w-[52px] text-[7px] font-mono text-neutral-600 uppercase text-right">PRINCIPAL</span>
-        <span className="w-[48px] text-[7px] font-mono text-neutral-600 uppercase text-right">DEFAULT</span>
-        <span className="w-[48px] text-[7px] font-mono text-neutral-600 uppercase text-right">RECOVERY</span>
-        <span className="flex-1 text-[7px] font-mono text-neutral-600 uppercase text-center">FLOW</span>
-      </div>
-      {deal.cashflowHistory.map((h, i) => (
-        <div key={i} className="flex items-center px-2 py-1 border-b border-border/5">
-          <span className="w-[48px] text-[7px] font-mono text-neutral-500">{h.date}</span>
-          <span className="w-[52px] text-[8px] font-mono text-right text-green-400">{fmtM(h.interest)}</span>
-          <span className="w-[52px] text-[8px] font-mono text-right text-blue-400">{fmtM(h.principal)}</span>
-          <span className="w-[48px] text-[8px] font-mono text-right text-red-400">{fmtM(h.defaults)}</span>
-          <span className="w-[48px] text-[8px] font-mono text-right text-neutral-300">{fmtM(h.recoveries)}</span>
-          <div className="flex-1 px-2">
-            <div className="h-2 bg-neutral-900 relative flex">
-              <div className="h-full bg-green-400/40" style={{ width: `${(h.interest / maxCF) * 100}%` }} />
-              <div className="h-full bg-blue-400/40" style={{ width: `${(h.principal / maxCF) * 100}%` }} />
-            </div>
-          </div>
-        </div>
-      ))}
-      <div className="flex items-center gap-3 px-2">
-        <div className="flex items-center gap-1"><div className="w-3 h-1 bg-green-400/40" /><span className="text-[6px] font-mono text-neutral-500">Interest</span></div>
-        <div className="flex items-center gap-1"><div className="w-3 h-1 bg-blue-400/40" /><span className="text-[6px] font-mono text-neutral-500">Principal</span></div>
+    <div className="flex-1 px-2 py-0.5 border-r border-border/10 last:border-r-0">
+      <div className="text-[7px] font-mono text-neutral-500 uppercase tracking-wider leading-tight">{label}</div>
+      <div
+        className="text-[10px] font-mono font-bold leading-tight"
+        style={color ? { color } : { color: '#fff' }}
+      >
+        {value}
       </div>
     </div>
   );

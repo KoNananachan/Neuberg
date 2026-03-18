@@ -12,24 +12,37 @@ function mulberry32(seed: number) {
   return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-const BDCS = [
-  { ticker: 'ARCC', name: 'Ares Capital', baseNAV: 20.5, baseDivYield: 9.8, aum: 22.5 },
-  { ticker: 'MAIN', name: 'Main Street Capital', baseNAV: 28.0, baseDivYield: 6.5, aum: 7.8 },
-  { ticker: 'FSK', name: 'FS KKR Capital', baseNAV: 23.5, baseDivYield: 13.2, aum: 15.2 },
-  { ticker: 'BXSL', name: 'Blackstone Secured', baseNAV: 26.0, baseDivYield: 10.5, aum: 10.5 },
-  { ticker: 'OBDC', name: 'Blue Owl Capital', baseNAV: 15.0, baseDivYield: 11.0, aum: 13.0 },
-  { ticker: 'GSBD', name: 'Goldman Sachs BDC', baseNAV: 14.5, baseDivYield: 12.5, aum: 3.8 },
-  { ticker: 'HTGC', name: 'Hercules Capital', baseNAV: 17.0, baseDivYield: 10.0, aum: 3.5 },
-  { ticker: 'TPVG', name: 'TriplePoint Venture', baseNAV: 9.5, baseDivYield: 14.5, aum: 1.2 },
-  { ticker: 'OCSL', name: 'Oaktree Specialty', baseNAV: 20.0, baseDivYield: 11.5, aum: 3.2 },
-  { ticker: 'PSEC', name: 'Prospect Capital', baseNAV: 8.5, baseDivYield: 12.0, aum: 7.5 },
+const DIRECT_LENDING_SEGMENTS = [
+  { segment: 'Upper Middle Market', baseSpread: 550, baseLeverage: 4.8, baseLTV: 48, baseDealSize: 350 },
+  { segment: 'Core Middle Market', baseSpread: 625, baseLeverage: 5.2, baseLTV: 52, baseDealSize: 150 },
+  { segment: 'Lower Middle Market', baseSpread: 700, baseLeverage: 4.5, baseLTV: 45, baseDealSize: 50 },
+  { segment: 'Unitranche Senior', baseSpread: 575, baseLeverage: 5.0, baseLTV: 50, baseDealSize: 200 },
+  { segment: 'Unitranche Stretched', baseSpread: 650, baseLeverage: 5.8, baseLTV: 58, baseDealSize: 175 },
+  { segment: 'Second Lien', baseSpread: 825, baseLeverage: 6.2, baseLTV: 65, baseDealSize: 100 },
+  { segment: 'Mezzanine', baseSpread: 1050, baseLeverage: 6.5, baseLTV: 70, baseDealSize: 75 },
+  { segment: 'Venture Debt', baseSpread: 750, baseLeverage: 3.5, baseLTV: 35, baseDealSize: 25 },
 ];
 
-const LOAN_INDICES = [
-  { id: 'LSTA', name: 'S&P/LSTA Leveraged Loan Index', baseLevel: 97.5, baseYield: 9.2 },
-  { id: 'ELLI', name: 'S&P European Leveraged Loan Index', baseLevel: 96.8, baseYield: 8.8 },
-  { id: 'CSLLI', name: 'CS Leveraged Loan Index', baseLevel: 97.2, baseYield: 9.0 },
-  { id: 'BKLN', name: 'Invesco Senior Loan ETF', baseLevel: 21.2, baseYield: 8.5 },
+const BDC_LIST = [
+  { name: 'Ares Capital', baseNAV: 19.50, baseDivYield: 9.8, baseROE: 12.5, baseNonAccruals: 1.8, baseTotalAssets: 22.5 },
+  { name: 'Blue Owl', baseNAV: 15.80, baseDivYield: 10.5, baseROE: 11.0, baseNonAccruals: 1.2, baseTotalAssets: 13.2 },
+  { name: 'Owl Rock', baseNAV: 15.20, baseDivYield: 11.2, baseROE: 10.8, baseNonAccruals: 1.5, baseTotalAssets: 10.8 },
+  { name: 'Golub', baseNAV: 16.50, baseDivYield: 10.0, baseROE: 11.5, baseNonAccruals: 2.0, baseTotalAssets: 8.5 },
+  { name: 'FS KKR', baseNAV: 23.80, baseDivYield: 12.0, baseROE: 13.2, baseNonAccruals: 2.5, baseTotalAssets: 15.0 },
+  { name: 'Main Street', baseNAV: 25.00, baseDivYield: 9.2, baseROE: 11.8, baseNonAccruals: 0.8, baseTotalAssets: 7.8 },
+  { name: 'Prospect', baseNAV: 17.00, baseDivYield: 11.8, baseROE: 9.5, baseNonAccruals: 3.2, baseTotalAssets: 7.2 },
+  { name: 'Gladstone', baseNAV: 15.50, baseDivYield: 10.8, baseROE: 10.2, baseNonAccruals: 2.8, baseTotalAssets: 3.5 },
+];
+
+const QUARTERS = ['Q1 2024', 'Q2 2024', 'Q3 2024', 'Q4 2024', 'Q1 2025', 'Q2 2025'];
+
+const DEFAULT_CATEGORIES = [
+  { category: 'Senior Secured 1st Lien', baseTrailingDefault: 1.2, basePeakDefault: 4.5, baseAvgRecovery: 72, baseStress: 3.5, baseWatchlist: 18 },
+  { category: 'Senior Secured 2nd Lien', baseTrailingDefault: 2.8, basePeakDefault: 8.2, baseAvgRecovery: 45, baseStress: 6.0, baseWatchlist: 12 },
+  { category: 'Unitranche', baseTrailingDefault: 1.8, basePeakDefault: 5.5, baseAvgRecovery: 58, baseStress: 4.2, baseWatchlist: 15 },
+  { category: 'Mezzanine', baseTrailingDefault: 3.5, basePeakDefault: 10.0, baseAvgRecovery: 32, baseStress: 7.5, baseWatchlist: 9 },
+  { category: 'Unsecured', baseTrailingDefault: 5.0, basePeakDefault: 14.0, baseAvgRecovery: 22, baseStress: 10.0, baseWatchlist: 7 },
+  { category: 'Distressed Exchange', baseTrailingDefault: 8.0, basePeakDefault: 18.0, baseAvgRecovery: 38, baseStress: 12.5, baseWatchlist: 5 },
 ];
 
 const CACHE_TTL = 5 * 60 * 1000;
@@ -37,70 +50,79 @@ let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {
   const day = new Date().toISOString().slice(0, 10);
-  const rng = mulberry32(hashSeed(day + '-private-credit'));
+  const rng = mulberry32(hashSeed(day + '-private-credit-v2'));
   const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
 
-  const bdcs = BDCS.map(b => {
-    const nav = Math.round(jitter(b.baseNAV, 0.04) * 100) / 100;
-    const price = Math.round(nav * (0.85 + rng() * 0.25) * 100) / 100;
-    const premDisc = Math.round((price / nav - 1) * 100 * 10) / 10;
-    const divYield = Math.round(jitter(b.baseDivYield, 0.08) * 100) / 100;
-    const totalReturn1y = Math.round((divYield + (rng() - 0.4) * 10) * 100) / 100;
-    const nonAccrual = Math.round((0.5 + rng() * 4) * 10) / 10;
-    const leverage = Math.round((0.8 + rng() * 0.6) * 100) / 100;
-    const weightedAvgYield = Math.round(jitter(11.5, 0.1) * 100) / 100;
-    const pctFloating = Math.round((80 + rng() * 18) * 10) / 10;
-    const pctFirstLien = Math.round((60 + rng() * 30) * 10) / 10;
+  // 1. Direct Lending
+  const directLending = DIRECT_LENDING_SEGMENTS.map(seg => {
+    const spread = Math.round(jitter(seg.baseSpread, 0.08));
+    const sofrRate = 5.33;
+    const allInYield = Math.round((sofrRate + spread / 100) * 100) / 100;
+    const leverage = Math.round(jitter(seg.baseLeverage, 0.06) * 10) / 10;
+    const ltv = Math.round(jitter(seg.baseLTV, 0.05) * 10) / 10;
+    const dealSize = Math.round(jitter(seg.baseDealSize, 0.12));
+    const change = Math.round((rng() - 0.5) * 30);
+    const weekChange = Math.round((rng() - 0.48) * 50);
 
     return {
-      ticker: b.ticker, name: b.name, aum: Math.round(jitter(b.aum, 0.05) * 10) / 10,
-      nav, price, premDisc, divYield, totalReturn1y,
-      portfolio: { nonAccrual, leverage, weightedAvgYield, pctFloating, pctFirstLien },
+      segment: seg.segment, spread, allInYield, leverage, ltv, dealSize, change, weekChange,
     };
   });
 
-  const loanIndices = LOAN_INDICES.map(l => {
-    const level = Math.round(jitter(l.baseLevel, 0.02) * 1000) / 1000;
-    const yld = Math.round(jitter(l.baseYield, 0.05) * 100) / 100;
-    const change1d = Math.round((rng() - 0.5) * 0.3 * 1000) / 1000;
-    const change1m = Math.round((rng() - 0.45) * 1.5 * 100) / 100;
-    const change3m = Math.round((rng() - 0.4) * 3 * 100) / 100;
-    const spreadToSOFR = Math.round(350 + rng() * 150);
+  // 2. BDC Performance
+  const bdcPerformance = BDC_LIST.map(bdc => {
+    const nav = Math.round(jitter(bdc.baseNAV, 0.04) * 100) / 100;
+    const premiumFactor = 0.88 + rng() * 0.22;
+    const price = Math.round(nav * premiumFactor * 100) / 100;
+    const premium = Math.round((price / nav - 1) * 100 * 10) / 10;
+    const dividendYield = Math.round(jitter(bdc.baseDivYield, 0.06) * 100) / 100;
+    const roe = Math.round(jitter(bdc.baseROE, 0.08) * 100) / 100;
+    const nonAccruals = Math.round(jitter(bdc.baseNonAccruals, 0.15) * 10) / 10;
+    const totalAssets = Math.round(jitter(bdc.baseTotalAssets, 0.05) * 10) / 10;
 
-    const history = Array.from({ length: 12 }, (_, i) => {
-      const d = new Date();
-      d.setMonth(d.getMonth() - (11 - i));
-      return {
-        date: d.toISOString().slice(0, 7),
-        level: Math.round(jitter(l.baseLevel, 0.015) * 1000) / 1000,
-        yield: Math.round(jitter(l.baseYield, 0.04) * 100) / 100,
-      };
-    });
-
-    return { id: l.id, name: l.name, level, yield: yld, change1d, change1m, change3m, spreadToSOFR, history };
-  });
-
-  const defaultTrend = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - (11 - i));
     return {
-      date: d.toISOString().slice(0, 7),
-      leveragedLoanDefault: Math.round((1.0 + rng() * 2.5) * 100) / 100,
-      highYieldDefault: Math.round((1.5 + rng() * 3) * 100) / 100,
-      recoveryRate: Math.round((45 + rng() * 25) * 10) / 10,
+      name: bdc.name, nav, price, premium, dividendYield, roe, nonAccruals, totalAssets,
     };
   });
 
-  const marketMetrics = {
-    totalPrivateCreditAUM: Math.round(jitter(1.7, 0.05) * 10) / 10,
-    avgBDCDivYield: Math.round(bdcs.reduce((a, b) => a + b.divYield, 0) / bdcs.length * 100) / 100,
-    avgBDCPremDisc: Math.round(bdcs.reduce((a, b) => a + b.premDisc, 0) / bdcs.length * 10) / 10,
-    avgLoanYield: Math.round(loanIndices.reduce((a, l) => a + l.yield, 0) / loanIndices.length * 100) / 100,
-    currentDefaultRate: defaultTrend[defaultTrend.length - 1].leveragedLoanDefault,
-    sofrRate: Math.round(jitter(5.3, 0.02) * 100) / 100,
-  };
+  // 3. Middle Market Deal Activity
+  const middleMarket = QUARTERS.map((quarter, idx) => {
+    const baseDealCount = 280 + idx * 8;
+    const baseVolume = 42 + idx * 1.5;
+    const dealCount = Math.round(jitter(baseDealCount, 0.06));
+    const totalVolume = Math.round(jitter(baseVolume, 0.08) * 10) / 10;
+    const avgSpread = Math.round(jitter(575, 0.05));
+    const avgLeverage = Math.round(jitter(5.1 + idx * 0.03, 0.04) * 10) / 10;
+    const avgLTV = Math.round(jitter(50, 0.04) * 10) / 10;
+    const defaultRate = Math.round(jitter(1.5 + idx * 0.08, 0.1) * 100) / 100;
 
-  return { bdcs, loanIndices, defaultTrend, marketMetrics, generatedAt: new Date().toISOString() };
+    return { quarter, dealCount, totalVolume, avgSpread, avgLeverage, avgLTV, defaultRate };
+  });
+
+  // 4. Default and Recovery Analysis
+  const defaultAndRecovery = DEFAULT_CATEGORIES.map(cat => {
+    const trailingDefault = Math.round(jitter(cat.baseTrailingDefault, 0.12) * 100) / 100;
+    const peakDefault = Math.round(jitter(cat.basePeakDefault, 0.08) * 100) / 100;
+    const avgRecovery = Math.round(jitter(cat.baseAvgRecovery, 0.06) * 10) / 10;
+    const currentVintageStress = Math.round(jitter(cat.baseStress, 0.1) * 100) / 100;
+    const watchlist = Math.round(jitter(cat.baseWatchlist, 0.15));
+
+    return { category: cat.category, trailingDefault, peakDefault, avgRecovery, currentVintageStress, watchlist };
+  });
+
+  // 5. Market Summary
+  const totalAUM = Math.round(jitter(1.7, 0.04) * 100) / 100;
+  const dryPowder = Math.round(jitter(420, 0.06) * 10) / 10;
+  const avgSpread = Math.round(directLending.reduce((a, d) => a + d.spread, 0) / directLending.length);
+  const avgLeverage = Math.round(directLending.reduce((a, d) => a + d.leverage, 0) / directLending.length * 10) / 10;
+  const trailingDefaultRate = Math.round(defaultAndRecovery.reduce((a, d) => a + d.trailingDefault, 0) / defaultAndRecovery.length * 100) / 100;
+  const dealPipeline = Math.round(jitter(85, 0.1) * 10) / 10;
+  const sentimentRoll = rng();
+  const sentiment = sentimentRoll < 0.35 ? 'Tightening' : sentimentRoll < 0.7 ? 'Stable' : 'Loosening';
+
+  const marketSummary = { totalAUM, dryPowder, avgSpread, avgLeverage, trailingDefaultRate, dealPipeline, sentiment };
+
+  return { directLending, bdcPerformance, middleMarket, defaultAndRecovery, marketSummary, generatedAt: new Date().toISOString() };
 }
 
 router.get('/', (_req, res) => {

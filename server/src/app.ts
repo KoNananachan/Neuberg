@@ -205,6 +205,7 @@ import commodityCurveAnalyticsRouter from './routes/commodity-curve-analytics.js
 import collateralMonitorRouter from './routes/collateral-monitor.js';
 import sovereignCdsRouter from './routes/sovereign-cds.js';
 import crossAssetMomentumRouter from './routes/cross-asset-momentum.js';
+import cryptoDerivativesRouter from './routes/crypto-derivatives.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -511,6 +512,7 @@ export function createApp() {
   app.use('/api/collateral-monitor', collateralMonitorRouter);
   app.use('/api/sovereign-cds', sovereignCdsRouter);
   app.use('/api/cross-asset-momentum', crossAssetMomentumRouter);
+  app.use('/api/crypto-derivatives', cryptoDerivativesRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

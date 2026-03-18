@@ -1,240 +1,473 @@
-import { useState, useMemo } from 'react';
 import { usePrivateCredit } from '../../api/hooks/use-private-credit';
+import { useT } from '../../i18n';
+import { Loader2 } from 'lucide-react';
 
-const ACCENT = '#c084fc'; // purple-400
-const ACCENT_DIM = 'rgba(192,132,252,0.08)';
+// ── i18n fallback helper ──
 
-type Tab = 'bdcs' | 'loans' | 'defaults' | 'overview';
+type TFn = ReturnType<typeof useT>;
+const tr = (t: TFn, key: string, fallback: string): string => {
+  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
+};
+
+// ── Formatting helpers ──
+
+function fmtNum(n: number, decimals = 2): string {
+  return n.toFixed(decimals);
+}
+
+function fmtPct(n: number): string {
+  return `${n.toFixed(2)}%`;
+}
+
+function fmtBp(n: number): string {
+  return n.toFixed(0);
+}
+
+function fmtDollarM(n: number): string {
+  return `$${n.toFixed(0)}M`;
+}
+
+function fmtDollarB(n: number): string {
+  return `$${n.toFixed(1)}B`;
+}
+
+function fmtLeverage(n: number): string {
+  return `${n.toFixed(1)}x`;
+}
+
+function fmtChange(n: number): string {
+  const sign = n >= 0 ? '+' : '';
+  return `${sign}${n.toFixed(2)}`;
+}
+
+// ── Color helpers ──
+
+function changeColor(n: number): string {
+  if (n > 0) return 'text-green-400';
+  if (n < 0) return 'text-red-400';
+  return 'text-neutral-500';
+}
+
+function premiumColor(n: number): string {
+  if (n > 0) return 'text-green-400';
+  if (n < 0) return 'text-red-400';
+  return 'text-neutral-500';
+}
+
+function sentimentBadge(sentiment: string): { text: string; bg: string } {
+  const s = sentiment.toLowerCase();
+  if (s === 'bullish' || s === 'risk on' || s === 'strong') {
+    return { text: 'text-green-400', bg: 'bg-green-500/10 border border-green-500/30' };
+  }
+  if (s === 'bearish' || s === 'risk off' || s === 'weak') {
+    return { text: 'text-red-400', bg: 'bg-red-500/10 border border-red-500/30' };
+  }
+  if (s === 'cautious' || s === 'mixed') {
+    return { text: 'text-yellow-400', bg: 'bg-yellow-500/10 border border-yellow-500/30' };
+  }
+  return { text: 'text-purple-400', bg: 'bg-purple-500/10 border border-purple-500/30' };
+}
+
+// ── Main Panel ──
 
 export function PrivateCreditPanel() {
-  const { data, isLoading, error } = usePrivateCredit();
-  const [tab, setTab] = useState<Tab>('bdcs');
-  const [sortCol, setSortCol] = useState<string>('ticker');
-  const [sortAsc, setSortAsc] = useState(true);
+  const t = useT();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, isLoading, error } = usePrivateCredit() as { data: any; isLoading: boolean; error: any };
 
-  const bdcsSorted = useMemo(() => {
-    if (!data?.bdcs) return [];
-    const arr = [...data.bdcs];
-    arr.sort((a: any, b: any) => {
-      const va = a[sortCol] ?? a.portfolio?.[sortCol] ?? 0;
-      const vb = b[sortCol] ?? b.portfolio?.[sortCol] ?? 0;
-      if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-      return sortAsc ? va - vb : vb - va;
-    });
-    return arr;
-  }, [data, sortCol, sortAsc]);
+  if (isLoading && !data) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
+        <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
+      </div>
+    );
+  }
 
-  const handleSort = (col: string) => {
-    if (sortCol === col) setSortAsc(!sortAsc);
-    else { setSortCol(col); setSortAsc(true); }
-  };
+  if (error && !data) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
+        <span className="text-red-400 text-[9px] font-mono">
+          {tr(t, 'pcError', 'Failed to load private credit data')}
+        </span>
+      </div>
+    );
+  }
 
-  if (isLoading) return <div className="h-full flex items-center justify-center bg-black"><div className="text-[9px] font-mono text-neutral/40 uppercase tracking-widest animate-pulse">Loading private credit data...</div></div>;
-  if (error || !data) return <div className="h-full flex items-center justify-center bg-black"><div className="text-[9px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load data</div></div>;
-
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'bdcs', label: 'BDCs' },
-    { key: 'loans', label: 'LOAN INDICES' },
-    { key: 'defaults', label: 'DEFAULTS' },
-    { key: 'overview', label: 'OVERVIEW' },
-  ];
-
-  const SortHeader = ({ col, label, right }: { col: string; label: string; right?: boolean }) => (
-    <th
-      className={`px-2 py-1.5 font-bold cursor-pointer hover:text-white/80 transition-colors whitespace-nowrap ${right ? 'text-right' : 'text-left'}`}
-      onClick={() => handleSort(col)}
-    >
-      {label}{sortCol === col ? (sortAsc ? ' ▲' : ' ▼') : ''}
-    </th>
-  );
+  if (!data) return null;
 
   return (
-    <div className="h-full flex flex-col bg-black text-white overflow-hidden">
-      {/* Tabs */}
-      <div className="flex items-center gap-0 border-b border-border/20 shrink-0">
-        {tabs.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className="px-3 py-2 text-[9px] font-mono font-bold uppercase tracking-wider transition-colors"
-            style={{
-              color: tab === t.key ? ACCENT : 'rgba(255,255,255,0.35)',
-              borderBottom: tab === t.key ? `1px solid ${ACCENT}` : '1px solid transparent',
-              background: tab === t.key ? ACCENT_DIM : 'transparent',
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-        <div className="flex-1" />
-        <div className="px-3 text-[8px] font-mono text-neutral/25">
-          SOFR: {data.marketMetrics?.sofrRate}%
+    <div className="h-full flex flex-col bg-black overflow-hidden font-mono text-[9px]">
+      <div className="flex-1 overflow-y-auto">
+        {/* Market Summary Bar */}
+        <MarketSummaryBar summary={data.marketSummary} t={t} />
+
+        {/* Direct Lending Table */}
+        <DirectLendingTable items={data.directLending} t={t} />
+
+        {/* BDC Performance Table */}
+        <BdcPerformanceTable items={data.bdcPerformance} t={t} />
+
+        {/* Middle Market Table */}
+        <MiddleMarketTable items={data.middleMarket} t={t} />
+
+        {/* Default & Recovery Table */}
+        <DefaultRecoveryTable items={data.defaultAndRecovery} t={t} />
+      </div>
+    </div>
+  );
+}
+
+// ── Market Summary Bar ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function MarketSummaryBar({ summary, t }: { summary: any; t: TFn }) {
+  const badge = sentimentBadge(summary.sentiment ?? '');
+
+  return (
+    <div className="grid grid-cols-6 border-b border-border/20">
+      <div className="px-2 py-1.5 border-r border-border/20">
+        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
+          {tr(t, 'pcTotalAum', 'Total AUM')}
+        </div>
+        <div className="text-[10px] font-bold text-white">
+          {fmtDollarB(summary.totalAUM)}
         </div>
       </div>
-
-      <div className="flex-1 overflow-auto no-scrollbar">
-        {tab === 'bdcs' && (
-          <table className="w-full text-[9px] font-mono">
-            <thead className="sticky top-0 bg-black/95 text-neutral/50 uppercase tracking-wider border-b border-border/10">
-              <tr>
-                <SortHeader col="ticker" label="Ticker" />
-                <SortHeader col="name" label="Name" />
-                <SortHeader col="aum" label="AUM ($B)" right />
-                <SortHeader col="nav" label="NAV" right />
-                <SortHeader col="price" label="Price" right />
-                <SortHeader col="premDisc" label="Prem/Disc" right />
-                <SortHeader col="divYield" label="Div Yield" right />
-                <SortHeader col="totalReturn1y" label="1Y Return" right />
-                <SortHeader col="nonAccrual" label="Non-Accrual" right />
-                <SortHeader col="leverage" label="Leverage" right />
-                <SortHeader col="pctFirstLien" label="1st Lien %" right />
-              </tr>
-            </thead>
-            <tbody>
-              {bdcsSorted.map((b: any) => (
-                <tr key={b.ticker} className="border-b border-border/5 hover:bg-white/[0.02] transition-colors">
-                  <td className="px-2 py-1.5 font-bold" style={{ color: ACCENT }}>{b.ticker}</td>
-                  <td className="px-2 py-1.5 text-white/70">{b.name}</td>
-                  <td className="px-2 py-1.5 text-right text-white/60">{b.aum}</td>
-                  <td className="px-2 py-1.5 text-right text-white/60">${b.nav.toFixed(2)}</td>
-                  <td className="px-2 py-1.5 text-right text-white/60">${b.price.toFixed(2)}</td>
-                  <td className={`px-2 py-1.5 text-right font-bold ${b.premDisc >= 0 ? 'text-bullish' : 'text-bearish'}`}>
-                    {b.premDisc >= 0 ? '+' : ''}{b.premDisc.toFixed(1)}%
-                  </td>
-                  <td className="px-2 py-1.5 text-right" style={{ color: ACCENT }}>{b.divYield.toFixed(2)}%</td>
-                  <td className={`px-2 py-1.5 text-right font-bold ${b.totalReturn1y >= 0 ? 'text-bullish' : 'text-bearish'}`}>
-                    {b.totalReturn1y >= 0 ? '+' : ''}{b.totalReturn1y.toFixed(2)}%
-                  </td>
-                  <td className={`px-2 py-1.5 text-right ${b.portfolio.nonAccrual > 3 ? 'text-bearish' : 'text-white/50'}`}>
-                    {b.portfolio.nonAccrual.toFixed(1)}%
-                  </td>
-                  <td className="px-2 py-1.5 text-right text-white/50">{b.portfolio.leverage.toFixed(2)}x</td>
-                  <td className="px-2 py-1.5 text-right text-white/50">{b.portfolio.pctFirstLien.toFixed(1)}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {tab === 'loans' && (
-          <div className="p-3 space-y-4">
-            {data.loanIndices?.map((l: any) => (
-              <div key={l.id} className="border border-border/10 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <span className="text-[10px] font-mono font-bold" style={{ color: ACCENT }}>{l.id}</span>
-                    <span className="text-[8px] font-mono text-neutral/40 ml-2">{l.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-mono font-bold text-white">{l.level.toFixed(3)}</span>
-                    <span className={`text-[8px] font-mono ml-2 ${l.change1d >= 0 ? 'text-bullish' : 'text-bearish'}`}>
-                      {l.change1d >= 0 ? '+' : ''}{l.change1d.toFixed(3)}
-                    </span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-5 gap-3 text-[8px] font-mono">
-                  <div>
-                    <div className="text-neutral/40 uppercase">Yield</div>
-                    <div className="text-white/80 font-bold">{l.yield.toFixed(2)}%</div>
-                  </div>
-                  <div>
-                    <div className="text-neutral/40 uppercase">1D Chg</div>
-                    <div className={l.change1d >= 0 ? 'text-bullish' : 'text-bearish'}>{l.change1d >= 0 ? '+' : ''}{l.change1d.toFixed(3)}</div>
-                  </div>
-                  <div>
-                    <div className="text-neutral/40 uppercase">1M Chg</div>
-                    <div className={l.change1m >= 0 ? 'text-bullish' : 'text-bearish'}>{l.change1m >= 0 ? '+' : ''}{l.change1m.toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <div className="text-neutral/40 uppercase">3M Chg</div>
-                    <div className={l.change3m >= 0 ? 'text-bullish' : 'text-bearish'}>{l.change3m >= 0 ? '+' : ''}{l.change3m.toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <div className="text-neutral/40 uppercase">Sprd/SOFR</div>
-                    <div className="text-white/70">{l.spreadToSOFR}bp</div>
-                  </div>
-                </div>
-                {/* Mini sparkline bar chart for history */}
-                <div className="mt-2 flex items-end gap-[2px] h-6">
-                  {l.history?.map((h: any, i: number) => {
-                    const min = Math.min(...l.history.map((x: any) => x.yield));
-                    const max = Math.max(...l.history.map((x: any) => x.yield));
-                    const range = max - min || 1;
-                    const pct = ((h.yield - min) / range) * 100;
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 min-w-0"
-                        style={{ height: `${Math.max(10, pct)}%`, background: ACCENT, opacity: 0.4 + (i / l.history.length) * 0.6 }}
-                        title={`${h.date}: ${h.yield}%`}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {tab === 'defaults' && (
-          <div className="p-3">
-            <table className="w-full text-[9px] font-mono">
-              <thead className="text-neutral/50 uppercase tracking-wider border-b border-border/10">
-                <tr>
-                  <th className="px-2 py-1.5 text-left">Month</th>
-                  <th className="px-2 py-1.5 text-right">Lev Loan Default %</th>
-                  <th className="px-2 py-1.5 text-right">HY Default %</th>
-                  <th className="px-2 py-1.5 text-right">Recovery Rate %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.defaultTrend?.map((d: any, i: number) => (
-                  <tr key={i} className="border-b border-border/5 hover:bg-white/[0.02]">
-                    <td className="px-2 py-1.5 text-white/60">{d.date}</td>
-                    <td className={`px-2 py-1.5 text-right font-bold ${d.leveragedLoanDefault > 2.5 ? 'text-bearish' : 'text-white/70'}`}>
-                      {d.leveragedLoanDefault.toFixed(2)}%
-                    </td>
-                    <td className={`px-2 py-1.5 text-right font-bold ${d.highYieldDefault > 3.0 ? 'text-bearish' : 'text-white/70'}`}>
-                      {d.highYieldDefault.toFixed(2)}%
-                    </td>
-                    <td className={`px-2 py-1.5 text-right ${d.recoveryRate < 50 ? 'text-bearish/70' : 'text-bullish/70'}`}>
-                      {d.recoveryRate.toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {tab === 'overview' && (
-          <div className="p-4 space-y-4">
-            <div className="text-[8px] font-mono text-neutral/40 uppercase tracking-widest mb-3">Market Overview</div>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Total Private Credit AUM', value: `$${data.marketMetrics?.totalPrivateCreditAUM}T`, accent: true },
-                { label: 'Avg BDC Div Yield', value: `${data.marketMetrics?.avgBDCDivYield}%`, accent: true },
-                { label: 'Avg BDC Prem/Disc', value: `${data.marketMetrics?.avgBDCPremDisc > 0 ? '+' : ''}${data.marketMetrics?.avgBDCPremDisc}%`, bullBear: data.marketMetrics?.avgBDCPremDisc },
-                { label: 'Avg Loan Yield', value: `${data.marketMetrics?.avgLoanYield}%` },
-                { label: 'Current Default Rate', value: `${data.marketMetrics?.currentDefaultRate}%`, warn: data.marketMetrics?.currentDefaultRate > 2.5 },
-                { label: 'SOFR Rate', value: `${data.marketMetrics?.sofrRate}%` },
-              ].map((m, i) => (
-                <div key={i} className="border border-border/10 p-3">
-                  <div className="text-[7px] font-mono text-neutral/40 uppercase tracking-wider mb-1">{m.label}</div>
-                  <div
-                    className="text-[14px] font-mono font-black"
-                    style={{
-                      color: m.accent ? ACCENT : m.bullBear !== undefined ? (m.bullBear >= 0 ? '#4ade80' : '#f87171') : m.warn ? '#f87171' : 'white',
-                    }}
-                  >
-                    {m.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="px-2 py-1.5 border-r border-border/20">
+        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
+          {tr(t, 'pcDryPowder', 'Dry Powder')}
+        </div>
+        <div className="text-[10px] font-bold text-white">
+          {fmtDollarB(summary.dryPowder)}
+        </div>
       </div>
+      <div className="px-2 py-1.5 border-r border-border/20">
+        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
+          {tr(t, 'pcAvgSpread', 'Avg Spread')}
+        </div>
+        <div className="text-[10px] font-bold text-purple-400">
+          {fmtBp(summary.avgSpread)} bp
+        </div>
+      </div>
+      <div className="px-2 py-1.5 border-r border-border/20">
+        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
+          {tr(t, 'pcAvgLeverage', 'Avg Leverage')}
+        </div>
+        <div className="text-[10px] font-bold text-white">
+          {fmtLeverage(summary.avgLeverage)}
+        </div>
+      </div>
+      <div className="px-2 py-1.5 border-r border-border/20">
+        <div className="text-[7px] text-neutral-600 uppercase tracking-wider">
+          {tr(t, 'pcDefaultRate', 'Default Rate')}
+        </div>
+        <div className="text-[10px] font-bold text-white">
+          {fmtPct(summary.trailingDefaultRate)}
+        </div>
+      </div>
+      <div className="px-2 py-1.5 flex items-center">
+        <span className={`px-1.5 py-0.5 text-[7px] font-black font-mono uppercase tracking-wider ${badge.text} ${badge.bg}`}>
+          {summary.sentiment}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Direct Lending Table ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function DirectLendingTable({ items, t }: { items: any[]; t: TFn }) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-2 py-1 border-b border-border/10 bg-[#030303]">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-purple-400">
+          {tr(t, 'pcDirectLending', 'Direct Lending')}
+        </span>
+      </div>
+
+      {/* Table header */}
+      <div className="grid grid-cols-[1fr_56px_60px_56px_48px_60px_56px_56px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+          {tr(t, 'pcSegment', 'Segment')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcSpreadBp', 'Spread')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcAllInYield', 'Yield %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcLeverage', 'Lever')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcLtv', 'LTV %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcDealSize', 'Deal $M')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcChange', 'Chg')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcWeekChange', '1W Chg')}
+        </span>
+      </div>
+
+      {/* Table rows */}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {items.map((item: any, idx: number) => (
+        <div
+          key={item.segment ?? idx}
+          className="grid grid-cols-[1fr_56px_60px_56px_48px_60px_56px_56px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-purple-400/[0.02] transition-colors items-center"
+        >
+          <span className="text-[8px] font-mono font-bold text-white truncate">
+            {item.segment}
+          </span>
+          <span className="text-[8px] font-mono font-bold text-purple-400 text-right">
+            {fmtBp(item.spread)}
+          </span>
+          <span className="text-[8px] font-mono font-bold text-white text-right">
+            {fmtPct(item.allInYield)}
+          </span>
+          <span className="text-[8px] font-mono font-bold text-white text-right">
+            {fmtLeverage(item.leverage)}
+          </span>
+          <span className="text-[8px] font-mono text-neutral-400 text-right">
+            {fmtNum(item.ltv, 1)}
+          </span>
+          <span className="text-[8px] font-mono text-neutral-400 text-right">
+            {fmtDollarM(item.dealSize)}
+          </span>
+          <span className={`text-[8px] font-mono font-bold text-right ${changeColor(item.change)}`}>
+            {fmtChange(item.change)}
+          </span>
+          <span className={`text-[8px] font-mono font-bold text-right ${changeColor(item.weekChange)}`}>
+            {fmtChange(item.weekChange)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── BDC Performance Table ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function BdcPerformanceTable({ items, t }: { items: any[]; t: TFn }) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-2 py-1 border-b border-border/10 bg-[#030303]">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-purple-400">
+          {tr(t, 'pcBdcPerformance', 'BDC Performance')}
+        </span>
+      </div>
+
+      {/* Table header */}
+      <div className="grid grid-cols-[1fr_52px_52px_52px_56px_48px_56px_56px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+          {tr(t, 'pcName', 'Name')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcNav', 'NAV')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcPrice', 'Price')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcPremium', 'Prem %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcDivYield', 'Div %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcRoe', 'ROE %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcNonAccruals', 'NonAcc %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcTotalAssets', 'Assets $B')}
+        </span>
+      </div>
+
+      {/* Table rows */}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {items.map((item: any, idx: number) => (
+        <div
+          key={item.name ?? idx}
+          className="grid grid-cols-[1fr_52px_52px_52px_56px_48px_56px_56px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-purple-400/[0.02] transition-colors items-center"
+        >
+          <span className="text-[8px] font-mono font-bold text-white truncate">
+            {item.name}
+          </span>
+          <span className="text-[8px] font-mono font-bold text-white text-right">
+            {fmtNum(item.nav)}
+          </span>
+          <span className="text-[8px] font-mono font-bold text-white text-right">
+            {fmtNum(item.price)}
+          </span>
+          <span className={`text-[8px] font-mono font-bold text-right ${premiumColor(item.premium)}`}>
+            {fmtPct(item.premium)}
+          </span>
+          <span className="text-[8px] font-mono text-purple-400 text-right">
+            {fmtPct(item.dividendYield)}
+          </span>
+          <span className="text-[8px] font-mono text-neutral-400 text-right">
+            {fmtPct(item.roe)}
+          </span>
+          <span className={`text-[8px] font-mono font-bold text-right ${item.nonAccruals > 3 ? 'text-red-400' : item.nonAccruals > 1.5 ? 'text-yellow-400' : 'text-green-400'}`}>
+            {fmtPct(item.nonAccruals)}
+          </span>
+          <span className="text-[8px] font-mono text-neutral-400 text-right">
+            {fmtDollarB(item.totalAssets)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Middle Market Table ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function MiddleMarketTable({ items, t }: { items: any[]; t: TFn }) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-2 py-1 border-b border-border/10 bg-[#030303]">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-purple-400">
+          {tr(t, 'pcMiddleMarket', 'Middle Market')}
+        </span>
+      </div>
+
+      {/* Table header */}
+      <div className="grid grid-cols-[72px_56px_64px_56px_56px_52px_56px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+          {tr(t, 'pcQuarter', 'Quarter')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcDealCount', 'Deals')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcTotalVol', 'Vol $B')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcAvgSpreadMm', 'Spread')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcAvgLeverageMm', 'Lever')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcAvgLtv', 'LTV %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcDefaultRateMm', 'Def %')}
+        </span>
+      </div>
+
+      {/* Table rows */}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {items.map((item: any, idx: number) => (
+        <div
+          key={item.quarter ?? idx}
+          className="grid grid-cols-[72px_56px_64px_56px_56px_52px_56px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-purple-400/[0.02] transition-colors items-center"
+        >
+          <span className="text-[8px] font-mono font-bold text-white">
+            {item.quarter}
+          </span>
+          <span className="text-[8px] font-mono font-bold text-white text-right">
+            {item.dealCount}
+          </span>
+          <span className="text-[8px] font-mono font-bold text-white text-right">
+            {fmtDollarB(item.totalVolume)}
+          </span>
+          <span className="text-[8px] font-mono text-purple-400 text-right">
+            {fmtBp(item.avgSpread)}
+          </span>
+          <span className="text-[8px] font-mono text-neutral-400 text-right">
+            {fmtLeverage(item.avgLeverage)}
+          </span>
+          <span className="text-[8px] font-mono text-neutral-400 text-right">
+            {fmtNum(item.avgLTV, 1)}
+          </span>
+          <span className={`text-[8px] font-mono font-bold text-right ${item.defaultRate > 3 ? 'text-red-400' : item.defaultRate > 1.5 ? 'text-yellow-400' : 'text-green-400'}`}>
+            {fmtPct(item.defaultRate)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Default & Recovery Table ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function DefaultRecoveryTable({ items, t }: { items: any[]; t: TFn }) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-2 py-1 border-b border-border/10 bg-[#030303]">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-purple-400">
+          {tr(t, 'pcDefaultRecovery', 'Default & Recovery')}
+        </span>
+      </div>
+
+      {/* Table header */}
+      <div className="grid grid-cols-[1fr_64px_60px_64px_64px_52px] gap-0 px-2 py-0.5 border-b border-border/10 bg-[#030303]">
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+          {tr(t, 'pcCategory', 'Category')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcTrailingDef', 'Trail Def %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcPeakDef', 'Peak Def %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcAvgRecovery', 'Avg Rec %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcVintageStress', 'Vint Str %')}
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          {tr(t, 'pcWatchlist', 'Watch')}
+        </span>
+      </div>
+
+      {/* Table rows */}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {items.map((item: any, idx: number) => (
+        <div
+          key={item.category ?? idx}
+          className="grid grid-cols-[1fr_64px_60px_64px_64px_52px] gap-0 px-2 py-[3px] border-b border-border/5 hover:bg-purple-400/[0.02] transition-colors items-center"
+        >
+          <span className="text-[8px] font-mono font-bold text-white truncate">
+            {item.category}
+          </span>
+          <span className={`text-[8px] font-mono font-bold text-right ${item.trailingDefault > 3 ? 'text-red-400' : item.trailingDefault > 1.5 ? 'text-yellow-400' : 'text-green-400'}`}>
+            {fmtPct(item.trailingDefault)}
+          </span>
+          <span className="text-[8px] font-mono text-red-400/70 text-right">
+            {fmtPct(item.peakDefault)}
+          </span>
+          <span className={`text-[8px] font-mono font-bold text-right ${item.avgRecovery > 60 ? 'text-green-400' : item.avgRecovery > 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+            {fmtPct(item.avgRecovery)}
+          </span>
+          <span className={`text-[8px] font-mono text-right ${item.vintageStress > 5 ? 'text-red-400' : 'text-neutral-400'}`}>
+            {fmtPct(item.vintageStress)}
+          </span>
+          <span className="text-[8px] font-mono text-neutral-400 text-right">
+            {item.watchlist}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

@@ -211,6 +211,7 @@ const CommodityCurveAnalyticsPanel = lazy(() => import('../panels/commodity-curv
 const CollateralMonitorPanel = lazy(() => import('../panels/collateral-monitor-panel').then(m => ({ default: m.CollateralMonitorPanel })));
 const SovereignCdsPanel = lazy(() => import('../panels/sovereign-cds-panel').then(m => ({ default: m.SovereignCdsPanel })));
 const CrossAssetMomentumPanel = lazy(() => import('../panels/cross-asset-momentum-panel').then(m => ({ default: m.CrossAssetMomentumPanel })));
+const CryptoDerivativesPanel = lazy(() => import('../panels/crypto-derivatives-panel').then(m => ({ default: m.CryptoDerivativesPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -434,6 +435,7 @@ export const PANEL_IDS = {
   COLLATERAL_MONITOR: 'collateral-monitor',
   SOVEREIGN_CDS: 'sovereign-cds',
   CROSS_ASSET_MOMENTUM: 'cross-asset-momentum',
+  CRYPTO_DERIVATIVES: 'crypto-derivatives',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -641,6 +643,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.COLLATERAL_MONITOR]: 'COLLATERAL MONITOR',
   [PANEL_IDS.SOVEREIGN_CDS]: 'SOVEREIGN CDS',
   [PANEL_IDS.CROSS_ASSET_MOMENTUM]: 'CROSS-ASSET MOMENTUM',
+  [PANEL_IDS.CRYPTO_DERIVATIVES]: 'CRYPTO DERIVATIVES',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -849,6 +852,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.COLLATERAL_MONITOR]: 'panelCollateralMonitor',
   [PANEL_IDS.SOVEREIGN_CDS]: 'panelSovereignCds',
   [PANEL_IDS.CROSS_ASSET_MOMENTUM]: 'panelCrossAssetMomentum',
+  [PANEL_IDS.CRYPTO_DERIVATIVES]: 'panelCryptoDerivatives',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1353,6 +1357,7 @@ export function DockLayout() {
       case PANEL_IDS.COLLATERAL_MONITOR: content = <LazyWrap><CollateralMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.SOVEREIGN_CDS: content = <LazyWrap><SovereignCdsPanel /></LazyWrap>; break;
       case PANEL_IDS.CROSS_ASSET_MOMENTUM: content = <LazyWrap><CrossAssetMomentumPanel /></LazyWrap>; break;
+      case PANEL_IDS.CRYPTO_DERIVATIVES: content = <LazyWrap><CryptoDerivativesPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
