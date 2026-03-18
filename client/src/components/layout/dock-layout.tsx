@@ -146,6 +146,9 @@ const CdxIndexPanel = lazy(() => import('../panels/cdx-index-panel').then(m => (
 const MuniBondsPanel = lazy(() => import('../panels/muni-bonds-panel').then(m => ({ default: m.MuniBondsPanel })));
 const CloAnalyticsPanel = lazy(() => import('../panels/clo-analytics-panel').then(m => ({ default: m.CloAnalyticsPanel })));
 const OnchainAnalyticsPanel = lazy(() => import('../panels/onchain-analytics-panel').then(m => ({ default: m.OnchainAnalyticsPanel })));
+const PrivateCreditPanel = lazy(() => import('../panels/private-credit-panel').then(m => ({ default: m.PrivateCreditPanel })));
+const VolRiskPremiumPanel = lazy(() => import('../panels/vol-risk-premium-panel').then(m => ({ default: m.VolRiskPremiumPanel })));
+const EsgRatingsPanel = lazy(() => import('../panels/esg-ratings-panel').then(m => ({ default: m.EsgRatingsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -304,6 +307,9 @@ export const PANEL_IDS = {
   MUNI_BONDS: 'muni-bonds',
   CLO_ANALYTICS: 'clo-analytics',
   ONCHAIN_ANALYTICS: 'onchain-analytics',
+  PRIVATE_CREDIT: 'private-credit',
+  VOL_RISK_PREMIUM: 'vol-risk-premium',
+  ESG_RATINGS: 'esg-ratings',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -446,6 +452,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MUNI_BONDS]: 'MUNICIPAL BONDS',
   [PANEL_IDS.CLO_ANALYTICS]: 'CLO ANALYTICS',
   [PANEL_IDS.ONCHAIN_ANALYTICS]: 'ON-CHAIN ANALYTICS',
+  [PANEL_IDS.PRIVATE_CREDIT]: 'PRIVATE CREDIT',
+  [PANEL_IDS.VOL_RISK_PREMIUM]: 'VOL RISK PREMIUM',
+  [PANEL_IDS.ESG_RATINGS]: 'ESG RATINGS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -589,6 +598,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MUNI_BONDS]: 'panelMuniBonds',
   [PANEL_IDS.CLO_ANALYTICS]: 'panelCloAnalytics',
   [PANEL_IDS.ONCHAIN_ANALYTICS]: 'panelOnchainAnalytics',
+  [PANEL_IDS.PRIVATE_CREDIT]: 'panelPrivateCredit',
+  [PANEL_IDS.VOL_RISK_PREMIUM]: 'panelVolRiskPremium',
+  [PANEL_IDS.ESG_RATINGS]: 'panelEsgRatings',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1028,6 +1040,9 @@ export function DockLayout() {
       case PANEL_IDS.MUNI_BONDS: content = <LazyWrap><MuniBondsPanel /></LazyWrap>; break;
       case PANEL_IDS.CLO_ANALYTICS: content = <LazyWrap><CloAnalyticsPanel /></LazyWrap>; break;
       case PANEL_IDS.ONCHAIN_ANALYTICS: content = <LazyWrap><OnchainAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.PRIVATE_CREDIT: content = <LazyWrap><PrivateCreditPanel /></LazyWrap>; break;
+      case PANEL_IDS.VOL_RISK_PREMIUM: content = <LazyWrap><VolRiskPremiumPanel /></LazyWrap>; break;
+      case PANEL_IDS.ESG_RATINGS: content = <LazyWrap><EsgRatingsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
