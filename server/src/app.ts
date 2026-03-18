@@ -134,6 +134,9 @@ import marketInternalsRouter from './routes/market-internals.js';
 import valuationMultiplesRouter from './routes/valuation-multiples.js';
 import fixedIncomeAnalyticsRouter from './routes/fixed-income-analytics.js';
 import insiderSentimentRouter from './routes/insider-sentiment.js';
+import customIndexRouter from './routes/custom-index.js';
+import mbsAnalyticsRouter from './routes/mbs-analytics.js';
+import cdxIndexRouter from './routes/cdx-index.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -369,6 +372,9 @@ export function createApp() {
   app.use('/api/valuation-multiples', valuationMultiplesRouter);
   app.use('/api/fixed-income-analytics', fixedIncomeAnalyticsRouter);
   app.use('/api/insider-sentiment', insiderSentimentRouter);
+  app.use('/api/custom-index', customIndexRouter);
+  app.use('/api/mbs-analytics', mbsAnalyticsRouter);
+  app.use('/api/cdx-index', cdxIndexRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

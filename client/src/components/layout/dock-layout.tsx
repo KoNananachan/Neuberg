@@ -140,6 +140,9 @@ const MarketInternalsPanel = lazy(() => import('../panels/market-internals-panel
 const ValuationMultiplesPanel = lazy(() => import('../panels/valuation-multiples-panel').then(m => ({ default: m.ValuationMultiplesPanel })));
 const FixedIncomeAnalyticsPanel = lazy(() => import('../panels/fixed-income-analytics-panel').then(m => ({ default: m.FixedIncomeAnalyticsPanel })));
 const InsiderSentimentPanel = lazy(() => import('../panels/insider-sentiment-panel').then(m => ({ default: m.InsiderSentimentPanel })));
+const CustomIndexPanel = lazy(() => import('../panels/custom-index-panel').then(m => ({ default: m.CustomIndexPanel })));
+const MbsAnalyticsPanel = lazy(() => import('../panels/mbs-analytics-panel').then(m => ({ default: m.MbsAnalyticsPanel })));
+const CdxIndexPanel = lazy(() => import('../panels/cdx-index-panel').then(m => ({ default: m.CdxIndexPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -292,6 +295,9 @@ export const PANEL_IDS = {
   VALUATION_MULTIPLES: 'valuation-multiples',
   FIXED_INCOME_ANALYTICS: 'fixed-income-analytics',
   INSIDER_SENTIMENT: 'insider-sentiment',
+  CUSTOM_INDEX: 'custom-index',
+  MBS_ANALYTICS: 'mbs-analytics',
+  CDX_INDEX: 'cdx-index',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -428,6 +434,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.VALUATION_MULTIPLES]: 'VALUATION MULTIPLES',
   [PANEL_IDS.FIXED_INCOME_ANALYTICS]: 'FIXED INCOME ANALYTICS',
   [PANEL_IDS.INSIDER_SENTIMENT]: 'INSIDER SENTIMENT',
+  [PANEL_IDS.CUSTOM_INDEX]: 'CUSTOM INDEX BUILDER',
+  [PANEL_IDS.MBS_ANALYTICS]: 'MBS ANALYTICS',
+  [PANEL_IDS.CDX_INDEX]: 'CDX / ITRAXX INDEX',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -565,6 +574,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.VALUATION_MULTIPLES]: 'panelValuationMultiples',
   [PANEL_IDS.FIXED_INCOME_ANALYTICS]: 'panelFixedIncomeAnalytics',
   [PANEL_IDS.INSIDER_SENTIMENT]: 'panelInsiderSentiment',
+  [PANEL_IDS.CUSTOM_INDEX]: 'panelCustomIndex',
+  [PANEL_IDS.MBS_ANALYTICS]: 'panelMbsAnalytics',
+  [PANEL_IDS.CDX_INDEX]: 'panelCdxIndex',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -998,6 +1010,9 @@ export function DockLayout() {
       case PANEL_IDS.VALUATION_MULTIPLES: content = <LazyWrap><ValuationMultiplesPanel /></LazyWrap>; break;
       case PANEL_IDS.FIXED_INCOME_ANALYTICS: content = <LazyWrap><FixedIncomeAnalyticsPanel /></LazyWrap>; break;
       case PANEL_IDS.INSIDER_SENTIMENT: content = <LazyWrap><InsiderSentimentPanel /></LazyWrap>; break;
+      case PANEL_IDS.CUSTOM_INDEX: content = <LazyWrap><CustomIndexPanel /></LazyWrap>; break;
+      case PANEL_IDS.MBS_ANALYTICS: content = <LazyWrap><MbsAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.CDX_INDEX: content = <LazyWrap><CdxIndexPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
