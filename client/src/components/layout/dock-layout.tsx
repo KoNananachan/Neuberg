@@ -102,6 +102,9 @@ const SentimentDashboardPanel = lazy(() => import('../panels/sentiment-dashboard
 const RiskParityPanel = lazy(() => import('../panels/risk-parity-panel').then(m => ({ default: m.RiskParityPanel })));
 const MarketAnomaliesPanel = lazy(() => import('../panels/market-anomalies-panel').then(m => ({ default: m.MarketAnomaliesPanel })));
 const CarryTradePanel = lazy(() => import('../panels/carry-trade-panel').then(m => ({ default: m.CarryTradePanel })));
+const CotReportPanel = lazy(() => import('../panels/cot-report-panel').then(m => ({ default: m.CotReportPanel })));
+const IvRankPanel = lazy(() => import('../panels/iv-rank-panel').then(m => ({ default: m.IvRankPanel })));
+const PerformanceAttributionPanel = lazy(() => import('../panels/performance-attribution-panel').then(m => ({ default: m.PerformanceAttributionPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -216,6 +219,9 @@ export const PANEL_IDS = {
   RISK_PARITY: 'risk-parity',
   MARKET_ANOMALIES: 'market-anomalies',
   CARRY_TRADE: 'carry-trade',
+  COT_REPORT: 'cot-report',
+  IV_RANK: 'iv-rank',
+  PERFORMANCE_ATTRIBUTION: 'performance-attribution',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -314,6 +320,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.RISK_PARITY]: 'RISK PARITY',
   [PANEL_IDS.MARKET_ANOMALIES]: 'MARKET ANOMALIES',
   [PANEL_IDS.CARRY_TRADE]: 'CARRY TRADE',
+  [PANEL_IDS.COT_REPORT]: 'COT REPORT',
+  [PANEL_IDS.IV_RANK]: 'IV RANK',
+  [PANEL_IDS.PERFORMANCE_ATTRIBUTION]: 'PERFORMANCE ATTRIBUTION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -413,6 +422,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.RISK_PARITY]: 'panelRiskParity',
   [PANEL_IDS.MARKET_ANOMALIES]: 'panelMarketAnomalies',
   [PANEL_IDS.CARRY_TRADE]: 'panelCarryTrade',
+  [PANEL_IDS.COT_REPORT]: 'panelCotReport',
+  [PANEL_IDS.IV_RANK]: 'panelIvRank',
+  [PANEL_IDS.PERFORMANCE_ATTRIBUTION]: 'panelPerformanceAttribution',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -808,6 +820,9 @@ export function DockLayout() {
       case PANEL_IDS.RISK_PARITY: content = <LazyWrap><RiskParityPanel /></LazyWrap>; break;
       case PANEL_IDS.MARKET_ANOMALIES: content = <LazyWrap><MarketAnomaliesPanel /></LazyWrap>; break;
       case PANEL_IDS.CARRY_TRADE: content = <LazyWrap><CarryTradePanel /></LazyWrap>; break;
+      case PANEL_IDS.COT_REPORT: content = <LazyWrap><CotReportPanel /></LazyWrap>; break;
+      case PANEL_IDS.IV_RANK: content = <LazyWrap><IvRankPanel /></LazyWrap>; break;
+      case PANEL_IDS.PERFORMANCE_ATTRIBUTION: content = <LazyWrap><PerformanceAttributionPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
