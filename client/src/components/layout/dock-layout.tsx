@@ -325,6 +325,9 @@ const AlgoExecutionPanel = lazy(() => import('../panels/algo-execution-panel').t
 const SecuritiesClassActionPanel = lazy(() => import('../panels/securities-class-action-panel').then(m => ({ default: m.SecuritiesClassActionPanel })));
 const ProxyVotingPanel = lazy(() => import('../panels/proxy-voting-panel').then(m => ({ default: m.ProxyVotingPanel })));
 const IndexRebalancePanel = lazy(() => import('../panels/index-rebalance-panel').then(m => ({ default: m.IndexRebalancePanel })));
+const ShareholderActivismPanel = lazy(() => import('../panels/shareholder-activism-panel').then(m => ({ default: m.ShareholderActivismPanel })));
+const FundFlowTrackerPanel = lazy(() => import('../panels/fund-flow-tracker-panel').then(m => ({ default: m.FundFlowTrackerPanel })));
+const InsiderTransactionPanel = lazy(() => import('../panels/insider-transaction-panel').then(m => ({ default: m.InsiderTransactionPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -662,6 +665,9 @@ export const PANEL_IDS = {
   SECURITIES_CLASS_ACTION: 'securities-class-action',
   PROXY_VOTING: 'proxy-voting',
   INDEX_REBALANCE: 'index-rebalance',
+  SHAREHOLDER_ACTIVISM: 'shareholder-activism',
+  FUND_FLOW_TRACKER: 'fund-flow-tracker',
+  INSIDER_TRANSACTION: 'insider-transaction',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -983,6 +989,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SECURITIES_CLASS_ACTION]: 'SECURITIES CLASS ACTION',
   [PANEL_IDS.PROXY_VOTING]: 'PROXY VOTING',
   [PANEL_IDS.INDEX_REBALANCE]: 'INDEX REBALANCE',
+  [PANEL_IDS.SHAREHOLDER_ACTIVISM]: 'SHAREHOLDER ACTIVISM',
+  [PANEL_IDS.FUND_FLOW_TRACKER]: 'FUND FLOW TRACKER',
+  [PANEL_IDS.INSIDER_TRANSACTION]: 'INSIDER TRANSACTION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1305,6 +1314,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SECURITIES_CLASS_ACTION]: 'panelSecuritiesClassAction',
   [PANEL_IDS.PROXY_VOTING]: 'panelProxyVoting',
   [PANEL_IDS.INDEX_REBALANCE]: 'panelIndexRebalance',
+  [PANEL_IDS.SHAREHOLDER_ACTIVISM]: 'panelShareholderActivism',
+  [PANEL_IDS.FUND_FLOW_TRACKER]: 'panelFundFlowTracker',
+  [PANEL_IDS.INSIDER_TRANSACTION]: 'panelInsiderTransaction',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1923,6 +1935,9 @@ export function DockLayout() {
       case PANEL_IDS.SECURITIES_CLASS_ACTION: content = <LazyWrap><SecuritiesClassActionPanel /></LazyWrap>; break;
       case PANEL_IDS.PROXY_VOTING: content = <LazyWrap><ProxyVotingPanel /></LazyWrap>; break;
       case PANEL_IDS.INDEX_REBALANCE: content = <LazyWrap><IndexRebalancePanel /></LazyWrap>; break;
+      case PANEL_IDS.SHAREHOLDER_ACTIVISM: content = <LazyWrap><ShareholderActivismPanel /></LazyWrap>; break;
+      case PANEL_IDS.FUND_FLOW_TRACKER: content = <LazyWrap><FundFlowTrackerPanel /></LazyWrap>; break;
+      case PANEL_IDS.INSIDER_TRANSACTION: content = <LazyWrap><InsiderTransactionPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
