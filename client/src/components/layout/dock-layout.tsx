@@ -212,6 +212,9 @@ const CollateralMonitorPanel = lazy(() => import('../panels/collateral-monitor-p
 const SovereignCdsPanel = lazy(() => import('../panels/sovereign-cds-panel').then(m => ({ default: m.SovereignCdsPanel })));
 const CrossAssetMomentumPanel = lazy(() => import('../panels/cross-asset-momentum-panel').then(m => ({ default: m.CrossAssetMomentumPanel })));
 const CryptoDerivativesPanel = lazy(() => import('../panels/crypto-derivatives-panel').then(m => ({ default: m.CryptoDerivativesPanel })));
+const BondRelativeValuePanel = lazy(() => import('../panels/bond-relative-value-panel').then(m => ({ default: m.BondRelativeValuePanel })));
+const VolatilityArbitragePanel = lazy(() => import('../panels/volatility-arbitrage-panel').then(m => ({ default: m.VolatilityArbitragePanel })));
+const SystematicStrategyPanel = lazy(() => import('../panels/systematic-strategy-panel').then(m => ({ default: m.SystematicStrategyPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -436,6 +439,9 @@ export const PANEL_IDS = {
   SOVEREIGN_CDS: 'sovereign-cds',
   CROSS_ASSET_MOMENTUM: 'cross-asset-momentum',
   CRYPTO_DERIVATIVES: 'crypto-derivatives',
+  BOND_RELATIVE_VALUE: 'bond-relative-value',
+  VOLATILITY_ARBITRAGE: 'volatility-arbitrage',
+  SYSTEMATIC_STRATEGY: 'systematic-strategy',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -644,6 +650,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SOVEREIGN_CDS]: 'SOVEREIGN CDS',
   [PANEL_IDS.CROSS_ASSET_MOMENTUM]: 'CROSS-ASSET MOMENTUM',
   [PANEL_IDS.CRYPTO_DERIVATIVES]: 'CRYPTO DERIVATIVES',
+  [PANEL_IDS.BOND_RELATIVE_VALUE]: 'BOND RELATIVE VALUE',
+  [PANEL_IDS.VOLATILITY_ARBITRAGE]: 'VOLATILITY ARBITRAGE',
+  [PANEL_IDS.SYSTEMATIC_STRATEGY]: 'SYSTEMATIC STRATEGY',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -853,6 +862,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SOVEREIGN_CDS]: 'panelSovereignCds',
   [PANEL_IDS.CROSS_ASSET_MOMENTUM]: 'panelCrossAssetMomentum',
   [PANEL_IDS.CRYPTO_DERIVATIVES]: 'panelCryptoDerivatives',
+  [PANEL_IDS.BOND_RELATIVE_VALUE]: 'panelBondRelativeValue',
+  [PANEL_IDS.VOLATILITY_ARBITRAGE]: 'panelVolatilityArbitrage',
+  [PANEL_IDS.SYSTEMATIC_STRATEGY]: 'panelSystematicStrategy',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1358,6 +1370,9 @@ export function DockLayout() {
       case PANEL_IDS.SOVEREIGN_CDS: content = <LazyWrap><SovereignCdsPanel /></LazyWrap>; break;
       case PANEL_IDS.CROSS_ASSET_MOMENTUM: content = <LazyWrap><CrossAssetMomentumPanel /></LazyWrap>; break;
       case PANEL_IDS.CRYPTO_DERIVATIVES: content = <LazyWrap><CryptoDerivativesPanel /></LazyWrap>; break;
+      case PANEL_IDS.BOND_RELATIVE_VALUE: content = <LazyWrap><BondRelativeValuePanel /></LazyWrap>; break;
+      case PANEL_IDS.VOLATILITY_ARBITRAGE: content = <LazyWrap><VolatilityArbitragePanel /></LazyWrap>; break;
+      case PANEL_IDS.SYSTEMATIC_STRATEGY: content = <LazyWrap><SystematicStrategyPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
