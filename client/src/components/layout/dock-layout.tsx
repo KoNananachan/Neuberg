@@ -108,6 +108,9 @@ const PerformanceAttributionPanel = lazy(() => import('../panels/performance-att
 const MarketMicrostructurePanel = lazy(() => import('../panels/market-microstructure-panel').then(m => ({ default: m.MarketMicrostructurePanel })));
 const CountryRiskPanel = lazy(() => import('../panels/country-risk-panel').then(m => ({ default: m.CountryRiskPanel })));
 const PositioningPanel = lazy(() => import('../panels/positioning-panel').then(m => ({ default: m.PositioningPanel })));
+const RepoRatesPanel = lazy(() => import('../panels/repo-rates-panel').then(m => ({ default: m.RepoRatesPanel })));
+const XccyBasisPanel = lazy(() => import('../panels/xccy-basis-panel').then(m => ({ default: m.XccyBasisPanel })));
+const StyleBoxPanel = lazy(() => import('../panels/style-box-panel').then(m => ({ default: m.StyleBoxPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -228,6 +231,9 @@ export const PANEL_IDS = {
   MARKET_MICROSTRUCTURE: 'market-microstructure',
   COUNTRY_RISK: 'country-risk',
   POSITIONING: 'positioning',
+  REPO_RATES: 'repo-rates',
+  XCCY_BASIS: 'xccy-basis',
+  STYLE_BOX: 'style-box',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -332,6 +338,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MARKET_MICROSTRUCTURE]: 'MARKET MICROSTRUCTURE',
   [PANEL_IDS.COUNTRY_RISK]: 'COUNTRY RISK',
   [PANEL_IDS.POSITIONING]: 'POSITIONING & FLOWS',
+  [PANEL_IDS.REPO_RATES]: 'REPO RATE MONITOR',
+  [PANEL_IDS.XCCY_BASIS]: 'XCCY BASIS',
+  [PANEL_IDS.STYLE_BOX]: 'EQUITY STYLE BOX',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -437,6 +446,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MARKET_MICROSTRUCTURE]: 'panelMarketMicrostructure',
   [PANEL_IDS.COUNTRY_RISK]: 'panelCountryRisk',
   [PANEL_IDS.POSITIONING]: 'panelPositioning',
+  [PANEL_IDS.REPO_RATES]: 'panelRepoRates',
+  [PANEL_IDS.XCCY_BASIS]: 'panelXccyBasis',
+  [PANEL_IDS.STYLE_BOX]: 'panelStyleBox',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -838,6 +850,9 @@ export function DockLayout() {
       case PANEL_IDS.MARKET_MICROSTRUCTURE: content = <LazyWrap><MarketMicrostructurePanel /></LazyWrap>; break;
       case PANEL_IDS.COUNTRY_RISK: content = <LazyWrap><CountryRiskPanel /></LazyWrap>; break;
       case PANEL_IDS.POSITIONING: content = <LazyWrap><PositioningPanel /></LazyWrap>; break;
+      case PANEL_IDS.REPO_RATES: content = <LazyWrap><RepoRatesPanel /></LazyWrap>; break;
+      case PANEL_IDS.XCCY_BASIS: content = <LazyWrap><XccyBasisPanel /></LazyWrap>; break;
+      case PANEL_IDS.STYLE_BOX: content = <LazyWrap><StyleBoxPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

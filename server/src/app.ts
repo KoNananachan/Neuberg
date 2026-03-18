@@ -101,6 +101,9 @@ import performanceAttributionRouter from './routes/performance-attribution.js';
 import marketMicrostructureRouter from './routes/market-microstructure.js';
 import countryRiskRouter from './routes/country-risk.js';
 import positioningRouter from './routes/positioning.js';
+import repoRatesRouter from './routes/repo-rates.js';
+import xccyBasisRouter from './routes/xccy-basis.js';
+import styleBoxRouter from './routes/style-box.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -303,6 +306,9 @@ export function createApp() {
   app.use('/api/market-microstructure', marketMicrostructureRouter);
   app.use('/api/country-risk', countryRiskRouter);
   app.use('/api/positioning', positioningRouter);
+  app.use('/api/repo-rates', repoRatesRouter);
+  app.use('/api/xccy-basis', xccyBasisRouter);
+  app.use('/api/style-box', styleBoxRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
