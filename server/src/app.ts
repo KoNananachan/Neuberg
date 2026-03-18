@@ -182,6 +182,9 @@ import pensionFundRouter from './routes/pension-fund.js';
 import swapSpreadMonitorRouter from './routes/swap-spread-monitor.js';
 import equityLinkedNotesRouter from './routes/equity-linked-notes.js';
 import tradeFinanceRouter from './routes/trade-finance.js';
+import repoMarketRouter from './routes/repo-market.js';
+import commodityInventoryRouter from './routes/commodity-inventory.js';
+import sovereignWealthRouter from './routes/sovereign-wealth.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -465,6 +468,9 @@ export function createApp() {
   app.use('/api/swap-spread-monitor', swapSpreadMonitorRouter);
   app.use('/api/equity-linked-notes', equityLinkedNotesRouter);
   app.use('/api/trade-finance', tradeFinanceRouter);
+  app.use('/api/repo-market', repoMarketRouter);
+  app.use('/api/commodity-inventory', commodityInventoryRouter);
+  app.use('/api/sovereign-wealth', sovereignWealthRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
