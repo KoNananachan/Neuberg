@@ -260,6 +260,9 @@ import equityScreenResultsRouter from './routes/equity-screen-results.js';
 import crossAssetCorrelationRouter from './routes/cross-asset-correlation.js';
 import portfolioAttributionRouter from './routes/portfolio-attribution.js';
 import ipoCalendarRouter from './routes/ipo-calendar.js';
+import municipalBondMonitorRouter from './routes/municipal-bond-monitor.js';
+import structuredCreditRouter from './routes/structured-credit.js';
+import currencyOptionsRouter from './routes/currency-options.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -621,6 +624,9 @@ export function createApp() {
   app.use('/api/cross-asset-correlation', crossAssetCorrelationRouter);
   app.use('/api/portfolio-attribution', portfolioAttributionRouter);
   app.use('/api/ipo-calendar', ipoCalendarRouter);
+  app.use('/api/municipal-bond-monitor', municipalBondMonitorRouter);
+  app.use('/api/structured-credit', structuredCreditRouter);
+  app.use('/api/currency-options', currencyOptionsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
