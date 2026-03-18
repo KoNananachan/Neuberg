@@ -51,6 +51,7 @@ import shortInterestRouter from './routes/short-interest.js';
 import fxConverterRouter from './routes/fx-converter.js';
 import pivotPointsRouter from './routes/pivot-points.js';
 import companyProfileRouter from './routes/company-profile.js';
+import pairsRouter from './routes/pairs.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -203,6 +204,7 @@ export function createApp() {
   app.use('/api/fx-rates', fxConverterRouter);
   app.use('/api/pivot-points', pivotPointsRouter);
   app.use('/api/company-profile', companyProfileRouter);
+  app.use('/api/pairs', pairsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
