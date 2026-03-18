@@ -1230,6 +1230,9 @@ const en = {
   panelFearGreed: 'FEAR & GREED INDEX',
   // Sentiment Heatmap
   panelSentimentHeatmap: 'SENTIMENT HEATMAP',
+  panelYieldCurve: 'YIELD CURVE',
+  panelCurrencyStrength: 'CURRENCY STRENGTH',
+  panelMoneyFlow: 'MONEY FLOW',
 };
 
 export type TranslationKey = keyof typeof en;
@@ -2318,6 +2321,9 @@ const zh: Record<TranslationKey, string> = {
   panelPortfolio: '投资组合分析',
   panelFearGreed: '恐惧贪婪指数',
   panelSentimentHeatmap: '情绪热力图',
+  panelYieldCurve: '收益率曲线',
+  panelCurrencyStrength: '货币强弱',
+  panelMoneyFlow: '资金流向',
 };
 
 const ja: Record<TranslationKey, string> = {
@@ -3401,6 +3407,9 @@ const ja: Record<TranslationKey, string> = {
   panelPortfolio: 'ポートフォリオ分析',
   panelFearGreed: '恐怖・強欲指数',
   panelSentimentHeatmap: 'センチメントヒートマップ',
+  panelYieldCurve: 'イールドカーブ',
+  panelCurrencyStrength: '通貨強弱',
+  panelMoneyFlow: 'マネーフロー',
 };
 
 const ko: Record<TranslationKey, string> = {
@@ -4484,6 +4493,9 @@ const ko: Record<TranslationKey, string> = {
   panelPortfolio: '포트폴리오 분석',
   panelFearGreed: '공포 탐욕 지수',
   panelSentimentHeatmap: '센티먼트 히트맵',
+  panelYieldCurve: '수익률 곡선',
+  panelCurrencyStrength: '통화 강도',
+  panelMoneyFlow: '자금 흐름',
 };
 
 const es: Record<TranslationKey, string> = {
@@ -5567,6 +5579,9 @@ const es: Record<TranslationKey, string> = {
   panelPortfolio: 'ANALISIS DE CARTERA',
   panelFearGreed: 'INDICE MIEDO Y CODICIA',
   panelSentimentHeatmap: 'MAPA DE SENTIMIENTO',
+  panelYieldCurve: 'CURVA DE RENDIMIENTO',
+  panelCurrencyStrength: 'FUERZA DE DIVISAS',
+  panelMoneyFlow: 'FLUJO DE DINERO',
 };
 
 const fr: Record<TranslationKey, string> = {
@@ -6650,6 +6665,9 @@ const fr: Record<TranslationKey, string> = {
   panelPortfolio: 'ANALYSE DE PORTEFEUILLE',
   panelFearGreed: 'INDICE PEUR ET AVIDITE',
   panelSentimentHeatmap: 'CARTE DE SENTIMENT',
+  panelYieldCurve: 'COURBE DES TAUX',
+  panelCurrencyStrength: 'FORCE DES DEVISES',
+  panelMoneyFlow: 'FLUX MONETAIRE',
 };
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {

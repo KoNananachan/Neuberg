@@ -57,6 +57,9 @@ import volatilityRouter from './routes/volatility.js';
 import relativeStrengthRouter from './routes/relative-strength.js';
 import fxCrossRouter from './routes/fx-cross.js';
 import fearGreedRouter from './routes/fear-greed.js';
+import yieldCurveRouter from './routes/yield-curve.js';
+import currencyStrengthRouter from './routes/currency-strength.js';
+import moneyFlowRouter from './routes/money-flow.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -215,6 +218,9 @@ export function createApp() {
   app.use('/api/relative-strength', relativeStrengthRouter);
   app.use('/api/fx-cross', fxCrossRouter);
   app.use('/api/fear-greed', fearGreedRouter);
+  app.use('/api/yield-curve', yieldCurveRouter);
+  app.use('/api/currency-strength', currencyStrengthRouter);
+  app.use('/api/money-flow', moneyFlowRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
