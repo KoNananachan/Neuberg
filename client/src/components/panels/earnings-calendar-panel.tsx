@@ -1,311 +1,134 @@
-import { useState, useMemo } from 'react';
-import { GlassCard } from '../common/glass-card';
-import {
-  useEarningsCalendarHeatmap,
-  type EarningsEvent,
-} from '../../api/hooks/use-earnings-calendar';
-import { CalendarDays, RefreshCw, ChevronUp, ChevronDown } from 'lucide-react';
+import { useEarningsCalendar } from '../../api/hooks/use-earnings-calendar';
 import { useT } from '../../i18n';
-
-// ── i18n helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as any)(key) || fallback; } catch { return fallback; }
-};
-
-// ── Types ──
-
-type ViewMode = 'CALENDAR' | 'TABLE' | 'HEATMAP';
-type SortKey = 'date' | 'symbol' | 'surprise' | 'expectedMove' | 'marketCap';
-type SortDir = 'asc' | 'desc';
 
 // ── Formatting helpers ──
 
 function fmtPct(n: number | null, decimals = 1): string {
-  if (n == null) return '-';
+  if (n == null) return '--';
   return `${n >= 0 ? '+' : ''}${n.toFixed(decimals)}%`;
 }
 
+function fmtEps(n: number | null): string {
+  if (n == null) return '--';
+  return `$${n.toFixed(2)}`;
+}
+
 function fmtRevenue(n: number | null): string {
-  if (n == null) return '-';
+  if (n == null) return '--';
   if (Math.abs(n) >= 1e6) return `${(n / 1e6).toFixed(1)}T`;
   if (Math.abs(n) >= 1e3) return `${(n / 1e3).toFixed(1)}B`;
   return `${n.toFixed(0)}M`;
 }
 
-function fmtEps(n: number | null): string {
-  if (n == null) return '-';
-  return `$${n.toFixed(2)}`;
+function fmtDate(d: string | null): string {
+  if (!d) return '--';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function pctColor(n: number | null): string {
+function surpriseColor(n: number | null): string {
   if (n == null) return 'text-neutral/40';
   return n >= 0 ? 'text-green-400' : 'text-red-400';
 }
 
-function surpriseBg(n: number | null, reported: boolean): string {
-  if (!reported || n == null) return 'bg-white/[0.03]';
-  return n >= 0 ? 'bg-green-500/[0.06]' : 'bg-red-500/[0.06]';
+function beatRateColor(rate: number | null): string {
+  if (rate == null) return 'text-neutral/40';
+  if (rate >= 80) return 'text-green-400';
+  if (rate >= 60) return 'text-green-400/70';
+  if (rate >= 40) return 'text-orange-400';
+  return 'text-red-400';
 }
 
-function isToday(dateStr: string): boolean {
-  const d = new Date(dateStr + 'T00:00:00');
-  const now = new Date();
-  return d.toDateString() === now.toDateString();
-}
-
-function dayLabel(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-}
-
-// ── Inline Surprise Spark (8 quarters) ──
-
-function SurpriseSpark({ history }: { history: number[] }) {
-  if (!history || history.length === 0) return <span className="text-neutral/30">-</span>;
-
-  const maxAbs = Math.max(...history.map(Math.abs), 1);
-  const barH = 12;
-  const barW = 4;
-  const gap = 1;
-  const w = history.length * (barW + gap);
-
-  return (
-    <svg width={w} height={barH} className="inline-block align-middle">
-      {history.map((val, i) => {
-        const h = (Math.abs(val) / maxAbs) * (barH / 2);
-        const y = val >= 0 ? barH / 2 - h : barH / 2;
-        const fill = val >= 0 ? 'rgba(74,222,128,0.7)' : 'rgba(248,113,113,0.7)';
-        return (
-          <rect
-            key={i}
-            x={i * (barW + gap)}
-            y={y}
-            width={barW}
-            height={Math.max(h, 0.5)}
-            fill={fill}
-          />
-        );
-      })}
-      <line
-        x1={0} x2={w}
-        y1={barH / 2} y2={barH / 2}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth={0.5}
-      />
-    </svg>
-  );
-}
-
-// ── CALENDAR View ──
-
-function CalendarView({ events, weekStart }: { events: EarningsEvent[]; weekStart: string }) {
-  // Build 5 weekday columns
-  const monday = new Date(weekStart + 'T00:00:00');
-  const days: string[] = [];
-  for (let i = 0; i < 5; i++) {
-    const d = new Date(monday);
-    d.setDate(d.getDate() + i);
-    days.push(d.toISOString().slice(0, 10));
+function consensusBadge(consensus: string | null): { label: string; cls: string } {
+  switch (consensus?.toUpperCase()) {
+    case 'BUY':
+    case 'STRONG BUY':
+      return { label: consensus.toUpperCase(), cls: 'text-green-400 bg-green-500/10' };
+    case 'HOLD':
+      return { label: 'HOLD', cls: 'text-yellow-400 bg-yellow-500/10' };
+    case 'SELL':
+    case 'STRONG SELL':
+      return { label: consensus.toUpperCase(), cls: 'text-red-400 bg-red-500/10' };
+    default:
+      return { label: consensus ?? '--', cls: 'text-neutral/40 bg-white/5' };
   }
+}
 
-  // Group events by date
-  const byDate = new Map<string, EarningsEvent[]>();
-  for (const e of events) {
-    if (!byDate.has(e.date)) byDate.set(e.date, []);
-    byDate.get(e.date)!.push(e);
-  }
+function directionArrow(n: number | null): string {
+  if (n == null) return '';
+  return n >= 0 ? '\u2191' : '\u2193';
+}
 
+// ── Section Header ──
+
+function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="grid grid-cols-5 gap-px bg-border/10 min-h-0">
-      {days.map(date => {
-        const today = isToday(date);
-        const dayEvents = byDate.get(date) || [];
-        const bmo = dayEvents.filter(e => e.time === 'BMO');
-        const amc = dayEvents.filter(e => e.time === 'AMC' || e.time === 'DMH');
-
-        return (
-          <div
-            key={date}
-            className={`bg-black flex flex-col min-w-0 ${today ? 'ring-1 ring-inset ring-yellow-400/30' : ''}`}
-          >
-            {/* Day header */}
-            <div className={`px-1.5 py-1 text-center border-b border-border/20 ${today ? 'bg-yellow-400/[0.08]' : 'bg-white/[0.02]'}`}>
-              <div className={`text-[8px] font-mono uppercase tracking-wider ${today ? 'text-yellow-400 font-bold' : 'text-neutral/50'}`}>
-                {dayLabel(date)}
-              </div>
-              {today && (
-                <div className="text-[7px] font-mono text-yellow-400/60 uppercase">TODAY</div>
-              )}
-            </div>
-
-            {/* BMO section */}
-            {bmo.length > 0 && (
-              <div className="border-b border-border/10">
-                <div className="text-[7px] font-mono text-neutral/30 uppercase px-1 py-0.5 bg-white/[0.01]">BMO</div>
-                {bmo.map(e => (
-                  <CalendarCard key={e.symbol} event={e} />
-                ))}
-              </div>
-            )}
-
-            {/* AMC section */}
-            {amc.length > 0 && (
-              <div>
-                <div className="text-[7px] font-mono text-neutral/30 uppercase px-1 py-0.5 bg-white/[0.01]">AMC</div>
-                {amc.map(e => (
-                  <CalendarCard key={e.symbol} event={e} />
-                ))}
-              </div>
-            )}
-
-            {dayEvents.length === 0 && (
-              <div className="flex-1 flex items-center justify-center py-4">
-                <span className="text-[8px] font-mono text-neutral/20 uppercase">No events</span>
-              </div>
-            )}
-          </div>
-        );
-      })}
+    <div className="px-2 py-1 bg-white/[0.02] border-b border-border/20">
+      <span className="text-[9px] font-mono font-bold text-orange-400 uppercase tracking-wider">
+        {title}
+      </span>
     </div>
   );
 }
 
-function CalendarCard({ event: e }: { event: EarningsEvent }) {
-  const cardBg = !e.reported
-    ? 'bg-white/[0.02] hover:bg-yellow-400/[0.04]'
-    : e.epsSurprise != null && e.epsSurprise >= 0
-      ? 'bg-green-500/[0.05] hover:bg-green-500/[0.08]'
-      : 'bg-red-500/[0.05] hover:bg-red-500/[0.08]';
+// ── Section 1: This Week's Earnings ──
 
-  return (
-    <div className={`px-1.5 py-1 border-b border-border/5 ${cardBg} transition-colors cursor-default`}>
-      <div className="flex items-center justify-between">
-        <span className="text-[9px] font-mono font-bold text-yellow-400">{e.symbol}</span>
-        {e.reported ? (
-          <span className={`text-[8px] font-mono font-bold ${pctColor(e.epsSurprise)}`}>
-            {e.epsSurprise != null && e.epsSurprise >= 0 ? 'BEAT' : 'MISS'}
-          </span>
-        ) : (
-          <span className="text-[8px] font-mono text-neutral/40">{fmtPct(e.expectedMove, 1).replace('+', '')}</span>
-        )}
+function ThisWeekEarnings({ items }: { items: any[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        No earnings this week
       </div>
-      {e.reported && e.priceReaction != null && (
-        <div className={`text-[8px] font-mono ${pctColor(e.priceReaction)}`}>
-          {fmtPct(e.priceReaction)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── TABLE View ──
-
-function TableView({ events }: { events: EarningsEvent[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>('date');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
-
-  const sorted = useMemo(() => {
-    const arr = [...events];
-    arr.sort((a, b) => {
-      let cmp = 0;
-      switch (sortKey) {
-        case 'date': cmp = a.date.localeCompare(b.date); break;
-        case 'symbol': cmp = a.symbol.localeCompare(b.symbol); break;
-        case 'surprise': cmp = (a.epsSurprise ?? -999) - (b.epsSurprise ?? -999); break;
-        case 'expectedMove': cmp = a.expectedMove - b.expectedMove; break;
-        case 'marketCap': cmp = a.marketCap - b.marketCap; break;
-      }
-      return sortDir === 'asc' ? cmp : -cmp;
-    });
-    return arr;
-  }, [events, sortKey, sortDir]);
-
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortKey(key); setSortDir('asc'); }
-  };
-
-  const SortIcon = ({ k }: { k: SortKey }) => {
-    if (sortKey !== k) return null;
-    return sortDir === 'asc'
-      ? <ChevronUp size={8} className="inline ml-0.5" />
-      : <ChevronDown size={8} className="inline ml-0.5" />;
-  };
+    );
+  }
 
   return (
-    <div className="overflow-auto">
-      <table className="w-full text-[9px] font-mono min-w-[900px]">
+    <div className="overflow-x-auto">
+      <table className="w-full text-[9px] font-mono">
         <thead>
           <tr className="bg-white/[0.03] border-b border-border/20">
-            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium cursor-pointer hover:text-yellow-400/60" onClick={() => toggleSort('date')}>
-              Date<SortIcon k="date" />
-            </th>
-            <th className="text-left px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Time</th>
-            <th className="text-left px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium cursor-pointer hover:text-yellow-400/60" onClick={() => toggleSort('symbol')}>
-              Symbol<SortIcon k="symbol" />
-            </th>
-            <th className="text-left px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Name</th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">EPS Est</th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">EPS Act</th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium cursor-pointer hover:text-yellow-400/60" onClick={() => toggleSort('surprise')}>
-              Surprise<SortIcon k="surprise" />
-            </th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Rev Est</th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Rev Act</th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium cursor-pointer hover:text-yellow-400/60" onClick={() => toggleSort('expectedMove')}>
-              Exp Move<SortIcon k="expectedMove" />
-            </th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Avg Move</th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Reaction</th>
-            <th className="text-center px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">History</th>
-            <th className="text-left px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Sector</th>
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Ticker</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Company</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Date</th>
+            <th className="text-center px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Time</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">EPS Est</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">EPS Act</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Surprise</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Revenue</th>
           </tr>
         </thead>
         <tbody>
-          {sorted.map((e) => {
-            const today = isToday(e.date);
-            const rowBg = today
-              ? 'bg-yellow-400/[0.03]'
-              : surpriseBg(e.epsSurprise, e.reported);
+          {items.map((e: any, i: number) => {
+            const reported = e.reported === true;
+            const surprise = e.epsSurprise ?? null;
 
             return (
               <tr
-                key={`${e.symbol}-${e.date}`}
-                className={`border-b border-border/5 ${rowBg} hover:bg-yellow-400/[0.02] transition-colors`}
+                key={`${e.symbol}-${e.date}-${i}`}
+                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
               >
-                <td className="px-1.5 py-1 text-neutral/60 whitespace-nowrap">{e.date.slice(5)}</td>
-                <td className="px-1 py-1">
-                  <span className={`text-[8px] px-1 py-0.5 ${
-                    e.time === 'BMO' ? 'text-blue-400 bg-blue-500/10' :
-                    e.time === 'AMC' ? 'text-purple-400 bg-purple-500/10' :
-                    'text-neutral/50 bg-white/5'
-                  }`}>
-                    {e.time}
-                  </span>
+                <td className="px-2 py-1 font-bold text-orange-400">{e.symbol}</td>
+                <td className="px-1.5 py-1 text-neutral/50 truncate max-w-[100px]">{e.name}</td>
+                <td className="px-1.5 py-1 text-neutral/60 whitespace-nowrap">{fmtDate(e.date)}</td>
+                <td className="px-1 py-1 text-center">
+                  {e.time === 'BMO' ? (
+                    <span className="text-[8px] px-1 py-0.5 text-blue-400 bg-blue-500/10">BMO</span>
+                  ) : e.time === 'AMC' ? (
+                    <span className="text-[8px] px-1 py-0.5 text-purple-400 bg-purple-500/10">AMC</span>
+                  ) : (
+                    <span className="text-[8px] px-1 py-0.5 text-neutral/40 bg-white/5">{e.time ?? '--'}</span>
+                  )}
                 </td>
-                <td className="px-1 py-1 font-bold text-yellow-400">{e.symbol}</td>
-                <td className="px-1 py-1 text-neutral/50 truncate max-w-[120px]">{e.name}</td>
-                <td className="text-right px-1 py-1 text-neutral/60">{fmtEps(e.epsEstimate)}</td>
-                <td className={`text-right px-1 py-1 font-bold ${e.reported ? pctColor(e.epsSurprise) : 'text-neutral/30'}`}>
-                  {fmtEps(e.epsActual)}
+                <td className="text-right px-1.5 py-1 text-neutral/60">{fmtEps(e.epsEstimate)}</td>
+                <td className={`text-right px-1.5 py-1 font-bold ${reported ? surpriseColor(surprise) : 'text-neutral/30'}`}>
+                  {reported ? fmtEps(e.epsActual) : '--'}
                 </td>
-                <td className={`text-right px-1 py-1 font-bold ${pctColor(e.epsSurprise)}`}>
-                  {fmtPct(e.epsSurprise)}
+                <td className={`text-right px-1.5 py-1 font-bold ${surpriseColor(surprise)}`}>
+                  {surprise != null ? fmtPct(surprise) : '--'}
                 </td>
-                <td className="text-right px-1 py-1 text-neutral/50">{fmtRevenue(e.revenueEstimate)}</td>
-                <td className={`text-right px-1 py-1 ${e.reported ? pctColor(e.revenueSurprise) : 'text-neutral/30'}`}>
-                  {fmtRevenue(e.revenueActual)}
+                <td className="text-right px-1.5 py-1 text-neutral/50">
+                  {fmtRevenue(e.revenueEstimate ?? e.revenue ?? null)}
                 </td>
-                <td className="text-right px-1 py-1 text-yellow-400/80">{e.expectedMove.toFixed(1)}%</td>
-                <td className="text-right px-1 py-1 text-neutral/50">{e.avgHistoricalMove.toFixed(1)}%</td>
-                <td className={`text-right px-1 py-1 font-bold ${pctColor(e.priceReaction)}`}>
-                  {fmtPct(e.priceReaction)}
-                </td>
-                <td className="text-center px-1 py-1">
-                  <SurpriseSpark history={e.surpriseHistory} />
-                </td>
-                <td className="px-1 py-1 text-neutral/40 truncate max-w-[100px]">{e.sector}</td>
               </tr>
             );
           })}
@@ -315,59 +138,211 @@ function TableView({ events }: { events: EarningsEvent[] }) {
   );
 }
 
-// ── HEATMAP View ──
+// ── Section 2: Recent Surprises ──
 
-function HeatmapView({ events }: { events: EarningsEvent[] }) {
-  // Color by expected move magnitude (or actual move if reported)
-  const maxMove = Math.max(...events.map(e => e.reported && e.priceReaction != null ? Math.abs(e.priceReaction) : e.expectedMove), 1);
-  const maxCap = Math.max(...events.map(e => e.marketCap), 1);
+function RecentSurprises({ items }: { items: any[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        No recent surprises
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-wrap gap-px p-1">
-      {events.map(e => {
-        const move = e.reported && e.priceReaction != null ? e.priceReaction : null;
-        const displayMove = move != null ? Math.abs(move) : e.expectedMove;
-        const intensity = Math.min(displayMove / maxMove, 1);
+    <div className="overflow-x-auto">
+      <table className="w-full text-[9px] font-mono">
+        <thead>
+          <tr className="bg-white/[0.03] border-b border-border/20">
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Ticker</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Surprise%</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Reaction</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.slice(0, 10).map((e: any, i: number) => {
+            const surprise = e.epsSurprise ?? e.surprise ?? null;
+            const reaction = e.priceReaction ?? e.reaction ?? null;
 
-        // Size by market cap: min 56px, max 110px
-        const capRatio = Math.sqrt(e.marketCap / maxCap);
-        const size = Math.round(56 + capRatio * 54);
+            return (
+              <tr
+                key={`surprise-${e.symbol}-${i}`}
+                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
+              >
+                <td className="px-2 py-1 font-bold text-orange-400">{e.symbol}</td>
+                <td className={`text-right px-1.5 py-1 font-bold ${surpriseColor(surprise)}`}>
+                  {fmtPct(surprise)}
+                </td>
+                <td className={`text-right px-1.5 py-1 font-bold ${surpriseColor(reaction)}`}>
+                  <span>{directionArrow(reaction)} {fmtPct(reaction)}</span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-        let bgColor: string;
-        if (e.reported && move != null) {
-          // Actual: green for positive, red for negative
-          bgColor = move >= 0
-            ? `rgba(74,222,128,${0.08 + intensity * 0.22})`
-            : `rgba(248,113,113,${0.08 + intensity * 0.22})`;
-        } else {
-          // Pending: yellow for expected move magnitude
-          bgColor = `rgba(234,179,8,${0.04 + intensity * 0.16})`;
-        }
+// ── Section 3: Revision Trends ──
 
-        return (
-          <div
-            key={`${e.symbol}-${e.date}`}
-            className="border border-border/10 flex flex-col items-center justify-center cursor-default hover:bg-yellow-400/[0.02] transition-colors"
-            style={{ width: size, height: size, backgroundColor: bgColor }}
-            title={`${e.symbol} - ${e.name}\nDate: ${e.date} ${e.time}\nExpected Move: ${e.expectedMove}%${e.reported ? `\nActual: ${fmtPct(e.priceReaction)}` : ''}`}
-          >
-            <div className="text-[10px] font-mono font-bold text-white/90">{e.symbol}</div>
-            <div className={`text-[8px] font-mono font-bold ${
-              e.reported && move != null
-                ? pctColor(move)
-                : 'text-yellow-400/70'
-            }`}>
-              {e.reported && move != null ? fmtPct(move) : `${e.expectedMove.toFixed(1)}%`}
-            </div>
-            <div className="text-[7px] font-mono text-neutral/30">{e.date.slice(5)}</div>
-            {e.reported && (
-              <div className={`text-[7px] font-mono ${pctColor(e.epsSurprise)}`}>
-                {e.epsSurprise != null && e.epsSurprise >= 0 ? 'BEAT' : 'MISS'}
-              </div>
-            )}
-          </div>
-        );
-      })}
+function RevisionTrends({ items }: { items: any[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        No revision data
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[9px] font-mono">
+        <thead>
+          <tr className="bg-white/[0.03] border-b border-border/20">
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Ticker</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Current</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">30D Ago</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Rev%</th>
+            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Up</th>
+            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Down</th>
+            <th className="text-center px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Consensus</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((e: any, i: number) => {
+            const revPct = e.revisionPct ?? e.revision ?? null;
+            const badge = consensusBadge(e.consensus);
+
+            return (
+              <tr
+                key={`revision-${e.symbol}-${i}`}
+                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
+              >
+                <td className="px-2 py-1 font-bold text-orange-400">{e.symbol}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/70">{fmtEps(e.current ?? e.currentEstimate ?? null)}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/50">{fmtEps(e.thirtyDaysAgo ?? e.previous ?? null)}</td>
+                <td className={`text-right px-1.5 py-1 font-bold ${surpriseColor(revPct)}`}>
+                  {fmtPct(revPct)}
+                </td>
+                <td className="text-right px-1 py-1 text-green-400">{e.up ?? e.upRevisions ?? '--'}</td>
+                <td className="text-right px-1 py-1 text-red-400">{e.down ?? e.downRevisions ?? '--'}</td>
+                <td className="text-center px-1.5 py-1">
+                  <span className={`text-[8px] px-1.5 py-0.5 ${badge.cls}`}>
+                    {badge.label}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Section 4: Sector Summary ──
+
+function SectorSummary({ items }: { items: any[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        No sector data
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[9px] font-mono">
+        <thead>
+          <tr className="bg-white/[0.03] border-b border-border/20">
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Sector</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Reported</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Beat Rate</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Avg Surprise</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Avg Reaction</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((s: any, i: number) => {
+            const beatRate = s.beatRate ?? s.beatPct ?? null;
+            const avgSurprise = s.avgSurprise ?? null;
+            const avgReaction = s.avgReaction ?? null;
+
+            return (
+              <tr
+                key={`sector-${s.sector ?? s.name}-${i}`}
+                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
+              >
+                <td className="px-2 py-1 text-neutral/70 uppercase">{s.sector ?? s.name ?? '--'}</td>
+                <td className="text-right px-1.5 py-1 text-neutral/60">{s.reported ?? s.count ?? '--'}</td>
+                <td className={`text-right px-1.5 py-1 font-bold ${beatRateColor(beatRate)}`}>
+                  {beatRate != null ? `${beatRate.toFixed(0)}%` : '--'}
+                </td>
+                <td className={`text-right px-1.5 py-1 ${surpriseColor(avgSurprise)}`}>
+                  {fmtPct(avgSurprise)}
+                </td>
+                <td className={`text-right px-1.5 py-1 ${surpriseColor(avgReaction)}`}>
+                  {fmtPct(avgReaction)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Section 5: Upcoming Highlights ──
+
+function UpcomingHighlights({ items }: { items: any[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        No upcoming highlights
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[9px] font-mono">
+        <thead>
+          <tr className="bg-white/[0.03] border-b border-border/20">
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Ticker</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Company</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Date</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Impl Move</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Analysts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((e: any, i: number) => {
+            const impliedMove = e.impliedMove ?? e.expectedMove ?? null;
+            const analysts = e.analystCount ?? e.analysts ?? null;
+
+            return (
+              <tr
+                key={`upcoming-${e.symbol}-${i}`}
+                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
+              >
+                <td className="px-2 py-1 font-bold text-orange-400">{e.symbol}</td>
+                <td className="px-1.5 py-1 text-neutral/50 truncate max-w-[100px]">{e.name ?? e.company ?? '--'}</td>
+                <td className="px-1.5 py-1 text-neutral/60 whitespace-nowrap">{fmtDate(e.date)}</td>
+                <td className="text-right px-1.5 py-1 text-orange-400/80">
+                  {impliedMove != null ? `${impliedMove.toFixed(1)}%` : '--'}
+                </td>
+                <td className="text-right px-1.5 py-1 text-neutral/50">
+                  {analysts ?? '--'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -376,98 +351,64 @@ function HeatmapView({ events }: { events: EarningsEvent[] }) {
 
 export function EarningsCalendarPanel() {
   const t = useT();
-  const [view, setView] = useState<ViewMode>('CALENDAR');
-  const { data, isLoading, refetch, dataUpdatedAt } = useEarningsCalendarHeatmap();
+  const { data, isLoading, error } = useEarningsCalendar();
+  const d = data as any;
 
-  const events = data?.events ?? [];
+  if (isLoading) {
+    return (
+      <div className="h-full bg-black flex items-center justify-center">
+        <span className="text-[9px] font-mono text-neutral/40 uppercase tracking-wider">
+          {t('loading')}
+        </span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full bg-black flex items-center justify-center">
+        <span className="text-[9px] font-mono text-red-400 uppercase tracking-wider">
+          FAILED TO LOAD
+        </span>
+      </div>
+    );
+  }
+
+  // Extract sections from the data, with flexible key access
+  const thisWeekItems: any[] = d?.thisWeek ?? d?.events ?? [];
+  const recentSurprises: any[] = d?.recentSurprises ?? d?.surprises ?? thisWeekItems.filter((e: any) => e.reported);
+  const revisionTrends: any[] = d?.revisionTrends ?? d?.revisions ?? [];
+  const sectorSummary: any[] = d?.sectorSummary ?? d?.sectors ?? [];
+  const upcomingHighlights: any[] = d?.upcomingHighlights ?? d?.upcoming ?? thisWeekItems.filter((e: any) => !e.reported);
 
   return (
-    <GlassCard className="flex flex-col h-full text-[10px]">
+    <div className="h-full bg-black text-[9px] font-mono overflow-y-auto">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/20 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <CalendarDays size={12} className="text-yellow-400" />
-          <span className="text-[10px] font-mono font-bold tracking-widest text-neutral/80 uppercase">
-            {tr(t, 'panelEarningsCalendar', 'EARNINGS CALENDAR')}
-          </span>
-          {data && (
-            <span className="px-1.5 py-0.5 text-[8px] font-mono text-yellow-400 bg-yellow-500/10 border border-yellow-500/30">
-              {data.totalThisWeek}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {dataUpdatedAt > 0 && (
-            <span className="text-[8px] font-mono text-neutral/30">
-              {new Date(dataUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-          <button
-            onClick={() => refetch()}
-            className="p-0.5 text-neutral/40 hover:text-yellow-400 transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw size={10} className={isLoading ? 'animate-spin' : ''} />
-          </button>
-        </div>
-      </div>
-
-      {/* ── View Tabs ── */}
-      <div className="flex items-center gap-0.5 px-3 py-1 border-b border-border/20 bg-black/20 shrink-0">
-        {(['CALENDAR', 'TABLE', 'HEATMAP'] as const).map(v => (
-          <button
-            key={v}
-            onClick={() => setView(v)}
-            className={`px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider transition-all ${
-              view === v
-                ? 'bg-yellow-500/20 text-yellow-400'
-                : 'text-neutral/40 hover:text-white'
-            }`}
-          >
-            {v}
-          </button>
-        ))}
-        {data && (
-          <span className="ml-auto text-[8px] font-mono text-neutral/30">
-            {data.weekStart} — {data.weekEnd}
-          </span>
-        )}
-      </div>
-
-      {/* ── Content ── */}
-      <div className="flex-1 overflow-auto min-h-0">
-        {isLoading && !data ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 animate-spin" />
-          </div>
-        ) : !data || events.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-neutral/30 text-[10px] font-mono uppercase tracking-widest">
-            {tr(t, 'ecNoData', 'No earnings data available')}
-          </div>
-        ) : (
-          <>
-            {view === 'CALENDAR' && (
-              <CalendarView events={events} weekStart={data.weekStart} />
-            )}
-            {view === 'TABLE' && (
-              <TableView events={events} />
-            )}
-            {view === 'HEATMAP' && (
-              <HeatmapView events={events} />
-            )}
-          </>
-        )}
-      </div>
-
-      {/* ── Footer ── */}
-      <div className="flex items-center justify-between px-3 py-1 border-t border-border/20 text-[8px] font-mono text-neutral/30 shrink-0">
-        <span>
-          {events.length} {tr(t, 'ecEvents', 'events')} / {events.filter(e => e.reported).length} {tr(t, 'ecReported', 'reported')}
-        </span>
-        <span>
-          {events.filter(e => e.reported && e.epsSurprise != null && e.epsSurprise >= 0).length}/{events.filter(e => e.reported).length} {tr(t, 'ecBeats', 'beats')}
+      <div className="px-2 py-1.5 border-b border-border/20 bg-black sticky top-0 z-10">
+        <span className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider">
+          {t('panelEarningsCalendar' as any) || 'EARNINGS CALENDAR & ESTIMATES'}
         </span>
       </div>
-    </GlassCard>
+
+      {/* ── Section 1: This Week's Earnings ── */}
+      <SectionHeader title="THIS WEEK'S EARNINGS" />
+      <ThisWeekEarnings items={thisWeekItems} />
+
+      {/* ── Section 2: Recent Surprises ── */}
+      <SectionHeader title="RECENT SURPRISES" />
+      <RecentSurprises items={recentSurprises} />
+
+      {/* ── Section 3: Revision Trends ── */}
+      <SectionHeader title="REVISION TRENDS" />
+      <RevisionTrends items={revisionTrends} />
+
+      {/* ── Section 4: Sector Summary ── */}
+      <SectionHeader title="SECTOR SUMMARY" />
+      <SectorSummary items={sectorSummary} />
+
+      {/* ── Section 5: Upcoming Highlights ── */}
+      <SectionHeader title="UPCOMING HIGHLIGHTS" />
+      <UpcomingHighlights items={upcomingHighlights} />
+    </div>
   );
 }

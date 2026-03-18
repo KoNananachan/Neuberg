@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { useSovereignCds } from '../../api/hooks/use-sovereign-cds';
 import { useT } from '../../i18n';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 // ── i18n fallback helper ──
 
@@ -14,78 +15,52 @@ const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string =
 
 // ── Formatting helpers ──
 
-function fmtSpread(n: number | null | undefined): string {
-  if (n == null) return '-';
+function fmtBps(n: number): string {
   return n.toFixed(1);
 }
 
-function fmtSpread0(n: number | null | undefined): string {
-  if (n == null) return '-';
-  return n.toFixed(0);
-}
-
-function fmtPd(n: number | null | undefined): string {
-  if (n == null) return '-';
-  return `${n.toFixed(2)}%`;
-}
-
-function fmtChange(n: number | null | undefined): string {
-  if (n == null) return '-';
+function fmtChg(n: number): string {
   const sign = n >= 0 ? '+' : '';
   return `${sign}${n.toFixed(1)}`;
 }
 
-function fmtPct(n: number | null | undefined): string {
-  if (n == null) return '-';
-  return `${n.toFixed(1)}%`;
+function fmtPd(n: number): string {
+  return `${n.toFixed(2)}%`;
 }
 
 // ── Color helpers ──
 
-function changeColor(n: number | null | undefined): string {
-  if (n == null) return 'text-neutral-500';
+function spreadColor(spread: number): string {
+  if (spread > 500) return 'text-red-400';
+  if (spread > 300) return 'text-red-400/80';
+  if (spread > 150) return 'text-orange-400';
+  if (spread > 80) return 'text-yellow-400';
+  if (spread > 40) return 'text-emerald-400/80';
+  return 'text-emerald-400';
+}
+
+function spreadBgColor(spread: number): string {
+  if (spread > 500) return 'bg-red-400/10';
+  if (spread > 300) return 'bg-red-400/5';
+  if (spread > 150) return 'bg-orange-400/5';
+  if (spread > 80) return 'bg-yellow-400/[0.03]';
+  return 'bg-emerald-400/[0.03]';
+}
+
+function changeColor(n: number): string {
+  // For CDS: positive change = widening = bad = red; negative = tightening = good = green
   if (n > 0) return 'text-red-400';
-  if (n < 0) return 'text-green-400';
+  if (n < 0) return 'text-emerald-400';
   return 'text-neutral-500';
 }
 
-// For CDS: widening (positive change) = red, tightening (negative) = green
-function spreadChangeColor(n: number | null | undefined): string {
-  if (n == null) return 'text-neutral-500';
-  if (n > 0) return 'text-red-400';
-  if (n < 0) return 'text-green-400';
-  return 'text-neutral-500';
-}
-
-function ratingColor(rating: string | null | undefined): string {
-  if (!rating) return 'text-neutral-500';
-  if (rating.startsWith('AAA')) return 'text-green-400';
-  if (rating.startsWith('AA')) return 'text-cyan-400';
-  if (rating.startsWith('A')) return 'text-blue-400';
+function ratingColor(rating: string): string {
+  if (rating.startsWith('AAA') || rating.startsWith('AA')) return 'text-emerald-400';
+  if (rating.startsWith('A')) return 'text-green-400/80';
   if (rating.startsWith('BBB')) return 'text-yellow-400';
   if (rating.startsWith('BB')) return 'text-orange-400';
-  if (rating.startsWith('B') || rating.startsWith('CCC') || rating.startsWith('CC')) return 'text-red-400';
-  return 'text-neutral-500';
-}
-
-function outlookColor(outlook: string | null | undefined): string {
-  if (!outlook) return 'text-neutral-500';
-  const lower = outlook.toLowerCase();
-  if (lower === 'positive' || lower === 'improving') return 'text-green-400';
-  if (lower === 'negative' || lower === 'deteriorating') return 'text-red-400';
-  if (lower === 'stable') return 'text-neutral-400';
-  if (lower === 'watch' || lower === 'developing') return 'text-yellow-400';
-  return 'text-neutral-500';
-}
-
-function creditWatchBg(watch: string | null | undefined): string {
-  if (!watch) return '';
-  const lower = watch.toLowerCase();
-  if (lower === 'positive') return 'text-green-400 bg-green-400/10';
-  if (lower === 'negative') return 'text-red-400 bg-red-400/10';
-  if (lower === 'developing' || lower === 'watch') return 'text-yellow-400 bg-yellow-400/10';
-  if (lower === 'none' || lower === 'n/a') return 'text-neutral-500 bg-neutral-500/10';
-  return 'text-neutral-400 bg-neutral-400/10';
+  if (rating.startsWith('B')) return 'text-red-400/80';
+  return 'text-red-400';
 }
 
 // ── Main Panel ──
@@ -93,48 +68,53 @@ function creditWatchBg(watch: string | null | undefined): string {
 export function SovereignCdsPanel() {
   const t = useT();
   const { data, isLoading, error, refetch } = useSovereignCds();
+  const d = data as any;
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/30 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 bg-red-400" />
-          <span className="text-[9px] font-black font-mono uppercase tracking-tighter text-red-400">
-            {tr(t, 'sovCdsTitle', 'Sovereign CDS Monitor')}
+          <div className="w-1.5 h-1.5 bg-rose-400" />
+          <span className="text-[9px] font-black font-mono uppercase tracking-tighter text-rose-400">
+            {tr(t, 'sovereignCdsTitle', 'Sovereign CDS Monitor')}
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {d?.timestamp && (
+            <span className="text-[7px] font-mono text-neutral-600">
+              {new Date(d.timestamp).toLocaleTimeString()}
+            </span>
+          )}
           <button
             onClick={() => refetch()}
-            className="p-1 text-neutral-500 hover:text-red-400 transition-colors"
+            className="p-1 text-neutral-500 hover:text-rose-400 transition-colors"
           >
             <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto no-scrollbar">
-        {isLoading && !data && (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-4 w-4 animate-spin text-red-400" />
+      <div className="flex-1 overflow-auto no-scrollbar">
+        {isLoading && !d && (
+          <div className="text-center py-8 text-rose-400 text-[9px] font-mono uppercase animate-pulse">
+            {tr(t, 'loading', 'Loading...')}
           </div>
         )}
 
-        {error && !data && (
-          <div className="text-center py-8 text-red-400 text-[9px] font-mono uppercase">
-            {tr(t, 'sovCdsError', 'Failed to load data')}
+        {error && !d && (
+          <div className="text-center py-8 text-red-500 text-[9px] font-mono uppercase">
+            FAILED TO LOAD
           </div>
         )}
 
-        {data && (
+        {d && (
           <>
-            <MarketSummaryBar summary={data.marketSummary} t={t} />
-            <CdsSpreadsTable spreads={data.cdsSpreads} t={t} />
-            <TermStructureTable terms={data.termStructure} t={t} />
-            <CrisisComparisonTable crises={data.crisisComparison} t={t} />
-            <DefaultProbabilitiesTable probs={data.defaultProbabilities} t={t} />
+            <CdsRankingsTable rankings={d.rankings} />
+            <TopMovers wideners={d.topMovers?.wideners} tighteners={d.topMovers?.tighteners} />
+            <TermStructure termStructure={d.termStructure} />
+            <CreditEvents events={d.creditEvents} />
+            <RegionalSummary regions={d.regionalSummary} />
           </>
         )}
       </div>
@@ -142,126 +122,235 @@ export function SovereignCdsPanel() {
   );
 }
 
-// ── Section 1: Market Summary Bar ──
+// ── Section 1: CDS Rankings Table ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MarketSummaryBar({ summary, t }: { summary: any; t: ReturnType<typeof useT> }) {
-  if (!summary) return null;
+function CdsRankingsTable({ rankings }: { rankings: any[] }) {
+  const sorted = useMemo(() => {
+    if (!rankings || !Array.isArray(rankings)) return [];
+    return [...rankings]
+      .sort((a: any, b: any) => (b.spread5y ?? 0) - (a.spread5y ?? 0))
+      .slice(0, 20);
+  }, [rankings]);
 
-  const metrics = [
-    { label: tr(t, 'sovCdsAvgDM', 'Avg DM Spread'), value: fmtSpread(summary.avgDMSpread), suffix: 'bp' },
-    { label: tr(t, 'sovCdsAvgEM', 'Avg EM Spread'), value: fmtSpread(summary.avgEMSpread), suffix: 'bp' },
-    {
-      label: tr(t, 'sovCdsMostWidened', 'Most Widened'),
-      value: summary.mostWidened || '-',
-      color: 'text-red-400',
-    },
-    {
-      label: tr(t, 'sovCdsMostTightened', 'Most Tightened'),
-      value: summary.mostTightened || '-',
-      color: 'text-green-400',
-    },
-    {
-      label: tr(t, 'sovCdsGlobalRisk', 'Global Risk Index'),
-      value: summary.globalRiskIndex != null ? summary.globalRiskIndex.toFixed(1) : '-',
-    },
-    {
-      label: tr(t, 'sovCdsDominantTheme', 'Dominant Theme'),
-      value: summary.dominantTheme || '-',
-      color: 'text-red-400/80',
-    },
-  ];
+  if (sorted.length === 0) return null;
 
   return (
     <div className="border-b border-border/20">
       <div className="px-3 py-1 border-b border-border/10">
         <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'sovCdsMarketSummary', 'Market Summary')}
+          CDS RANKINGS — TOP 20 BY SPREAD
         </span>
       </div>
-      <div className="grid grid-cols-6 gap-px bg-border/10">
-        {metrics.map((m) => (
-          <div key={m.label} className="bg-black px-2 py-1.5">
-            <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider truncate">
-              {m.label}
-            </div>
-            <div className={`text-[10px] font-mono font-bold ${m.color || 'text-white'} truncate`}>
-              {m.value}
-              {m.suffix && <span className="text-[7px] text-neutral-600 ml-0.5">{m.suffix}</span>}
-            </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[9px] font-mono">
+          <thead className="sticky top-0 bg-[#080808] z-10">
+            <tr className="border-b border-border/20">
+              <th className="px-1.5 py-1 text-left text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">
+                #
+              </th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">
+                COUNTRY
+              </th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">
+                5Y SPREAD
+              </th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">
+                1D CHG
+              </th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">
+                1W CHG
+              </th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">
+                1M CHG
+              </th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">
+                IMPLIED PD
+              </th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">
+                RATING
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((entry: any, idx: number) => (
+              <tr
+                key={entry.country || idx}
+                className="border-b border-border/10 hover:bg-rose-400/[0.02] transition-colors"
+              >
+                <td className="px-1.5 py-1 text-neutral-600 whitespace-nowrap">
+                  {idx + 1}
+                </td>
+                <td className="px-1.5 py-1 text-white font-bold whitespace-nowrap">
+                  {(entry.country ?? '').toUpperCase()}
+                </td>
+                <td className={`px-1.5 py-1 text-right font-bold whitespace-nowrap ${spreadColor(entry.spread5y ?? 0)} ${spreadBgColor(entry.spread5y ?? 0)}`}>
+                  {fmtBps(entry.spread5y ?? 0)}
+                </td>
+                <td className={`px-1.5 py-1 text-right font-bold whitespace-nowrap ${changeColor(entry.change1d ?? 0)}`}>
+                  {fmtChg(entry.change1d ?? 0)}
+                </td>
+                <td className={`px-1.5 py-1 text-right font-bold whitespace-nowrap ${changeColor(entry.change1w ?? 0)}`}>
+                  {fmtChg(entry.change1w ?? 0)}
+                </td>
+                <td className={`px-1.5 py-1 text-right font-bold whitespace-nowrap ${changeColor(entry.change1m ?? 0)}`}>
+                  {fmtChg(entry.change1m ?? 0)}
+                </td>
+                <td className="px-1.5 py-1 text-right text-neutral-300 whitespace-nowrap">
+                  {fmtPd(entry.impliedPd ?? 0)}
+                </td>
+                <td className={`px-1.5 py-1 text-right font-bold whitespace-nowrap ${ratingColor(entry.rating ?? '')}`}>
+                  {entry.rating ?? '\u2014'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Section 2: Top Movers ──
+
+function TopMovers({ wideners, tighteners }: { wideners: any[]; tighteners: any[] }) {
+  const w = Array.isArray(wideners) ? wideners : [];
+  const tg = Array.isArray(tighteners) ? tighteners : [];
+
+  if (w.length === 0 && tg.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-3 py-1 border-b border-border/10">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+          TOP MOVERS
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-px bg-border/10">
+        {/* Wideners */}
+        <div className="bg-black">
+          <div className="px-2 py-1 border-b border-border/10">
+            <span className="text-[7px] font-black font-mono uppercase tracking-wider text-red-400">
+              WIDENERS
+            </span>
           </div>
-        ))}
+          {w.map((m: any, i: number) => (
+            <div
+              key={m.country || i}
+              className="flex items-center justify-between px-2 py-0.5 border-b border-border/5 hover:bg-rose-400/[0.02] transition-colors"
+            >
+              <span className="text-[8px] font-mono font-bold text-white uppercase">
+                {m.country ?? ''}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[8px] font-mono font-bold text-red-400">
+                  {fmtChg(m.change ?? 0)} BPS
+                </span>
+                <span className="text-[7px] font-mono text-neutral-500">
+                  {fmtBps(m.spread ?? 0)}
+                </span>
+              </div>
+            </div>
+          ))}
+          {w.length === 0 && (
+            <div className="px-2 py-2 text-[7px] font-mono text-neutral-600 text-center uppercase">
+              NONE
+            </div>
+          )}
+        </div>
+
+        {/* Tighteners */}
+        <div className="bg-black">
+          <div className="px-2 py-1 border-b border-border/10">
+            <span className="text-[7px] font-black font-mono uppercase tracking-wider text-emerald-400">
+              TIGHTENERS
+            </span>
+          </div>
+          {tg.map((m: any, i: number) => (
+            <div
+              key={m.country || i}
+              className="flex items-center justify-between px-2 py-0.5 border-b border-border/5 hover:bg-rose-400/[0.02] transition-colors"
+            >
+              <span className="text-[8px] font-mono font-bold text-white uppercase">
+                {m.country ?? ''}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[8px] font-mono font-bold text-emerald-400">
+                  {fmtChg(m.change ?? 0)} BPS
+                </span>
+                <span className="text-[7px] font-mono text-neutral-500">
+                  {fmtBps(m.spread ?? 0)}
+                </span>
+              </div>
+            </div>
+          ))}
+          {tg.length === 0 && (
+            <div className="px-2 py-2 text-[7px] font-mono text-neutral-600 text-center uppercase">
+              NONE
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Section 2: CDS Spreads Table ──
+// ── Section 3: Term Structure ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CdsSpreadsTable({ spreads, t }: { spreads: any[]; t: ReturnType<typeof useT> }) {
-  if (!spreads || spreads.length === 0) return null;
+function TermStructure({ termStructure }: { termStructure: any[] }) {
+  const entries = Array.isArray(termStructure) ? termStructure : [];
+  if (entries.length === 0) return null;
+
+  const tenors = ['6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y'];
 
   return (
     <div className="border-b border-border/20">
       <div className="px-3 py-1 border-b border-border/10">
         <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'sovCdsSpreads', 'CDS Spreads')}
+          CDS TERM STRUCTURE (BPS)
         </span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-[9px] font-mono">
-          <thead className="sticky top-0 bg-[#080808] z-10">
+          <thead>
             <tr className="border-b border-border/20">
-              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Country</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">5Y (bp)</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Chg</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">1W</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">1M</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">52W H</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">52W L</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">%ile</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Impl PD%</th>
-              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Rating</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap sticky left-0 bg-[#080808] z-10">
+                COUNTRY
+              </th>
+              {tenors.map((tenor) => (
+                <th
+                  key={tenor}
+                  className="px-1.5 py-1 text-right text-[7px] font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap"
+                >
+                  {tenor}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {spreads.map((row: any, i: number) => (
-              <tr
-                key={row.country || i}
-                className="border-b border-border/10 hover:bg-red-400/[0.02] transition-colors"
-              >
-                <td className="px-1.5 py-1 whitespace-nowrap text-white font-bold">{row.country}</td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300 font-bold">
-                  {fmtSpread(row.spread5y)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right font-bold ${spreadChangeColor(row.change)}`}>
-                  {fmtChange(row.change)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right ${spreadChangeColor(row.weekChange)}`}>
-                  {fmtChange(row.weekChange)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right ${spreadChangeColor(row.monthChange)}`}>
-                  {fmtChange(row.monthChange)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-400">
-                  {fmtSpread(row.high52w)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-400">
-                  {fmtSpread(row.low52w)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">
-                  {row.percentile != null ? fmtSpread0(row.percentile) : '-'}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-red-400/80">
-                  {fmtPd(row.impliedPD)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap font-bold ${ratingColor(row.rating)}`}>
-                  {row.rating || '-'}
-                </td>
-              </tr>
-            ))}
+            {entries.map((row: any, idx: number) => {
+              const curve = row.curve || {};
+              return (
+                <tr
+                  key={row.country || idx}
+                  className="border-b border-border/10 hover:bg-rose-400/[0.02] transition-colors"
+                >
+                  <td className="px-1.5 py-1 text-white font-bold whitespace-nowrap sticky left-0 bg-black">
+                    {(row.country ?? '').toUpperCase()}
+                  </td>
+                  {tenors.map((tenor) => {
+                    const val = curve[tenor] ?? curve[tenor.toLowerCase()] ?? null;
+                    return (
+                      <td
+                        key={tenor}
+                        className={`px-1.5 py-1 text-right whitespace-nowrap ${val != null ? spreadColor(val) : 'text-neutral-600'}`}
+                      >
+                        {val != null ? fmtBps(val) : '\u2014'}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -269,182 +358,118 @@ function CdsSpreadsTable({ spreads, t }: { spreads: any[]; t: ReturnType<typeof 
   );
 }
 
-// ── Section 3: Term Structure Table ──
+// ── Section 4: Credit Events ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function TermStructureTable({ terms, t }: { terms: any[]; t: ReturnType<typeof useT> }) {
-  if (!terms || terms.length === 0) return null;
+function CreditEvents({ events }: { events: any[] }) {
+  const items = Array.isArray(events) ? events : [];
+  if (items.length === 0) return null;
 
   return (
     <div className="border-b border-border/20">
       <div className="px-3 py-1 border-b border-border/10">
         <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'sovCdsTermStructure', 'Term Structure')}
+          CREDIT EVENTS
         </span>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[9px] font-mono">
-          <thead className="sticky top-0 bg-[#080808] z-10">
-            <tr className="border-b border-border/20">
-              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Country</th>
-              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Tenor</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Spread</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Chg</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Impl Hazard</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {terms.map((row: any, i: number) => (
-              <tr
-                key={`${row.country}-${row.tenor}-${i}`}
-                className="border-b border-border/10 hover:bg-red-400/[0.02] transition-colors"
-              >
-                <td className="px-1.5 py-1 whitespace-nowrap text-white font-bold">{row.country}</td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-neutral-400">{row.tenor}</td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300 font-bold">
-                  {fmtSpread(row.spread)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right font-bold ${spreadChangeColor(row.change)}`}>
-                  {fmtChange(row.change)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-400">
-                  {fmtPd(row.impliedHazardRate)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="divide-y divide-border/10">
+        {items.map((evt: any, idx: number) => {
+          const impact = (evt.impact ?? '').toLowerCase();
+          const impactColor =
+            impact === 'high' || impact === 'negative'
+              ? 'text-red-400 bg-red-400/10'
+              : impact === 'medium' || impact === 'mixed'
+                ? 'text-yellow-400 bg-yellow-400/10'
+                : impact === 'positive'
+                  ? 'text-emerald-400 bg-emerald-400/10'
+                  : 'text-neutral-400 bg-neutral-400/10';
+
+          return (
+            <div
+              key={idx}
+              className="px-3 py-1.5 hover:bg-rose-400/[0.02] transition-colors"
+            >
+              <div className="flex items-center justify-between mb-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] font-mono font-bold text-white uppercase">
+                    {evt.country ?? ''}
+                  </span>
+                  <span className={`text-[7px] font-mono font-bold px-1 py-0.5 uppercase ${impactColor}`}>
+                    {evt.impact ?? 'N/A'}
+                  </span>
+                </div>
+                <span className="text-[7px] font-mono text-neutral-600">
+                  {evt.date ?? ''}
+                </span>
+              </div>
+              <div className="text-[8px] font-mono text-neutral-400 leading-tight">
+                {evt.description ?? ''}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// ── Section 4: Crisis Comparison Table ──
+// ── Section 5: Regional Summary ──
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CrisisComparisonTable({ crises, t }: { crises: any[]; t: ReturnType<typeof useT> }) {
-  if (!crises || crises.length === 0) return null;
-
-  return (
-    <div className="border-b border-border/20">
-      <div className="px-3 py-1 border-b border-border/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'sovCdsCrisisComparison', 'Crisis Comparison')}
-        </span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[9px] font-mono">
-          <thead className="sticky top-0 bg-[#080808] z-10">
-            <tr className="border-b border-border/20">
-              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Event</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">US</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Italy</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Brazil</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Turkey</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Avg EM</th>
-              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Peak Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {crises.map((row: any, i: number) => (
-              <tr
-                key={row.event || i}
-                className="border-b border-border/10 hover:bg-red-400/[0.02] transition-colors"
-              >
-                <td className="px-1.5 py-1 whitespace-nowrap text-white font-bold">{row.event}</td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">
-                  {fmtSpread(row.usSpread)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">
-                  {fmtSpread(row.italySpread)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">
-                  {fmtSpread(row.brazilSpread)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">
-                  {fmtSpread(row.turkeySpread)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-red-400/80 font-bold">
-                  {fmtSpread(row.avgEM)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-neutral-500">
-                  {row.peakDate || '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ── Section 5: Default Probabilities Table ──
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function DefaultProbabilitiesTable({ probs, t }: { probs: any[]; t: ReturnType<typeof useT> }) {
-  if (!probs || probs.length === 0) return null;
+function RegionalSummary({ regions }: { regions: any[] }) {
+  const items = Array.isArray(regions) ? regions : [];
+  if (items.length === 0) return null;
 
   return (
-    <div className="border-b border-border/20">
+    <div>
       <div className="px-3 py-1 border-b border-border/10">
         <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'sovCdsDefaultProb', 'Default Probabilities')}
+          REGIONAL SUMMARY
         </span>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[9px] font-mono">
-          <thead className="sticky top-0 bg-[#080808] z-10">
-            <tr className="border-b border-border/20">
-              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Country</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">PD 1Y</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">PD 3Y</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">PD 5Y</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">PD 10Y</th>
-              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Recovery%</th>
-              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Cr Watch</th>
-              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Outlook</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {probs.map((row: any, i: number) => (
-              <tr
-                key={row.country || i}
-                className="border-b border-border/10 hover:bg-red-400/[0.02] transition-colors"
-              >
-                <td className="px-1.5 py-1 whitespace-nowrap text-white font-bold">{row.country}</td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">
-                  {fmtPd(row.pd1y)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">
-                  {fmtPd(row.pd3y)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">
-                  {fmtPd(row.pd5y)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">
-                  {fmtPd(row.pd10y)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-400">
-                  {fmtPct(row.recoveryAssumption)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap">
-                  {row.creditWatch && (
-                    <span className={`text-[7px] font-bold px-1 py-0.5 ${creditWatchBg(row.creditWatch)}`}>
-                      {row.creditWatch}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-px bg-border/10">
+        {items.map((region: any, idx: number) => {
+          const avgSpread = region.avgSpread ?? 0;
+          return (
+            <div
+              key={region.region || idx}
+              className="bg-black px-2.5 py-2 hover:bg-rose-400/[0.02] transition-colors"
+            >
+              <div className="text-[8px] font-mono font-black text-rose-400 uppercase tracking-wider mb-1">
+                {region.region ?? ''}
+              </div>
+              <div className="flex items-baseline gap-1 mb-1">
+                <span className="text-[7px] font-mono text-neutral-600 uppercase">AVG SPREAD</span>
+                <span className={`text-[10px] font-mono font-bold ${spreadColor(avgSpread)}`}>
+                  {fmtBps(avgSpread)}
+                </span>
+                <span className="text-[7px] font-mono text-neutral-600">BPS</span>
+              </div>
+              <div className="flex items-center justify-between text-[7px] font-mono">
+                <div>
+                  <span className="text-neutral-600 uppercase">WORST </span>
+                  <span className="text-red-400 font-bold uppercase">
+                    {region.worst ?? '\u2014'}
+                  </span>
+                  {region.worstSpread != null && (
+                    <span className="text-neutral-600 ml-1">
+                      {fmtBps(region.worstSpread)}
                     </span>
                   )}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap font-bold ${outlookColor(row.outlook)}`}>
-                  {row.outlook || '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+                <div>
+                  <span className="text-neutral-600 uppercase">BEST </span>
+                  <span className="text-emerald-400 font-bold uppercase">
+                    {region.best ?? '\u2014'}
+                  </span>
+                  {region.bestSpread != null && (
+                    <span className="text-neutral-600 ml-1">
+                      {fmtBps(region.bestSpread)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

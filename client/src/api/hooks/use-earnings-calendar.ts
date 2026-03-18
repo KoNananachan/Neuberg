@@ -39,3 +39,13 @@ export function useEarningsCalendarHeatmap() {
     staleTime: 2 * 60_000, // 2 min
   });
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useEarningsCalendar() {
+  return useQuery({
+    queryKey: ['earnings-calendar'],
+    queryFn: () => api.get<any>('/earnings-calendar'),
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 3 * 60 * 1000,
+  });
+}

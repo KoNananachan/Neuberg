@@ -1,106 +1,138 @@
 import { Router } from 'express';
 
+// ── Seeded PRNG ──
+
+function hashSeed(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function mulberry32(a: number): () => number {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
 // ── Types ──
 
-interface EarningsEvent {
-  symbol: string;
-  name: string;
-  date: string;
-  time: string; // BMO | AMC | DMH
-  quarter: string;
+interface ThisWeekEntry {
+  ticker: string;
+  company: string;
+  reportDate: string;
+  timing: 'BMO' | 'AMC';
   epsEstimate: number;
   epsActual: number | null;
   epsSurprise: number | null;
-  revenueEstimate: number;
-  revenueActual: number | null;
-  revenueSurprise: number | null;
-  expectedMove: number;
-  avgHistoricalMove: number;
-  lastQuarterSurprise: number;
-  marketCap: number;
+  revEstimateB: number;
+  revActualB: number | null;
+  revSurprise: number | null;
+  marketCap: string;
   sector: string;
-  reported: boolean;
-  surpriseHistory: number[];
-  priceReaction: number | null;
+}
+
+interface RecentSurprise {
+  ticker: string;
+  epsEstimate: number;
+  epsActual: number;
+  surprisePercent: number;
+  priceReaction: number;
+  reactionDirection: 'up' | 'down';
+}
+
+interface RevisionTrend {
+  ticker: string;
+  currentEstimate: number;
+  estimate30dAgo: number;
+  revisionPercent: number;
+  numUp: number;
+  numDown: number;
+  consensus: 'buy' | 'hold' | 'sell';
+}
+
+interface SectorSummaryEntry {
+  sector: string;
+  companiesReported: number;
+  beatRate: number;
+  avgSurprise: number;
+  avgPriceReaction: number;
+}
+
+interface UpcomingHighlight {
+  ticker: string;
+  company: string;
+  date: string;
+  optionsImpliedMove: number;
+  analystCount: number;
+  epsEstimate: number;
 }
 
 interface EarningsCalendarResponse {
-  events: EarningsEvent[];
-  weekStart: string;
-  weekEnd: string;
-  totalThisWeek: number;
+  thisWeek: ThisWeekEntry[];
+  recentSurprises: RecentSurprise[];
+  revisionTrends: RevisionTrend[];
+  sectorSummary: SectorSummaryEntry[];
+  upcomingHighlights: UpcomingHighlight[];
   timestamp: string;
 }
 
 // ── Cache ──
 
-let cache: { data: EarningsCalendarResponse | null; ts: number } = { data: null, ts: 0 };
-const CACHE_TTL = 15 * 60_000; // 15 minutes
+let cacheData: EarningsCalendarResponse | null = null;
+let cacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000;
 
-// ── Deterministic pseudo-random from seed string ──
-
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return s / 2147483647;
-  };
-}
-
-// ── Company definitions ──
+// ── Company pool ──
 
 const COMPANIES: Array<{
-  symbol: string;
-  name: string;
+  ticker: string;
+  company: string;
   sector: string;
-  marketCap: number; // billions
-  typicalExpectedMove: number; // %
-  avgHistMove: number;
-  time: 'BMO' | 'AMC' | 'DMH';
-  epsBase: number;
-  revBase: number; // millions
+  marketCap: string;
+  epsRange: [number, number];
+  revB: [number, number]; // revenue range in billions
+  timing: 'BMO' | 'AMC';
 }> = [
-  { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Technology', marketCap: 3420, typicalExpectedMove: 3.8, avgHistMove: 3.2, time: 'AMC', epsBase: 2.18, revBase: 94680 },
-  { symbol: 'MSFT', name: 'Microsoft Corp.', sector: 'Technology', marketCap: 3180, typicalExpectedMove: 3.5, avgHistMove: 3.0, time: 'AMC', epsBase: 3.32, revBase: 65585 },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', sector: 'Communication Services', marketCap: 2150, typicalExpectedMove: 5.2, avgHistMove: 4.8, time: 'AMC', epsBase: 2.12, revBase: 90234 },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', sector: 'Consumer Discretionary', marketCap: 2080, typicalExpectedMove: 5.8, avgHistMove: 5.1, time: 'AMC', epsBase: 1.43, revBase: 170000 },
-  { symbol: 'NVDA', name: 'NVIDIA Corp.', sector: 'Technology', marketCap: 3350, typicalExpectedMove: 8.5, avgHistMove: 7.2, time: 'AMC', epsBase: 0.89, revBase: 44000 },
-  { symbol: 'META', name: 'Meta Platforms Inc.', sector: 'Communication Services', marketCap: 1580, typicalExpectedMove: 7.2, avgHistMove: 6.5, time: 'AMC', epsBase: 6.73, revBase: 42310 },
-  { symbol: 'TSLA', name: 'Tesla Inc.', sector: 'Consumer Discretionary', marketCap: 980, typicalExpectedMove: 9.5, avgHistMove: 8.8, time: 'AMC', epsBase: 0.72, revBase: 25500 },
-  { symbol: 'BRK.B', name: 'Berkshire Hathaway', sector: 'Financials', marketCap: 1050, typicalExpectedMove: 2.1, avgHistMove: 1.8, time: 'BMO', epsBase: 6.42, revBase: 93650 },
-  { symbol: 'JPM', name: 'JPMorgan Chase & Co.', sector: 'Financials', marketCap: 680, typicalExpectedMove: 3.2, avgHistMove: 2.8, time: 'BMO', epsBase: 4.81, revBase: 43320 },
-  { symbol: 'V', name: 'Visa Inc.', sector: 'Financials', marketCap: 620, typicalExpectedMove: 2.8, avgHistMove: 2.3, time: 'AMC', epsBase: 2.65, revBase: 9620 },
-  { symbol: 'UNH', name: 'UnitedHealth Group', sector: 'Healthcare', marketCap: 540, typicalExpectedMove: 3.5, avgHistMove: 3.0, time: 'BMO', epsBase: 7.12, revBase: 100800 },
-  { symbol: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', marketCap: 380, typicalExpectedMove: 2.2, avgHistMove: 1.9, time: 'BMO', epsBase: 2.71, revBase: 22300 },
-  { symbol: 'WMT', name: 'Walmart Inc.', sector: 'Consumer Staples', marketCap: 630, typicalExpectedMove: 3.1, avgHistMove: 2.6, time: 'BMO', epsBase: 0.65, revBase: 167800 },
-  { symbol: 'PG', name: 'Procter & Gamble', sector: 'Consumer Staples', marketCap: 390, typicalExpectedMove: 2.0, avgHistMove: 1.7, time: 'BMO', epsBase: 1.84, revBase: 21740 },
-  { symbol: 'MA', name: 'Mastercard Inc.', sector: 'Financials', marketCap: 480, typicalExpectedMove: 2.9, avgHistMove: 2.5, time: 'BMO', epsBase: 3.69, revBase: 7370 },
-  { symbol: 'HD', name: 'The Home Depot', sector: 'Consumer Discretionary', marketCap: 370, typicalExpectedMove: 3.4, avgHistMove: 2.9, time: 'BMO', epsBase: 3.82, revBase: 39700 },
-  { symbol: 'AVGO', name: 'Broadcom Inc.', sector: 'Technology', marketCap: 820, typicalExpectedMove: 6.8, avgHistMove: 5.9, time: 'AMC', epsBase: 1.42, revBase: 14890 },
-  { symbol: 'XOM', name: 'Exxon Mobil Corp.', sector: 'Energy', marketCap: 490, typicalExpectedMove: 2.5, avgHistMove: 2.1, time: 'BMO', epsBase: 2.14, revBase: 87240 },
-  { symbol: 'LLY', name: 'Eli Lilly and Co.', sector: 'Healthcare', marketCap: 710, typicalExpectedMove: 5.0, avgHistMove: 4.3, time: 'BMO', epsBase: 3.92, revBase: 11340 },
-  { symbol: 'COST', name: 'Costco Wholesale', sector: 'Consumer Staples', marketCap: 410, typicalExpectedMove: 3.0, avgHistMove: 2.5, time: 'AMC', epsBase: 4.02, revBase: 62150 },
-  { symbol: 'NFLX', name: 'Netflix Inc.', sector: 'Communication Services', marketCap: 420, typicalExpectedMove: 8.2, avgHistMove: 7.5, time: 'AMC', epsBase: 5.81, revBase: 10250 },
-  { symbol: 'ADBE', name: 'Adobe Inc.', sector: 'Technology', marketCap: 220, typicalExpectedMove: 5.5, avgHistMove: 4.8, time: 'AMC', epsBase: 4.65, revBase: 5710 },
-  { symbol: 'CRM', name: 'Salesforce Inc.', sector: 'Technology', marketCap: 280, typicalExpectedMove: 6.0, avgHistMove: 5.2, time: 'AMC', epsBase: 2.56, revBase: 9440 },
-  { symbol: 'AMD', name: 'Advanced Micro Devices', sector: 'Technology', marketCap: 260, typicalExpectedMove: 7.8, avgHistMove: 6.9, time: 'AMC', epsBase: 0.77, revBase: 7120 },
-  { symbol: 'BAC', name: 'Bank of America', sector: 'Financials', marketCap: 340, typicalExpectedMove: 3.0, avgHistMove: 2.6, time: 'BMO', epsBase: 0.94, revBase: 25820 },
-  { symbol: 'PFE', name: 'Pfizer Inc.', sector: 'Healthcare', marketCap: 150, typicalExpectedMove: 3.2, avgHistMove: 2.8, time: 'BMO', epsBase: 0.63, revBase: 14920 },
-  { symbol: 'DIS', name: 'Walt Disney Co.', sector: 'Communication Services', marketCap: 210, typicalExpectedMove: 4.5, avgHistMove: 3.9, time: 'BMO', epsBase: 1.45, revBase: 22580 },
-  { symbol: 'INTC', name: 'Intel Corp.', sector: 'Technology', marketCap: 110, typicalExpectedMove: 6.5, avgHistMove: 5.8, time: 'AMC', epsBase: 0.13, revBase: 12830 },
-  { symbol: 'KO', name: 'Coca-Cola Co.', sector: 'Consumer Staples', marketCap: 310, typicalExpectedMove: 1.8, avgHistMove: 1.5, time: 'BMO', epsBase: 0.77, revBase: 11950 },
-  { symbol: 'NKE', name: 'Nike Inc.', sector: 'Consumer Discretionary', marketCap: 120, typicalExpectedMove: 5.5, avgHistMove: 4.8, time: 'AMC', epsBase: 0.78, revBase: 12630 },
+  { ticker: 'AAPL', company: 'Apple Inc.', sector: 'Tech', marketCap: '2.8T', epsRange: [2.10, 2.35], revB: [89.5, 97.2], timing: 'AMC' },
+  { ticker: 'MSFT', company: 'Microsoft Corp.', sector: 'Tech', marketCap: '3.1T', epsRange: [3.10, 3.40], revB: [61.8, 67.5], timing: 'AMC' },
+  { ticker: 'GOOGL', company: 'Alphabet Inc.', sector: 'Tech', marketCap: '2.1T', epsRange: [1.80, 2.10], revB: [84.7, 92.3], timing: 'AMC' },
+  { ticker: 'AMZN', company: 'Amazon.com Inc.', sector: 'Tech', marketCap: '2.0T', epsRange: [1.10, 1.45], revB: [155.0, 172.0], timing: 'AMC' },
+  { ticker: 'META', company: 'Meta Platforms Inc.', sector: 'Tech', marketCap: '1.5T', epsRange: [5.50, 6.80], revB: [39.5, 43.8], timing: 'AMC' },
+  { ticker: 'NVDA', company: 'NVIDIA Corp.', sector: 'Tech', marketCap: '3.4T', epsRange: [0.80, 1.20], revB: [35.0, 44.5], timing: 'AMC' },
+  { ticker: 'TSLA', company: 'Tesla Inc.', sector: 'Consumer', marketCap: '780B', epsRange: [0.55, 0.82], revB: [23.5, 27.2], timing: 'AMC' },
+  { ticker: 'JPM', company: 'JPMorgan Chase & Co.', sector: 'Financials', marketCap: '680B', epsRange: [4.20, 4.95], revB: [40.1, 45.6], timing: 'BMO' },
+  { ticker: 'BAC', company: 'Bank of America Corp.', sector: 'Financials', marketCap: '340B', epsRange: [0.80, 0.98], revB: [24.5, 27.1], timing: 'BMO' },
+  { ticker: 'JNJ', company: 'Johnson & Johnson', sector: 'Healthcare', marketCap: '380B', epsRange: [2.55, 2.78], revB: [21.2, 23.4], timing: 'BMO' },
+  { ticker: 'UNH', company: 'UnitedHealth Group Inc.', sector: 'Healthcare', marketCap: '540B', epsRange: [6.70, 7.25], revB: [95.8, 104.2], timing: 'BMO' },
+  { ticker: 'PG', company: 'Procter & Gamble Co.', sector: 'Consumer', marketCap: '390B', epsRange: [1.72, 1.92], revB: [20.5, 22.3], timing: 'BMO' },
+  { ticker: 'V', company: 'Visa Inc.', sector: 'Financials', marketCap: '620B', epsRange: [2.45, 2.72], revB: [9.0, 10.1], timing: 'AMC' },
+  { ticker: 'MA', company: 'Mastercard Inc.', sector: 'Financials', marketCap: '480B', epsRange: [3.40, 3.78], revB: [6.8, 7.6], timing: 'BMO' },
+  { ticker: 'HD', company: 'The Home Depot Inc.', sector: 'Consumer', marketCap: '370B', epsRange: [3.60, 3.95], revB: [37.8, 41.2], timing: 'BMO' },
+  { ticker: 'XOM', company: 'Exxon Mobil Corp.', sector: 'Energy', marketCap: '490B', epsRange: [1.85, 2.25], revB: [82.5, 93.4], timing: 'BMO' },
+  { ticker: 'CVX', company: 'Chevron Corp.', sector: 'Energy', marketCap: '310B', epsRange: [2.90, 3.45], revB: [48.2, 56.1], timing: 'BMO' },
+  { ticker: 'LLY', company: 'Eli Lilly and Co.', sector: 'Healthcare', marketCap: '710B', epsRange: [3.55, 4.10], revB: [10.2, 12.5], timing: 'BMO' },
+  { ticker: 'AVGO', company: 'Broadcom Inc.', sector: 'Tech', marketCap: '820B', epsRange: [1.30, 1.55], revB: [13.8, 15.9], timing: 'AMC' },
+  { ticker: 'COST', company: 'Costco Wholesale Corp.', sector: 'Consumer', marketCap: '410B', epsRange: [3.75, 4.15], revB: [58.2, 64.1], timing: 'AMC' },
+  { ticker: 'NFLX', company: 'Netflix Inc.', sector: 'Tech', marketCap: '420B', epsRange: [5.20, 6.10], revB: [9.5, 10.8], timing: 'AMC' },
+  { ticker: 'CRM', company: 'Salesforce Inc.', sector: 'Tech', marketCap: '280B', epsRange: [2.35, 2.68], revB: [9.0, 9.8], timing: 'AMC' },
+  { ticker: 'WMT', company: 'Walmart Inc.', sector: 'Consumer', marketCap: '630B', epsRange: [0.58, 0.68], revB: [160.5, 170.8], timing: 'BMO' },
+  { ticker: 'PFE', company: 'Pfizer Inc.', sector: 'Healthcare', marketCap: '150B', epsRange: [0.48, 0.68], revB: [13.8, 15.9], timing: 'BMO' },
+  { ticker: 'CAT', company: 'Caterpillar Inc.', sector: 'Industrials', marketCap: '190B', epsRange: [5.10, 5.85], revB: [16.2, 18.1], timing: 'BMO' },
+  { ticker: 'GE', company: 'GE Aerospace', sector: 'Industrials', marketCap: '210B', epsRange: [1.05, 1.28], revB: [9.2, 10.4], timing: 'BMO' },
+  { ticker: 'FCX', company: 'Freeport-McMoRan Inc.', sector: 'Materials', marketCap: '75B', epsRange: [0.35, 0.52], revB: [5.8, 7.1], timing: 'BMO' },
+  { ticker: 'NEM', company: 'Newmont Corp.', sector: 'Materials', marketCap: '55B', epsRange: [0.72, 0.95], revB: [4.5, 5.3], timing: 'BMO' },
+  { ticker: 'NEE', company: 'NextEra Energy Inc.', sector: 'Utilities', marketCap: '160B', epsRange: [0.85, 1.02], revB: [6.2, 7.4], timing: 'BMO' },
+  { ticker: 'DUK', company: 'Duke Energy Corp.', sector: 'Utilities', marketCap: '90B', epsRange: [1.32, 1.55], revB: [7.0, 8.1], timing: 'BMO' },
 ];
 
-// ── Data generation ──
+// ── Helper functions ──
 
 function getMonday(d: Date): Date {
   const day = d.getDay();
@@ -111,132 +143,223 @@ function getMonday(d: Date): Date {
   return mon;
 }
 
-function toISO(d: Date): string {
+function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function generateEvents(): EarningsCalendarResponse {
-  const now = new Date();
-  const monday = getMonday(now);
-  const weekStart = toISO(monday);
-  const friday = new Date(monday);
-  friday.setDate(friday.getDate() + 4);
-  const weekEnd = toISO(friday);
+function lerp(rng: () => number, min: number, max: number): number {
+  return min + rng() * (max - min);
+}
 
-  // Generate dates spanning 2 weeks (Mon-Fri)
-  const allDates: string[] = [];
-  for (let w = 0; w < 2; w++) {
-    for (let d = 0; d < 5; d++) {
-      const dt = new Date(monday);
-      dt.setDate(dt.getDate() + w * 7 + d);
-      allDates.push(toISO(dt));
-    }
+function pick<T>(rng: () => number, arr: T[]): T {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
+// ── Data generation ──
+
+function generateData(): EarningsCalendarResponse {
+  const today = new Date();
+  const seed = hashSeed('earnings-calendar-' + new Date().toISOString().slice(0, 10));
+  const rng = mulberry32(seed);
+
+  // Week dates (Mon-Fri)
+  const monday = getMonday(today);
+  const weekDates: string[] = [];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    weekDates.push(formatDate(d));
   }
 
-  const todayStr = toISO(now);
-  const rng = seededRandom(hashSeed(weekStart));
+  const todayStr = formatDate(today);
 
-  const events: EarningsEvent[] = COMPANIES.map((co, idx) => {
-    // Assign each company to a date deterministically
-    const dateIdx = idx % allDates.length;
-    const date = allDates[dateIdx];
-    const isPast = date < todayStr;
-    const isToday = date === todayStr;
-    const reported = isPast || (isToday && rng() > 0.5);
+  // ── thisWeek: 15-20 companies ──
+  const weekCount = 15 + Math.floor(rng() * 6);
+  const shuffled = [...COMPANIES].sort(() => rng() - 0.5);
+  const weekCompanies = shuffled.slice(0, weekCount);
 
-    // Quarter label
-    const reportDate = new Date(date);
-    const month = reportDate.getMonth() + 1;
-    const year = reportDate.getFullYear();
-    let q: string;
-    if (month <= 3) q = 'Q4';
-    else if (month <= 6) q = 'Q1';
-    else if (month <= 9) q = 'Q2';
-    else q = 'Q3';
-    const fy = month <= 3 ? year - 1 : year;
-    const quarter = `${q} ${fy}`;
+  const thisWeek: ThisWeekEntry[] = weekCompanies.map(co => {
+    const reportDate = pick(rng, weekDates);
+    const isPast = reportDate < todayStr;
+    const isToday = reportDate === todayStr;
+    const reported = isPast || (isToday && rng() > 0.4);
 
-    // Expected move: slight variation from typical
-    const expectedMove = +(co.typicalExpectedMove * (0.85 + rng() * 0.3)).toFixed(1);
+    const epsEstimate = round2(lerp(rng, co.epsRange[0], co.epsRange[1]));
+    const revEstimateB = round2(lerp(rng, co.revB[0], co.revB[1]));
 
-    // Surprise history: 8 quarters of surprise %
-    const surpriseHistory: number[] = [];
-    for (let i = 0; i < 8; i++) {
-      const surprise = +(rng() * 16 - 4).toFixed(1); // -4% to +12%
-      surpriseHistory.push(surprise);
-    }
-    const lastQuarterSurprise = surpriseHistory[0];
-
-    // Revenue estimate
-    const revenueEstimate = Math.round(co.revBase * (0.95 + rng() * 0.1));
-
-    // EPS estimate
-    const epsEstimate = +(co.epsBase * (0.95 + rng() * 0.1)).toFixed(2);
-
-    // If reported, generate actual values
     let epsActual: number | null = null;
     let epsSurprise: number | null = null;
-    let revenueActual: number | null = null;
-    let revenueSurprise: number | null = null;
-    let priceReaction: number | null = null;
+    let revActualB: number | null = null;
+    let revSurprise: number | null = null;
 
     if (reported) {
-      // EPS actual: mostly beats (70% of time)
-      const beatFactor = rng() > 0.3 ? (1 + rng() * 0.08) : (1 - rng() * 0.06);
-      epsActual = +(epsEstimate * beatFactor).toFixed(2);
-      epsSurprise = +((epsActual - epsEstimate) / Math.abs(epsEstimate) * 100).toFixed(1);
+      // ~70% beat EPS
+      const beatEps = rng() < 0.70;
+      if (beatEps) {
+        epsActual = round2(epsEstimate * (1 + rng() * 0.08));
+      } else {
+        epsActual = round2(epsEstimate * (1 - rng() * 0.06));
+      }
+      epsSurprise = round1(((epsActual - epsEstimate) / Math.abs(epsEstimate)) * 100);
 
-      // Revenue actual
-      const revBeatFactor = rng() > 0.35 ? (1 + rng() * 0.04) : (1 - rng() * 0.03);
-      revenueActual = Math.round(revenueEstimate * revBeatFactor);
-      revenueSurprise = +((revenueActual - revenueEstimate) / revenueEstimate * 100).toFixed(1);
-
-      // Price reaction: correlated with EPS surprise but with noise
-      const baseReaction = epsSurprise * 0.4;
-      const noise = (rng() - 0.5) * co.avgHistMove;
-      priceReaction = +(baseReaction + noise).toFixed(1);
+      // ~65% beat revenue
+      const beatRev = rng() < 0.65;
+      if (beatRev) {
+        revActualB = round2(revEstimateB * (1 + rng() * 0.04));
+      } else {
+        revActualB = round2(revEstimateB * (1 - rng() * 0.03));
+      }
+      revSurprise = round1(((revActualB - revEstimateB) / revEstimateB) * 100);
     }
 
     return {
-      symbol: co.symbol,
-      name: co.name,
-      date,
-      time: co.time,
-      quarter,
+      ticker: co.ticker,
+      company: co.company,
+      reportDate,
+      timing: co.timing,
       epsEstimate,
       epsActual,
       epsSurprise,
-      revenueEstimate,
-      revenueActual,
-      revenueSurprise,
-      expectedMove,
-      avgHistoricalMove: co.avgHistMove,
-      lastQuarterSurprise,
+      revEstimateB,
+      revActualB,
+      revSurprise,
       marketCap: co.marketCap,
       sector: co.sector,
-      reported,
-      surpriseHistory,
-      priceReaction,
     };
   });
 
-  // Sort by date, then time (BMO before AMC), then market cap
-  events.sort((a, b) => {
-    const dateCmp = a.date.localeCompare(b.date);
+  // Sort by date, then timing (BMO first), then ticker
+  thisWeek.sort((a, b) => {
+    const dateCmp = a.reportDate.localeCompare(b.reportDate);
     if (dateCmp !== 0) return dateCmp;
-    const timeOrder = { BMO: 0, DMH: 1, AMC: 2 };
-    const timeCmp = (timeOrder[a.time as keyof typeof timeOrder] ?? 1) - (timeOrder[b.time as keyof typeof timeOrder] ?? 1);
-    if (timeCmp !== 0) return timeCmp;
-    return b.marketCap - a.marketCap;
+    if (a.timing !== b.timing) return a.timing === 'BMO' ? -1 : 1;
+    return a.ticker.localeCompare(b.ticker);
   });
 
-  const thisWeekEvents = events.filter(e => e.date >= weekStart && e.date <= weekEnd);
+  // ── recentSurprises: last 10 reported ──
+  const surprisePool = shuffled.slice(0, 15);
+  const recentSurprises: RecentSurprise[] = surprisePool.slice(0, 10).map(co => {
+    const epsEstimate = round2(lerp(rng, co.epsRange[0], co.epsRange[1]));
+    const beat = rng() < 0.65;
+    const epsActual = beat
+      ? round2(epsEstimate * (1 + rng() * 0.10))
+      : round2(epsEstimate * (1 - rng() * 0.08));
+    const surprisePercent = round1(((epsActual - epsEstimate) / Math.abs(epsEstimate)) * 100);
+
+    // Price reaction: correlated with surprise but noisy
+    const baseReaction = surprisePercent * 0.5;
+    const noise = (rng() - 0.5) * 4;
+    const priceReaction = round1(baseReaction + noise);
+    const reactionDirection: 'up' | 'down' = priceReaction >= 0 ? 'up' : 'down';
+
+    return {
+      ticker: co.ticker,
+      epsEstimate,
+      epsActual,
+      surprisePercent,
+      priceReaction: Math.abs(priceReaction),
+      reactionDirection,
+    };
+  });
+
+  // ── revisionTrends: 10 stocks with significant revisions ──
+  const revisionPool = [...COMPANIES].sort(() => rng() - 0.5).slice(0, 10);
+  const revisionTrends: RevisionTrend[] = revisionPool.map(co => {
+    const currentEstimate = round2(lerp(rng, co.epsRange[0], co.epsRange[1]));
+    // Revision: -15% to +15% over 30 days
+    const revDirection = rng() < 0.55 ? 1 : -1;
+    const revMagnitude = rng() * 0.15;
+    const estimate30dAgo = round2(currentEstimate / (1 + revDirection * revMagnitude));
+    const revisionPercent = round1(((currentEstimate - estimate30dAgo) / Math.abs(estimate30dAgo)) * 100);
+
+    const totalAnalysts = 15 + Math.floor(rng() * 25);
+    const numUp = revDirection > 0
+      ? Math.floor(totalAnalysts * (0.4 + rng() * 0.4))
+      : Math.floor(totalAnalysts * rng() * 0.3);
+    const numDown = revDirection < 0
+      ? Math.floor(totalAnalysts * (0.3 + rng() * 0.4))
+      : Math.floor(totalAnalysts * rng() * 0.25);
+
+    const consensusRoll = rng();
+    const consensus: 'buy' | 'hold' | 'sell' = consensusRoll < 0.55 ? 'buy' : consensusRoll < 0.85 ? 'hold' : 'sell';
+
+    return {
+      ticker: co.ticker,
+      currentEstimate,
+      estimate30dAgo,
+      revisionPercent,
+      numUp,
+      numDown,
+      consensus,
+    };
+  });
+
+  // Sort by absolute revision magnitude descending
+  revisionTrends.sort((a, b) => Math.abs(b.revisionPercent) - Math.abs(a.revisionPercent));
+
+  // ── sectorSummary ──
+  const sectors = ['Tech', 'Healthcare', 'Financials', 'Consumer', 'Industrials', 'Energy', 'Materials', 'Utilities'];
+  const sectorSummary: SectorSummaryEntry[] = sectors.map(sector => {
+    const companiesReported = 8 + Math.floor(rng() * 35);
+    const beatRate = round1(55 + rng() * 25); // 55-80%
+    const avgSurprise = round1(-2 + rng() * 10); // -2% to +8%
+    const avgPriceReaction = round1(-1.5 + rng() * 5); // -1.5% to +3.5%
+
+    return {
+      sector,
+      companiesReported,
+      beatRate,
+      avgSurprise,
+      avgPriceReaction,
+    };
+  });
+
+  // ── upcomingHighlights: next 5 most-anticipated ──
+  const upcomingPool = [...COMPANIES]
+    .sort(() => rng() - 0.5)
+    .slice(0, 5);
+
+  // Dates in next 1-3 weeks
+  const upcomingHighlights: UpcomingHighlight[] = upcomingPool.map(co => {
+    const daysAhead = 7 + Math.floor(rng() * 14);
+    const d = new Date(today);
+    d.setDate(d.getDate() + daysAhead);
+    // Skip weekends
+    const dow = d.getDay();
+    if (dow === 0) d.setDate(d.getDate() + 1);
+    if (dow === 6) d.setDate(d.getDate() + 2);
+
+    const optionsImpliedMove = round1(3 + rng() * 9); // 3-12%
+    const analystCount = 20 + Math.floor(rng() * 30);
+    const epsEstimate = round2(lerp(rng, co.epsRange[0], co.epsRange[1]));
+
+    return {
+      ticker: co.ticker,
+      company: co.company,
+      date: formatDate(d),
+      optionsImpliedMove,
+      analystCount,
+      epsEstimate,
+    };
+  });
+
+  // Sort by date
+  upcomingHighlights.sort((a, b) => a.date.localeCompare(b.date));
 
   return {
-    events,
-    weekStart,
-    weekEnd,
-    totalThisWeek: thisWeekEvents.length,
+    thisWeek,
+    recentSurprises,
+    revisionTrends,
+    sectorSummary,
+    upcomingHighlights,
     timestamp: new Date().toISOString(),
   };
 }
@@ -247,17 +370,21 @@ const router = Router();
 
 router.get('/', (_req, res) => {
   try {
-    // Check cache
-    if (cache.data && Date.now() - cache.ts < CACHE_TTL) {
-      return res.json(cache.data);
+    if (cacheData && Date.now() - cacheTime < CACHE_TTL) {
+      return res.json(cacheData);
     }
 
-    const data = generateEvents();
-    cache = { data, ts: Date.now() };
+    const data = generateData();
+    cacheData = data;
+    cacheTime = Date.now();
     res.json(data);
   } catch (err) {
     console.error('[EarningsCalendar] Error:', err instanceof Error ? err.message : err);
-    res.status(500).json({ error: 'Failed to fetch earnings calendar data' });
+    // Stale fallback
+    if (cacheData) {
+      return res.json(cacheData);
+    }
+    res.status(500).json({ error: 'Failed to generate earnings calendar data' });
   }
 });
 

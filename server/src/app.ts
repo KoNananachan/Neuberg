@@ -257,6 +257,7 @@ import marketBreadthAdvancedRouter from './routes/market-breadth-advanced.js';
 import volatilityDashboardRouter from './routes/volatility-dashboard.js';
 import fiRelativeValueRouter from './routes/fi-relative-value.js';
 import equityScreenResultsRouter from './routes/equity-screen-results.js';
+import crossAssetCorrelationRouter from './routes/cross-asset-correlation.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -615,6 +616,7 @@ export function createApp() {
   app.use('/api/volatility-dashboard', volatilityDashboardRouter);
   app.use('/api/fi-relative-value', fiRelativeValueRouter);
   app.use('/api/equity-screen-results', equityScreenResultsRouter);
+  app.use('/api/cross-asset-correlation', crossAssetCorrelationRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

@@ -4,224 +4,232 @@ const router = Router();
 
 // ── Seeded PRNG ──
 
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-  return h >>> 0;
+function hashSeed(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
 }
-function mulberry32(seed: number) {
-  let s = seed | 0;
-  return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+
+function mulberry32(a: number): () => number {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ── Types ──
+
+interface CountrySeed {
+  country: string;
+  ticker: string;
+  spread5yBase: number;
+  spread1yBase: number;
+  rating: string;
+  region: string;
+}
+
+interface RankingEntry {
+  country: string;
+  ticker: string;
+  spread5y: number;
+  spread1y: number;
+  change1d: number;
+  change1w: number;
+  change1m: number;
+  impliedPD: number;
+  rating: string;
+  region: string;
+}
+
+interface SpreadChange {
+  country: string;
+  change: number;
+  currentSpread: number;
+  percentChange: number;
+}
+
+interface TermStructureEntry {
+  country: string;
+  tenors: { tenor: string; spread: number }[];
+}
+
+interface CreditEvent {
+  country: string;
+  event: string;
+  impact: number;
+  date: string;
+}
+
+interface RegionalSummary {
+  region: string;
+  avgSpread: number;
+  medianSpread: number;
+  worstCountry: string;
+  bestCountry: string;
 }
 
 // ── Seed Data ──
 
-interface CountryCdsSeed {
-  country: string;
-  baseSpread: number;
-  rating: string;
-  high52w: number;
-  low52w: number;
-}
-
-const CDS_SEEDS: CountryCdsSeed[] = [
-  { country: 'United States',  baseSpread: 35,   rating: 'AAA',  high52w: 48,   low52w: 22 },
-  { country: 'Germany',        baseSpread: 15,   rating: 'AAA',  high52w: 22,   low52w: 8 },
-  { country: 'United Kingdom', baseSpread: 30,   rating: 'AA',   high52w: 42,   low52w: 18 },
-  { country: 'France',         baseSpread: 25,   rating: 'AA',   high52w: 38,   low52w: 15 },
-  { country: 'Japan',          baseSpread: 25,   rating: 'A+',   high52w: 40,   low52w: 14 },
-  { country: 'Italy',          baseSpread: 120,  rating: 'BBB',  high52w: 175,  low52w: 85 },
-  { country: 'Spain',          baseSpread: 60,   rating: 'A',    high52w: 88,   low52w: 38 },
-  { country: 'Brazil',         baseSpread: 160,  rating: 'BB-',  high52w: 225,  low52w: 110 },
-  { country: 'Turkey',         baseSpread: 400,  rating: 'B',    high52w: 580,  low52w: 280 },
-  { country: 'South Africa',   baseSpread: 200,  rating: 'BB-',  high52w: 290,  low52w: 140 },
-  { country: 'Mexico',         baseSpread: 100,  rating: 'BBB',  high52w: 145,  low52w: 68 },
-  { country: 'China',          baseSpread: 60,   rating: 'A+',   high52w: 95,   low52w: 35 },
-  { country: 'Russia',         baseSpread: 800,  rating: 'CC',   high52w: 1200, low52w: 550 },
-  { country: 'Argentina',      baseSpread: 2500, rating: 'CCC',  high52w: 4200, low52w: 1600 },
-  { country: 'Indonesia',      baseSpread: 80,   rating: 'BBB',  high52w: 115,  low52w: 52 },
+const COUNTRY_SEEDS: CountrySeed[] = [
+  { country: 'United States',  ticker: 'US CDS',  spread5yBase: 20,   spread1yBase: 12,   rating: 'AA+',  region: 'North America' },
+  { country: 'Germany',        ticker: 'DE CDS',  spread5yBase: 15,   spread1yBase: 8,    rating: 'AAA',  region: 'Europe Core' },
+  { country: 'Japan',          ticker: 'JP CDS',  spread5yBase: 28,   spread1yBase: 16,   rating: 'A+',   region: 'Asia' },
+  { country: 'United Kingdom', ticker: 'GB CDS',  spread5yBase: 22,   spread1yBase: 13,   rating: 'AA',   region: 'Europe Core' },
+  { country: 'France',         ticker: 'FR CDS',  spread5yBase: 30,   spread1yBase: 18,   rating: 'AA-',  region: 'Europe Core' },
+  { country: 'Italy',          ticker: 'IT CDS',  spread5yBase: 115,  spread1yBase: 75,   rating: 'BBB',  region: 'Europe Periphery' },
+  { country: 'Spain',          ticker: 'ES CDS',  spread5yBase: 90,   spread1yBase: 55,   rating: 'A',    region: 'Europe Periphery' },
+  { country: 'Portugal',       ticker: 'PT CDS',  spread5yBase: 55,   spread1yBase: 32,   rating: 'A-',   region: 'Europe Periphery' },
+  { country: 'Greece',         ticker: 'GR CDS',  spread5yBase: 105,  spread1yBase: 68,   rating: 'BBB-', region: 'Europe Periphery' },
+  { country: 'Brazil',         ticker: 'BR CDS',  spread5yBase: 160,  spread1yBase: 100,  rating: 'BB',   region: 'LatAm' },
+  { country: 'Turkey',         ticker: 'TR CDS',  spread5yBase: 380,  spread1yBase: 260,  rating: 'B+',   region: 'Middle East/Africa' },
+  { country: 'South Africa',   ticker: 'ZA CDS',  spread5yBase: 215,  spread1yBase: 140,  rating: 'BB-',  region: 'Middle East/Africa' },
+  { country: 'Mexico',         ticker: 'MX CDS',  spread5yBase: 120,  spread1yBase: 72,   rating: 'BBB',  region: 'LatAm' },
+  { country: 'Argentina',      ticker: 'AR CDS',  spread5yBase: 1200, spread1yBase: 900,  rating: 'CCC+', region: 'LatAm' },
+  { country: 'Colombia',       ticker: 'CO CDS',  spread5yBase: 145,  spread1yBase: 88,   rating: 'BB+',  region: 'LatAm' },
+  { country: 'China',          ticker: 'CN CDS',  spread5yBase: 65,   spread1yBase: 38,   rating: 'A+',   region: 'Asia' },
+  { country: 'Indonesia',      ticker: 'ID CDS',  spread5yBase: 85,   spread1yBase: 50,   rating: 'BBB',  region: 'Asia' },
+  { country: 'South Korea',    ticker: 'KR CDS',  spread5yBase: 35,   spread1yBase: 20,   rating: 'AA',   region: 'Asia' },
+  { country: 'Saudi Arabia',   ticker: 'SA CDS',  spread5yBase: 60,   spread1yBase: 35,   rating: 'A',    region: 'Middle East/Africa' },
+  { country: 'Egypt',          ticker: 'EG CDS',  spread5yBase: 520,  spread1yBase: 380,  rating: 'B-',   region: 'Middle East/Africa' },
 ];
 
-const US_TERM_BASE: Record<string, number> = { '1Y': 18, '2Y': 22, '3Y': 28, '5Y': 35, '7Y': 40, '10Y': 45 };
-const IT_TERM_BASE: Record<string, number> = { '1Y': 85, '2Y': 95, '3Y': 108, '5Y': 120, '7Y': 128, '10Y': 132 };
+const TERM_STRUCTURE_COUNTRIES = ['United States', 'Germany', 'Italy', 'Brazil', 'Turkey'];
 
-const CRISIS_DATA = [
-  { event: 'GFC 2008',          usSpread: 90,   italySpread: 290,  brazilSpread: 580,  turkeySpread: 720,  avgEM: 650,  peakDate: '2008-11-20' },
-  { event: 'Euro Crisis 2012',  usSpread: 45,   italySpread: 580,  brazilSpread: 210,  turkeySpread: 310,  avgEM: 420,  peakDate: '2012-06-18' },
-  { event: 'Taper Tantrum 2013', usSpread: 32,   italySpread: 260,  brazilSpread: 230,  turkeySpread: 280,  avgEM: 380,  peakDate: '2013-06-24' },
-  { event: 'COVID 2020',        usSpread: 55,   italySpread: 250,  brazilSpread: 360,  turkeySpread: 620,  avgEM: 510,  peakDate: '2020-03-23' },
-  { event: 'Rate Hike 2022',    usSpread: 28,   italySpread: 180,  brazilSpread: 260,  turkeySpread: 580,  avgEM: 420,  peakDate: '2022-10-12' },
-];
+const TERM_STRUCTURE_BASES: Record<string, Record<string, number>> = {
+  'United States': { '6M': 8, '1Y': 12, '2Y': 16, '3Y': 18, '5Y': 20, '7Y': 23, '10Y': 26 },
+  'Germany':       { '6M': 5, '1Y': 8,  '2Y': 11, '3Y': 13, '5Y': 15, '7Y': 17, '10Y': 19 },
+  'Italy':         { '6M': 55, '1Y': 75, '2Y': 90, '3Y': 102, '5Y': 115, '7Y': 122, '10Y': 128 },
+  'Brazil':        { '6M': 75, '1Y': 100, '2Y': 125, '3Y': 142, '5Y': 160, '7Y': 172, '10Y': 180 },
+  'Turkey':        { '6M': 180, '1Y': 260, '2Y': 310, '3Y': 345, '5Y': 380, '7Y': 400, '10Y': 415 },
+};
 
-interface DefaultProbSeed {
-  country: string;
-  pd1y: number;
-  pd3y: number;
-  pd5y: number;
-  pd10y: number;
-  recoveryAssumption: number;
-  creditWatch: boolean;
-  outlook: string;
-}
-
-const DEFAULT_PROB_SEEDS: DefaultProbSeed[] = [
-  { country: 'United States',  pd1y: 0.06, pd3y: 0.22, pd5y: 0.58, pd10y: 1.40, recoveryAssumption: 40, creditWatch: false, outlook: 'Stable' },
-  { country: 'Germany',        pd1y: 0.02, pd3y: 0.09, pd5y: 0.25, pd10y: 0.62, recoveryAssumption: 40, creditWatch: false, outlook: 'Stable' },
-  { country: 'Japan',          pd1y: 0.04, pd3y: 0.16, pd5y: 0.42, pd10y: 1.10, recoveryAssumption: 40, creditWatch: false, outlook: 'Stable' },
-  { country: 'Italy',          pd1y: 0.20, pd3y: 0.72, pd5y: 1.98, pd10y: 4.80, recoveryAssumption: 40, creditWatch: false, outlook: 'Negative' },
-  { country: 'Brazil',         pd1y: 0.27, pd3y: 0.95, pd5y: 2.65, pd10y: 6.20, recoveryAssumption: 25, creditWatch: false, outlook: 'Stable' },
-  { country: 'Turkey',         pd1y: 0.67, pd3y: 2.30, pd5y: 6.50, pd10y: 14.80, recoveryAssumption: 25, creditWatch: false, outlook: 'Negative' },
-  { country: 'Russia',         pd1y: 1.33, pd3y: 4.50, pd5y: 12.80, pd10y: 28.50, recoveryAssumption: 15, creditWatch: true, outlook: 'Watch' },
-  { country: 'Argentina',      pd1y: 4.10, pd3y: 13.50, pd5y: 35.20, pd10y: 62.00, recoveryAssumption: 15, creditWatch: true, outlook: 'Negative' },
-  { country: 'China',          pd1y: 0.10, pd3y: 0.38, pd5y: 1.00, pd10y: 2.45, recoveryAssumption: 40, creditWatch: false, outlook: 'Stable' },
-  { country: 'Indonesia',      pd1y: 0.13, pd3y: 0.50, pd5y: 1.32, pd10y: 3.20, recoveryAssumption: 30, creditWatch: false, outlook: 'Positive' },
+const CREDIT_EVENT_TEMPLATES = [
+  { country: 'Turkey', event: 'Lira sell-off triggers sovereign risk repricing after central bank rate decision', impactBase: 35 },
+  { country: 'Argentina', event: 'IMF debt restructuring talks stall, fiscal deficit concerns mount', impactBase: 85 },
+  { country: 'Italy', event: 'BTP-Bund spread widening on coalition instability and budget revision', impactBase: 18 },
+  { country: 'Brazil', event: 'Commodity export weakness pressures fiscal outlook, real depreciates', impactBase: 22 },
+  { country: 'Egypt', event: 'Foreign reserves decline accelerates amid FX pressure', impactBase: 45 },
+  { country: 'South Africa', event: 'Load-shedding crisis and SOE debt concerns weigh on sovereign credit', impactBase: 28 },
+  { country: 'China', event: 'Property sector contagion risk impacts local government financing vehicles', impactBase: 12 },
+  { country: 'Greece', event: 'Rating upgrade expectations drive spread compression vs periphery', impactBase: -15 },
 ];
 
 // ── Cache ──
 
 const CACHE_TTL = 5 * 60 * 1000;
-let cache: { data: unknown; ts: number } | null = null;
+let cacheData: unknown = null;
+let cacheTime = 0;
 
 // ── Generator ──
 
 function generate() {
-  const day = new Date().toISOString().slice(0, 10);
-  const rng = mulberry32(hashSeed(day + '-sovereign-cds'));
+  const seed = hashSeed('sovereign-cds-' + new Date().toISOString().slice(0, 10));
+  const rng = mulberry32(seed);
+
   const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
   const round2 = (v: number) => Math.round(v * 100) / 100;
   const round1 = (v: number) => Math.round(v * 10) / 10;
 
-  // 1. CDS Spreads
-  const cdsSpreads = CDS_SEEDS.map(seed => {
-    const spread5y = round1(jitter(seed.baseSpread, 0.08));
-    const change = round1((rng() - 0.48) * seed.baseSpread * 0.04);
-    const weekChange = round1((rng() - 0.45) * seed.baseSpread * 0.06);
-    const monthChange = round1((rng() - 0.42) * seed.baseSpread * 0.10);
-    const range = seed.high52w - seed.low52w;
-    const percentile = Math.round(((spread5y - seed.low52w) / (range || 1)) * 100);
-    const impliedPD = round2(spread5y / 10000 * 100 / 0.6 * 5);
+  // ── Rankings ──
+  const rankings: RankingEntry[] = COUNTRY_SEEDS.map(s => {
+    const spread5y = round1(jitter(s.spread5yBase, 0.10));
+    const spread1y = round1(jitter(s.spread1yBase, 0.12));
+    const change1d = round1((rng() - 0.48) * s.spread5yBase * 0.03);
+    const change1w = round1((rng() - 0.46) * s.spread5yBase * 0.06);
+    const change1m = round1((rng() - 0.44) * s.spread5yBase * 0.10);
+    // Implied probability of default: spread / (1 - recovery) / 10000 * 100 over 5Y horizon
+    const recovery = 0.40;
+    const impliedPD = round2((spread5y / 10000) / (1 - recovery) * 5 * 100);
 
     return {
-      country: seed.country,
+      country: s.country,
+      ticker: s.ticker,
       spread5y,
-      change,
-      weekChange,
-      monthChange,
-      high52w: seed.high52w,
-      low52w: seed.low52w,
-      percentile: Math.max(0, Math.min(100, percentile)),
+      spread1y,
+      change1d,
+      change1w,
+      change1m,
       impliedPD,
-      rating: seed.rating,
+      rating: s.rating,
+      region: s.region,
+    };
+  }).sort((a, b) => a.spread5y - b.spread5y);
+
+  // ── Spread Changes (top 5 wideners, top 5 tighteners) ──
+  const sortedByChange = [...rankings].sort((a, b) => b.change1d - a.change1d);
+  const wideners: SpreadChange[] = sortedByChange.slice(0, 5).map(r => ({
+    country: r.country,
+    change: r.change1d,
+    currentSpread: r.spread5y,
+    percentChange: round2((r.change1d / (r.spread5y - r.change1d)) * 100),
+  }));
+  const tighteners: SpreadChange[] = sortedByChange.slice(-5).reverse().map(r => ({
+    country: r.country,
+    change: r.change1d,
+    currentSpread: r.spread5y,
+    percentChange: round2((r.change1d / (r.spread5y - r.change1d)) * 100),
+  }));
+
+  const spreadChanges = { wideners, tighteners };
+
+  // ── Term Structure ──
+  const tenorLabels = ['6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y'];
+  const termStructure: TermStructureEntry[] = TERM_STRUCTURE_COUNTRIES.map(country => {
+    const bases = TERM_STRUCTURE_BASES[country];
+    const tenors = tenorLabels.map(tenor => ({
+      tenor,
+      spread: round1(jitter(bases[tenor], 0.08)),
+    }));
+    return { country, tenors };
+  });
+
+  // ── Credit Events ──
+  const today = new Date();
+  const shuffled = [...CREDIT_EVENT_TEMPLATES].sort(() => rng() - 0.5);
+  const selectedEvents = shuffled.slice(0, 4);
+  const creditEvents: CreditEvent[] = selectedEvents.map((evt, i) => {
+    const daysAgo = Math.floor(rng() * 7) + i * 2;
+    const eventDate = new Date(today);
+    eventDate.setDate(eventDate.getDate() - daysAgo);
+    return {
+      country: evt.country,
+      event: evt.event,
+      impact: round1(jitter(Math.abs(evt.impactBase), 0.15)) * (evt.impactBase < 0 ? -1 : 1),
+      date: eventDate.toISOString().slice(0, 10),
     };
   });
 
-  // 2. Term Structure
-  const tenors = ['1Y', '2Y', '3Y', '5Y', '7Y', '10Y'] as const;
-  const termStructure: {
-    country: string;
-    tenor: string;
-    spread: number;
-    change: number;
-    impliedHazardRate: number;
-  }[] = [];
+  // ── Regional Summary ──
+  const regions = ['North America', 'Europe Core', 'Europe Periphery', 'LatAm', 'Asia', 'Middle East/Africa'];
+  const regionalSummary: RegionalSummary[] = regions.map(region => {
+    const members = rankings.filter(r => r.region === region);
+    if (members.length === 0) {
+      return { region, avgSpread: 0, medianSpread: 0, worstCountry: 'N/A', bestCountry: 'N/A' };
+    }
+    const spreads = members.map(m => m.spread5y).sort((a, b) => a - b);
+    const avg = round1(spreads.reduce((s, v) => s + v, 0) / spreads.length);
+    const mid = Math.floor(spreads.length / 2);
+    const median = spreads.length % 2 === 0
+      ? round1((spreads[mid - 1] + spreads[mid]) / 2)
+      : spreads[mid];
+    const worst = members.reduce((w, m) => m.spread5y > w.spread5y ? m : w).country;
+    const best = members.reduce((b, m) => m.spread5y < b.spread5y ? m : b).country;
 
-  for (const tenor of tenors) {
-    const usBase = US_TERM_BASE[tenor];
-    const usSpread = round1(jitter(usBase, 0.06));
-    termStructure.push({
-      country: 'United States',
-      tenor,
-      spread: usSpread,
-      change: round1((rng() - 0.5) * usBase * 0.03),
-      impliedHazardRate: round2(usSpread / 10000 / 0.6 * 100),
-    });
-  }
-  for (const tenor of tenors) {
-    const itBase = IT_TERM_BASE[tenor];
-    const itSpread = round1(jitter(itBase, 0.06));
-    termStructure.push({
-      country: 'Italy',
-      tenor,
-      spread: itSpread,
-      change: round1((rng() - 0.5) * itBase * 0.03),
-      impliedHazardRate: round2(itSpread / 10000 / 0.6 * 100),
-    });
-  }
-
-  // 3. Crisis Comparison
-  const currentUS = cdsSpreads.find(c => c.country === 'United States')!.spread5y;
-  const currentIT = cdsSpreads.find(c => c.country === 'Italy')!.spread5y;
-  const currentBR = cdsSpreads.find(c => c.country === 'Brazil')!.spread5y;
-  const currentTR = cdsSpreads.find(c => c.country === 'Turkey')!.spread5y;
-  const emCountries = cdsSpreads.filter(c => ['Brazil', 'Turkey', 'South Africa', 'Mexico', 'Argentina', 'Indonesia'].includes(c.country));
-  const currentAvgEM = Math.round(emCountries.reduce((sum, c) => sum + c.spread5y, 0) / emCountries.length);
-
-  const crisisComparison = [
-    ...CRISIS_DATA,
-    {
-      event: 'Current',
-      usSpread: Math.round(currentUS),
-      italySpread: Math.round(currentIT),
-      brazilSpread: Math.round(currentBR),
-      turkeySpread: Math.round(currentTR),
-      avgEM: currentAvgEM,
-      peakDate: day,
-    },
-  ];
-
-  // 4. Default Probabilities
-  const defaultProbabilities = DEFAULT_PROB_SEEDS.map(seed => ({
-    country: seed.country,
-    pd1y: round2(jitter(seed.pd1y, 0.05)),
-    pd3y: round2(jitter(seed.pd3y, 0.05)),
-    pd5y: round2(jitter(seed.pd5y, 0.05)),
-    pd10y: round2(jitter(seed.pd10y, 0.05)),
-    recoveryAssumption: seed.recoveryAssumption,
-    creditWatch: seed.creditWatch,
-    outlook: seed.outlook,
-  }));
-
-  // 5. Market Summary
-  const dmCountries = cdsSpreads.filter(c =>
-    ['United States', 'Germany', 'United Kingdom', 'France', 'Japan'].includes(c.country),
-  );
-  const avgDMSpread = round1(dmCountries.reduce((sum, c) => sum + c.spread5y, 0) / dmCountries.length);
-  const avgEMSpread = round1(emCountries.reduce((sum, c) => sum + c.spread5y, 0) / emCountries.length);
-
-  const sortedByChange = [...cdsSpreads].sort((a, b) => b.change - a.change);
-  const mostWidened = sortedByChange[0].country;
-  const mostTightened = sortedByChange[sortedByChange.length - 1].country;
-
-  const globalRiskIndex = round1(
-    (avgEMSpread / 600) * 50 + (avgDMSpread / 40) * 30 + (rng() * 20),
-  );
-
-  const themes = [
-    'EM Spread Compression',
-    'DM Safe-Haven Demand',
-    'Rate Divergence',
-    'Geopolitical Risk Premium',
-    'Credit Repricing',
-    'Risk-On Sentiment',
-    'Fiscal Concerns',
-  ];
-  const dominantTheme = themes[Math.floor(rng() * themes.length)];
-
-  const marketSummary = {
-    avgDMSpread,
-    avgEMSpread,
-    mostWidened,
-    mostTightened,
-    globalRiskIndex: Math.max(0, Math.min(100, globalRiskIndex)),
-    dominantTheme,
-  };
+    return { region, avgSpread: avg, medianSpread: median, worstCountry: worst, bestCountry: best };
+  });
 
   return {
-    cdsSpreads,
+    rankings,
+    spreadChanges,
     termStructure,
-    crisisComparison,
-    defaultProbabilities,
-    marketSummary,
+    creditEvents,
+    regionalSummary,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -231,13 +239,16 @@ function generate() {
 router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-    if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
+    if (cacheData && now - cacheTime < CACHE_TTL) {
+      return res.json(cacheData);
+    }
     const data = generate();
-    cache = { data, ts: now };
+    cacheData = data;
+    cacheTime = now;
     res.json(data);
   } catch (err) {
     console.error('[SovereignCDS] Error:', (err as Error).message);
-    if (cache) return res.json(cache.data);
+    if (cacheData) return res.json(cacheData);
     res.status(500).json({ error: 'Failed to generate sovereign CDS data' });
   }
 });

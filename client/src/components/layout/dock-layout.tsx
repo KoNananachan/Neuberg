@@ -263,6 +263,7 @@ const MarketBreadthAdvancedPanel = lazy(() => import('../panels/market-breadth-a
 const VolatilityDashboardPanel = lazy(() => import('../panels/volatility-dashboard-panel').then(m => ({ default: m.VolatilityDashboardPanel })));
 const FiRelativeValuePanel = lazy(() => import('../panels/fi-relative-value-panel').then(m => ({ default: m.FiRelativeValuePanel })));
 const EquityScreenResultsPanel = lazy(() => import('../panels/equity-screen-results-panel').then(m => ({ default: m.EquityScreenResultsPanel })));
+const CrossAssetCorrelationPanel = lazy(() => import('../panels/cross-asset-correlation-panel').then(m => ({ default: m.CrossAssetCorrelationPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -538,6 +539,7 @@ export const PANEL_IDS = {
   VOLATILITY_DASHBOARD: 'volatility-dashboard',
   FI_RELATIVE_VALUE: 'fi-relative-value',
   EQUITY_SCREEN_RESULTS: 'equity-screen-results',
+  CROSS_ASSET_CORRELATION: 'cross-asset-correlation',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -797,6 +799,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.VOLATILITY_DASHBOARD]: 'VOLATILITY DASHBOARD',
   [PANEL_IDS.FI_RELATIVE_VALUE]: 'FI RELATIVE VALUE',
   [PANEL_IDS.EQUITY_SCREEN_RESULTS]: 'EQUITY SCREEN RESULTS',
+  [PANEL_IDS.CROSS_ASSET_CORRELATION]: 'CROSS-ASSET CORRELATION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1057,6 +1060,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.VOLATILITY_DASHBOARD]: 'panelVolatilityDashboard',
   [PANEL_IDS.FI_RELATIVE_VALUE]: 'panelFiRelativeValue',
   [PANEL_IDS.EQUITY_SCREEN_RESULTS]: 'panelEquityScreenResults',
+  [PANEL_IDS.CROSS_ASSET_CORRELATION]: 'panelCrossAssetCorrelation',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1613,6 +1617,7 @@ export function DockLayout() {
       case PANEL_IDS.VOLATILITY_DASHBOARD: content = <LazyWrap><VolatilityDashboardPanel /></LazyWrap>; break;
       case PANEL_IDS.FI_RELATIVE_VALUE: content = <LazyWrap><FiRelativeValuePanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_SCREEN_RESULTS: content = <LazyWrap><EquityScreenResultsPanel /></LazyWrap>; break;
+      case PANEL_IDS.CROSS_ASSET_CORRELATION: content = <LazyWrap><CrossAssetCorrelationPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
