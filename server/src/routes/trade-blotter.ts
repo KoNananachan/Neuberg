@@ -2,320 +2,282 @@ import { Router } from 'express';
 
 const router = Router();
 
+// ── Seeded PRNG ──
+
+function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; } return h >>> 0; }
+function mulberry32(a: number) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function seededRandom(tag: string) { const d = new Date().toISOString().slice(0, 10); return mulberry32(hashSeed(tag + d)); }
+
 // ── Types ──
 
-interface Trade {
-  id: string;
-  symbol: string;
-  side: string;
-  quantity: number;
-  avgPrice: number;
-  vwap: number;
-  twap: number;
-  arrivalPrice: number;
-  closePrice: number;
-  slippageBps: number;
-  vwapSlippageBps: number;
-  implementationShortfall: number;
-  marketImpact: number;
-  participationRate: number;
-  executionTime: string;
-  duration: number;
-  fills: number;
-  algo: string;
-  venue: string;
-  status: string;
-  qualityScore: number;
+interface BlockTrade {
+  ticker: string;
+  side: 'BUY' | 'SELL';
+  size: number;
+  price: number;
+  notional: number;
+  exchange: string;
+  timestamp: string;
+  broker: string;
 }
 
-interface ExecutionSummary {
-  totalTrades: number;
-  avgSlippageBps: number;
-  avgVwapSlippageBps: number;
-  avgQualityScore: number;
-  totalVolume: number;
-  bestExecution: { symbol: string; slippageBps: number };
-  worstExecution: { symbol: string; slippageBps: number };
-  algoBreakdown: { algo: string; count: number; avgSlippage: number }[];
-  venueBreakdown: { venue: string; count: number; avgSlippage: number }[];
-  slippageDistribution: number[];
+interface OrderFlowSector {
+  sector: string;
+  buyVolume: number;
+  sellVolume: number;
+  netFlow: number;
+  tradeCount: number;
 }
 
-interface TradeBlotterResponse {
-  trades: Trade[];
-  summary: ExecutionSummary;
+interface TopMover {
+  ticker: string;
+  unusualVolume: number;
+  price: number;
+  changePercent: number;
+  volumeToday: number;
+  avgVolume: number;
+}
+
+interface MarketSummary {
+  totalBlockTrades: number;
+  totalNotional: number;
+  avgBlockSize: number;
+  buyToSellRatio: number;
+  mostActiveExchange: string;
   timestamp: string;
 }
 
-// ── Seed data ──
+interface TradeBlotterResponse {
+  recentBlockTrades: BlockTrade[];
+  orderFlowSummary: OrderFlowSector[];
+  topMoversByVolume: TopMover[];
+  marketSummary: MarketSummary;
+}
 
-const TICKERS = [
-  { symbol: 'AAPL', basePrice: 195 },
-  { symbol: 'MSFT', basePrice: 430 },
-  { symbol: 'NVDA', basePrice: 880 },
-  { symbol: 'GOOGL', basePrice: 175 },
-  { symbol: 'AMZN', basePrice: 185 },
-  { symbol: 'META', basePrice: 510 },
-  { symbol: 'TSLA', basePrice: 245 },
-  { symbol: 'JPM', basePrice: 198 },
-  { symbol: 'V', basePrice: 280 },
-  { symbol: 'UNH', basePrice: 520 },
-  { symbol: 'AMD', basePrice: 178 },
-  { symbol: 'NFLX', basePrice: 630 },
-  { symbol: 'SPY', basePrice: 520 },
-  { symbol: 'QQQ', basePrice: 450 },
-  { symbol: 'GS', basePrice: 415 },
+// ── Stock definitions with realistic base prices and sectors ──
+
+interface StockDef {
+  ticker: string;
+  sector: string;
+  basePrice: number;
+  avgDailyVolume: number;
+}
+
+const BLOCK_TRADE_STOCKS: StockDef[] = [
+  { ticker: 'AAPL', sector: 'Technology', basePrice: 213.25, avgDailyVolume: 55_000_000 },
+  { ticker: 'MSFT', sector: 'Technology', basePrice: 428.50, avgDailyVolume: 22_000_000 },
+  { ticker: 'NVDA', sector: 'Technology', basePrice: 875.30, avgDailyVolume: 42_000_000 },
+  { ticker: 'GOOG', sector: 'Technology', basePrice: 175.60, avgDailyVolume: 25_000_000 },
+  { ticker: 'META', sector: 'Technology', basePrice: 505.20, avgDailyVolume: 18_000_000 },
+  { ticker: 'AMZN', sector: 'Technology', basePrice: 186.40, avgDailyVolume: 38_000_000 },
+  { ticker: 'JPM', sector: 'Financials', basePrice: 198.70, avgDailyVolume: 10_000_000 },
+  { ticker: 'GS', sector: 'Financials', basePrice: 415.80, avgDailyVolume: 3_200_000 },
+  { ticker: 'BAC', sector: 'Financials', basePrice: 37.90, avgDailyVolume: 35_000_000 },
+  { ticker: 'MS', sector: 'Financials', basePrice: 97.40, avgDailyVolume: 8_500_000 },
+  { ticker: 'JNJ', sector: 'Healthcare', basePrice: 156.30, avgDailyVolume: 7_200_000 },
+  { ticker: 'UNH', sector: 'Healthcare', basePrice: 527.80, avgDailyVolume: 3_800_000 },
+  { ticker: 'PFE', sector: 'Healthcare', basePrice: 28.40, avgDailyVolume: 32_000_000 },
+  { ticker: 'XOM', sector: 'Energy', basePrice: 117.30, avgDailyVolume: 15_000_000 },
+  { ticker: 'CVX', sector: 'Energy', basePrice: 158.90, avgDailyVolume: 8_000_000 },
+  { ticker: 'COP', sector: 'Energy', basePrice: 114.60, avgDailyVolume: 6_500_000 },
+  { ticker: 'PG', sector: 'Consumer', basePrice: 168.40, avgDailyVolume: 7_500_000 },
+  { ticker: 'KO', sector: 'Consumer', basePrice: 62.80, avgDailyVolume: 12_000_000 },
+  { ticker: 'WMT', sector: 'Consumer', basePrice: 172.50, avgDailyVolume: 8_000_000 },
+  { ticker: 'TSLA', sector: 'Consumer', basePrice: 248.90, avgDailyVolume: 95_000_000 },
+  { ticker: 'CAT', sector: 'Industrials', basePrice: 338.60, avgDailyVolume: 3_200_000 },
+  { ticker: 'BA', sector: 'Industrials', basePrice: 192.70, avgDailyVolume: 5_500_000 },
+  { ticker: 'HON', sector: 'Industrials', basePrice: 205.30, avgDailyVolume: 3_800_000 },
+  { ticker: 'GE', sector: 'Industrials', basePrice: 164.20, avgDailyVolume: 6_000_000 },
 ];
 
-const ALGOS: string[] = ['VWAP', 'TWAP', 'IS', 'POV', 'LIMIT', 'MARKET'];
-const VENUES: string[] = ['NYSE', 'NASDAQ', 'DARK', 'MULTI'];
-const STATUSES: string[] = ['FILLED', 'FILLED', 'FILLED', 'FILLED', 'PARTIAL', 'WORKING'];
+const EXCHANGES = ['NYSE', 'NASDAQ', 'BATS', 'IEX'];
+const BROKERS = ['ML', 'GS', 'JPM', 'BARC', 'MS', 'CITI', 'UBS', 'CS', 'DB', 'HSBC'];
+const SECTORS = ['Technology', 'Financials', 'Healthcare', 'Energy', 'Consumer', 'Industrials'];
 
 // ── Helpers ──
 
-function round2(v: number): number {
-  return Math.round(v * 100) / 100;
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
-function round4(v: number): number {
-  return Math.round(v * 10000) / 10000;
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
 }
 
-/** Seeded PRNG for deterministic variation */
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
+function pick<T>(arr: T[], rng: () => number): T {
+  return arr[Math.floor(rng() * arr.length)];
 }
 
-function generateTrades(timeSeed: number): Trade[] {
-  const rng = seededRandom(timeSeed);
-  const trades: Trade[] = [];
+function jitter(base: number, pct: number, rng: () => number): number {
+  return base * (1 + (rng() - 0.5) * 2 * pct);
+}
 
-  // Generate ~25 trades
-  const numTrades = 24 + Math.floor(rng() * 3);
+// ── Generation logic ──
 
-  for (let i = 0; i < numTrades; i++) {
-    const ticker = TICKERS[Math.floor(rng() * TICKERS.length)];
-    const side = rng() > 0.5 ? 'BUY' : 'SELL';
-    const algo = ALGOS[Math.floor(rng() * ALGOS.length)];
-    const venue = VENUES[Math.floor(rng() * VENUES.length)];
-    const status = STATUSES[Math.floor(rng() * STATUSES.length)];
+function generateBlockTrades(rng: () => number): BlockTrade[] {
+  const trades: BlockTrade[] = [];
+  const today = new Date().toISOString().slice(0, 10);
 
-    // Base price with some randomness
-    const priceNoise = (rng() - 0.5) * ticker.basePrice * 0.02;
-    const arrivalPrice = round4(ticker.basePrice + priceNoise);
+  for (let i = 0; i < 20; i++) {
+    const stock = pick(BLOCK_TRADE_STOCKS, rng);
 
-    // VWAP is typically close to arrival
-    const vwapOffset = (rng() - 0.45) * ticker.basePrice * 0.003;
-    const vwap = round4(arrivalPrice + vwapOffset);
+    const side: 'BUY' | 'SELL' = rng() > 0.48 ? 'BUY' : 'SELL';
 
-    // TWAP
-    const twapOffset = (rng() - 0.48) * ticker.basePrice * 0.0025;
-    const twap = round4(arrivalPrice + twapOffset);
+    // Block size: 10k-500k shares, weighted toward lower end
+    const sizeRaw = 10_000 + Math.floor(rng() * rng() * 490_000);
+    const size = Math.round(sizeRaw / 100) * 100;
 
-    // Execution average price — slight slippage from arrival
-    const slippageDir = side === 'BUY' ? 1 : -1;
-    const rawSlippage = (rng() * 0.004 - 0.001) * slippageDir;
-    const avgPrice = round4(arrivalPrice * (1 + rawSlippage));
+    // Price with realistic daily variation
+    const price = round2(jitter(stock.basePrice, 0.012, rng));
 
-    // Close price
-    const closeOffset = (rng() - 0.5) * ticker.basePrice * 0.01;
-    const closePrice = round4(arrivalPrice + closeOffset);
+    const notional = Math.round(size * price);
 
-    // Slippage in bps
-    const slippageBps = round2(((avgPrice - arrivalPrice) / arrivalPrice) * 10000 * slippageDir);
-    const vwapSlippageBps = round2(((avgPrice - vwap) / vwap) * 10000 * slippageDir);
+    const exchange = pick(EXCHANGES, rng);
+    const broker = pick(BROKERS, rng);
 
-    // Implementation shortfall = (avgPrice - arrivalPrice) / arrivalPrice * 10000
-    const implementationShortfall = round2(Math.abs(avgPrice - arrivalPrice) / arrivalPrice * 10000);
+    // Spread timestamps across 9:30 - 16:00 ET (6.5h = 390 min)
+    const minuteOffset = Math.floor(rng() * 390);
+    const hour = 9 + Math.floor((30 + minuteOffset) / 60);
+    const minute = (30 + minuteOffset) % 60;
+    const second = Math.floor(rng() * 60);
+    const ms = Math.floor(rng() * 1000);
+    const timestamp = `${today}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}.${String(ms).padStart(3, '0')}Z`;
 
-    // Market impact estimate (subset of IS)
-    const marketImpact = round2(implementationShortfall * (0.3 + rng() * 0.4));
-
-    // Participation rate
-    const participationRate = round2(1 + rng() * 24);
-
-    // Quantity
-    const quantity = Math.round((100 + rng() * 9900) / 100) * 100;
-
-    // Duration in seconds
-    const duration = Math.round(30 + rng() * 3600);
-
-    // Fills
-    const fills = Math.max(1, Math.round(quantity / (200 + rng() * 800)));
-
-    // Execution time — spread across the trading day
-    const baseHour = 9;
-    const baseMinute = 30;
-    const minuteOffset = Math.floor(rng() * 390); // 6.5 hours
-    const execHour = baseHour + Math.floor((baseMinute + minuteOffset) / 60);
-    const execMinute = (baseMinute + minuteOffset) % 60;
-    const execSecond = Math.floor(rng() * 60);
-    const today = new Date();
-    today.setHours(execHour, execMinute, execSecond, 0);
-    const executionTime = today.toISOString();
-
-    // Quality score: higher is better (lower slippage = higher quality)
-    const absSlippage = Math.abs(slippageBps);
-    let qualityScore = Math.round(95 - absSlippage * 8 + (rng() - 0.5) * 10);
-    qualityScore = Math.max(15, Math.min(99, qualityScore));
-
-    trades.push({
-      id: `TRD-${String(timeSeed).slice(-4)}-${String(i + 1).padStart(3, '0')}`,
-      symbol: ticker.symbol,
-      side,
-      quantity,
-      avgPrice,
-      vwap,
-      twap,
-      arrivalPrice,
-      closePrice,
-      slippageBps,
-      vwapSlippageBps,
-      implementationShortfall,
-      marketImpact,
-      participationRate,
-      executionTime,
-      duration,
-      fills,
-      algo,
-      venue,
-      status,
-      qualityScore,
-    });
+    trades.push({ ticker: stock.ticker, side, size, price, notional, exchange, timestamp, broker });
   }
 
-  // Sort by execution time descending (most recent first)
-  trades.sort((a, b) => new Date(b.executionTime).getTime() - new Date(a.executionTime).getTime());
+  // Sort by timestamp descending (most recent first)
+  trades.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return trades;
 }
 
-function computeSummary(trades: Trade[]): ExecutionSummary {
-  const totalTrades = trades.length;
-  if (totalTrades === 0) {
-    return {
-      totalTrades: 0,
-      avgSlippageBps: 0,
-      avgVwapSlippageBps: 0,
-      avgQualityScore: 0,
-      totalVolume: 0,
-      bestExecution: { symbol: '-', slippageBps: 0 },
-      worstExecution: { symbol: '-', slippageBps: 0 },
-      algoBreakdown: [],
-      venueBreakdown: [],
-      slippageDistribution: [],
-    };
+function generateOrderFlowSummary(rng: () => number): OrderFlowSector[] {
+  return SECTORS.map((sector) => {
+    // Buy volume in millions of dollars
+    const buyVolume = Math.round(jitter(1_800_000_000, 0.4, rng));
+    // Sell volume slightly asymmetric for realistic imbalance
+    const sellBias = 0.85 + rng() * 0.3; // 0.85-1.15x of buy
+    const sellVolume = Math.round(buyVolume * sellBias);
+    const netFlow = buyVolume - sellVolume;
+    const tradeCount = Math.round(jitter(4500, 0.35, rng));
+
+    return { sector, buyVolume, sellVolume, netFlow, tradeCount };
+  });
+}
+
+function generateTopMovers(rng: () => number): TopMover[] {
+  // Select 10 unique stocks for top movers
+  const shuffled = [...BLOCK_TRADE_STOCKS];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
+  const selected = shuffled.slice(0, 10);
 
-  const avgSlippageBps = round2(
-    trades.reduce((s, t) => s + t.slippageBps, 0) / totalTrades,
-  );
-  const avgVwapSlippageBps = round2(
-    trades.reduce((s, t) => s + t.vwapSlippageBps, 0) / totalTrades,
-  );
-  const avgQualityScore = Math.round(
-    trades.reduce((s, t) => s + t.qualityScore, 0) / totalTrades,
-  );
-  const totalVolume = trades.reduce((s, t) => s + t.quantity, 0);
+  const movers: TopMover[] = selected.map((stock) => {
+    const avgVolume = Math.round(jitter(stock.avgDailyVolume, 0.1, rng));
+    // Unusual volume ratio: 1.5x to 5x, skewed toward lower end
+    const unusualVolume = round1(1.5 + rng() * rng() * 3.5);
+    const volumeToday = Math.round(avgVolume * unusualVolume);
+    const price = round2(jitter(stock.basePrice, 0.015, rng));
+    // Change% correlated with unusual volume, but with randomness
+    const direction = rng() > 0.4 ? 1 : -1;
+    const magnitude = 0.5 + rng() * (unusualVolume * 1.2);
+    const changePercent = round2(direction * magnitude);
 
-  // Best/worst by absolute slippage
-  const sorted = [...trades].sort((a, b) => Math.abs(a.slippageBps) - Math.abs(b.slippageBps));
-  const bestExecution = { symbol: sorted[0].symbol, slippageBps: sorted[0].slippageBps };
-  const worstExecution = {
-    symbol: sorted[sorted.length - 1].symbol,
-    slippageBps: sorted[sorted.length - 1].slippageBps,
-  };
+    return { ticker: stock.ticker, unusualVolume, price, changePercent, volumeToday, avgVolume };
+  });
 
-  // Algo breakdown
-  const algoMap = new Map<string, { count: number; totalSlippage: number }>();
-  for (const t of trades) {
-    const entry = algoMap.get(t.algo) || { count: 0, totalSlippage: 0 };
-    entry.count++;
-    entry.totalSlippage += Math.abs(t.slippageBps);
-    algoMap.set(t.algo, entry);
+  // Sort by unusual volume descending
+  movers.sort((a, b) => b.unusualVolume - a.unusualVolume);
+
+  return movers;
+}
+
+function generateMarketSummary(blockTrades: BlockTrade[]): MarketSummary {
+  const totalBlockTrades = blockTrades.length;
+  const totalNotional = blockTrades.reduce((sum, t) => sum + t.notional, 0);
+  const avgBlockSize = Math.round(blockTrades.reduce((sum, t) => sum + t.size, 0) / totalBlockTrades);
+
+  const buyCount = blockTrades.filter((t) => t.side === 'BUY').length;
+  const sellCount = blockTrades.filter((t) => t.side === 'SELL').length;
+  const buyToSellRatio = round2(sellCount > 0 ? buyCount / sellCount : buyCount);
+
+  // Determine most active exchange by trade count
+  const exchangeCounts = new Map<string, number>();
+  for (const t of blockTrades) {
+    exchangeCounts.set(t.exchange, (exchangeCounts.get(t.exchange) || 0) + 1);
   }
-  const algoBreakdown = [...algoMap.entries()].map(([algo, v]) => ({
-    algo,
-    count: v.count,
-    avgSlippage: round2(v.totalSlippage / v.count),
-  })).sort((a, b) => b.count - a.count);
-
-  // Venue breakdown
-  const venueMap = new Map<string, { count: number; totalSlippage: number }>();
-  for (const t of trades) {
-    const entry = venueMap.get(t.venue) || { count: 0, totalSlippage: 0 };
-    entry.count++;
-    entry.totalSlippage += Math.abs(t.slippageBps);
-    venueMap.set(t.venue, entry);
-  }
-  const venueBreakdown = [...venueMap.entries()].map(([venue, v]) => ({
-    venue,
-    count: v.count,
-    avgSlippage: round2(v.totalSlippage / v.count),
-  })).sort((a, b) => b.count - a.count);
-
-  // Slippage distribution histogram: 10 buckets from -5 to +5 bps
-  const BUCKETS = 10;
-  const MIN_BPS = -5;
-  const MAX_BPS = 5;
-  const bucketWidth = (MAX_BPS - MIN_BPS) / BUCKETS;
-  const slippageDistribution = new Array(BUCKETS).fill(0);
-  for (const t of trades) {
-    const clamped = Math.max(MIN_BPS, Math.min(MAX_BPS - 0.001, t.slippageBps));
-    const idx = Math.floor((clamped - MIN_BPS) / bucketWidth);
-    slippageDistribution[Math.min(idx, BUCKETS - 1)]++;
+  let mostActiveExchange = 'NYSE';
+  let maxCount = 0;
+  for (const [exchange, count] of exchangeCounts) {
+    if (count > maxCount) {
+      maxCount = count;
+      mostActiveExchange = exchange;
+    }
   }
 
   return {
-    totalTrades,
-    avgSlippageBps,
-    avgVwapSlippageBps,
-    avgQualityScore,
-    totalVolume,
-    bestExecution,
-    worstExecution,
-    algoBreakdown,
-    venueBreakdown,
-    slippageDistribution,
+    totalBlockTrades,
+    totalNotional,
+    avgBlockSize,
+    buyToSellRatio,
+    mostActiveExchange,
+    timestamp: new Date().toISOString(),
   };
+}
+
+function buildTradeBlotterData(): TradeBlotterResponse {
+  const rng = seededRandom('trade-blotter');
+
+  const recentBlockTrades = generateBlockTrades(rng);
+  const orderFlowSummary = generateOrderFlowSummary(rng);
+  const topMoversByVolume = generateTopMovers(rng);
+  const marketSummary = generateMarketSummary(recentBlockTrades);
+
+  return { recentBlockTrades, orderFlowSummary, topMoversByVolume, marketSummary };
 }
 
 // ── Cache ──
 
-let cache: { data: TradeBlotterResponse; expiresAt: number } = {
-  data: null as unknown as TradeBlotterResponse,
-  expiresAt: 0,
-};
-const CACHE_TTL = 120_000; // 2 minutes
+let cachedData: { data: TradeBlotterResponse; ts: number } | null = null;
+let staleData: TradeBlotterResponse | null = null;
+const CACHE_TTL = 5 * 60_000; // 5 minutes
 
-// GET /api/trade-blotter
+// ── Route ──
+
 router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-    if (cache.data && now < cache.expiresAt) {
-      return res.json(cache.data);
+
+    // Return cached data if still fresh
+    if (cachedData && now - cachedData.ts < CACHE_TTL) {
+      res.json(cachedData.data);
+      return;
     }
 
-    const timeSeed = Math.floor(now / CACHE_TTL);
-    const trades = generateTrades(timeSeed);
-    const summary = computeSummary(trades);
+    // Generate fresh data
+    const data = buildTradeBlotterData();
 
-    const response: TradeBlotterResponse = {
-      trades,
-      summary,
-      timestamp: new Date().toISOString(),
-    };
+    // Update cache
+    staleData = cachedData?.data ?? staleData;
+    cachedData = { data, ts: now };
 
-    cache = { data: response, expiresAt: now + CACHE_TTL };
-    res.json(response);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('[TradeBlotter] Error:', message);
-    if (cache.data) return res.json(cache.data);
+    res.json(data);
+  } catch (err) {
+    console.error('[TradeBlotter] Error:', err instanceof Error ? err.message : err);
+
+    // Stale fallback
+    if (staleData) {
+      res.json(staleData);
+      return;
+    }
+    if (cachedData) {
+      res.json(cachedData.data);
+      return;
+    }
+
     res.status(500).json({ error: 'Failed to generate trade blotter data' });
   }
 });

@@ -2,335 +2,298 @@ import { Router } from 'express';
 
 const router = Router();
 
-// ── Types ──
+// ── PRNG (deterministic daily) ──
 
-interface CountryRiskEntry {
-  country: string;
-  code: string;
-  region: string;
-  creditRating: string;
-  ratingOutlook: string;
-  cdsSpread5y: number;
-  cdsChange1d: number;
-  cdsChange1w: number;
-  debtToGdp: number;
-  fiscalBalance: number;
-  currentAccount: number;
-  inflation: number;
-  policyRate: number;
-  realRate: number;
-  gdpGrowth: number;
-  fxReserves: number;
-  overallRiskScore: number;
-  fiscalScore: number;
-  externalScore: number;
-  politicalScore: number;
-  riskTier: string;
-  cdsPercentile: number;
-  cdsHistory: number[];
-  alert: string | null;
+function hashSeed(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return h >>> 0;
 }
 
-interface CountryRiskResponse {
-  entries: CountryRiskEntry[];
-  globalRiskIndex: number;
+function mulberry32(a: number) {
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededRandom(tag: string) {
+  const d = new Date().toISOString().slice(0, 10);
+  return mulberry32(hashSeed(tag + d));
+}
+
+// ── Types ──
+
+interface CountryRiskScore {
+  country: string;
+  isoCode: string;
+  overallRisk: number;
+  creditRating: string;
+  cds5y: number;
+  fxVolatility: number;
+  politicalRisk: number;
+  economicRisk: number;
+  change1w: number;
+}
+
+interface RiskEvent {
+  country: string;
+  event: string;
+  date: string;
+  impactLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+  description: string;
+}
+
+interface FxReservesEntry {
+  country: string;
+  reserves: number;
+  monthsImportCover: number;
+  change3m: number;
+  adequacyRatio: number;
+}
+
+interface CountryRiskSummary {
+  avgEmRisk: number;
+  highRiskCount: number;
+  avgEmCds: number;
+  globalRiskTrend: 'IMPROVING' | 'STABLE' | 'DETERIORATING';
   timestamp: string;
 }
 
-// ── Country Seed Data ──
+interface CountryRiskResponse {
+  riskScores: CountryRiskScore[];
+  riskEvents: RiskEvent[];
+  fxReserves: FxReservesEntry[];
+  summary: CountryRiskSummary;
+}
+
+// ── Seed Data: 20 countries ──
 
 interface CountrySeed {
   country: string;
-  code: string;
-  region: string;
+  isoCode: string;
+  baseOverallRisk: number;
   creditRating: string;
-  ratingOutlook: string;
-  cdsBase: number;
-  debtToGdp: number;
-  fiscalBalance: number;
-  currentAccount: number;
-  inflation: number;
-  policyRate: number;
-  gdpGrowth: number;
-  fxReserves: number;
-  overallRiskScore: number;
-  fiscalScore: number;
-  externalScore: number;
-  politicalScore: number;
+  baseCds5y: number;
+  baseFxVol: number;
+  basePoliticalRisk: number;
+  baseEconomicRisk: number;
 }
 
 const COUNTRY_SEEDS: CountrySeed[] = [
-  {
-    country: 'United States', code: 'US', region: 'North America',
-    creditRating: 'AA+', ratingOutlook: 'Stable',
-    cdsBase: 32, debtToGdp: 123.4, fiscalBalance: -6.2, currentAccount: -3.1,
-    inflation: 3.1, policyRate: 5.25, gdpGrowth: 2.5, fxReserves: 36.2,
-    overallRiskScore: 85, fiscalScore: 55, externalScore: 72, politicalScore: 78,
-  },
-  {
-    country: 'China', code: 'CN', region: 'Asia',
-    creditRating: 'A+', ratingOutlook: 'Stable',
-    cdsBase: 68, debtToGdp: 83.6, fiscalBalance: -7.1, currentAccount: 1.5,
-    inflation: 0.3, policyRate: 3.45, gdpGrowth: 4.8, fxReserves: 3220,
-    overallRiskScore: 72, fiscalScore: 62, externalScore: 80, politicalScore: 58,
-  },
-  {
-    country: 'Japan', code: 'JP', region: 'Asia',
-    creditRating: 'A+', ratingOutlook: 'Stable',
-    cdsBase: 28, debtToGdp: 255.2, fiscalBalance: -5.8, currentAccount: 3.5,
-    inflation: 3.2, policyRate: 0.25, gdpGrowth: 1.1, fxReserves: 1230,
-    overallRiskScore: 78, fiscalScore: 35, externalScore: 88, politicalScore: 85,
-  },
-  {
-    country: 'Germany', code: 'DE', region: 'Europe',
-    creditRating: 'AAA', ratingOutlook: 'Stable',
-    cdsBase: 18, debtToGdp: 64.3, fiscalBalance: -1.6, currentAccount: 6.2,
-    inflation: 2.4, policyRate: 4.50, gdpGrowth: 0.3, fxReserves: 270,
-    overallRiskScore: 92, fiscalScore: 88, externalScore: 95, politicalScore: 87,
-  },
-  {
-    country: 'United Kingdom', code: 'GB', region: 'Europe',
-    creditRating: 'AA', ratingOutlook: 'Stable',
-    cdsBase: 35, debtToGdp: 101.2, fiscalBalance: -4.8, currentAccount: -3.2,
-    inflation: 3.9, policyRate: 5.25, gdpGrowth: 0.6, fxReserves: 185,
-    overallRiskScore: 80, fiscalScore: 58, externalScore: 68, politicalScore: 76,
-  },
-  {
-    country: 'France', code: 'FR', region: 'Europe',
-    creditRating: 'AA-', ratingOutlook: 'Negative',
-    cdsBase: 42, debtToGdp: 111.8, fiscalBalance: -5.5, currentAccount: -0.8,
-    inflation: 2.6, policyRate: 4.50, gdpGrowth: 0.9, fxReserves: 230,
-    overallRiskScore: 76, fiscalScore: 50, externalScore: 72, politicalScore: 68,
-  },
-  {
-    country: 'Italy', code: 'IT', region: 'Europe',
-    creditRating: 'BBB', ratingOutlook: 'Stable',
-    cdsBase: 105, debtToGdp: 140.6, fiscalBalance: -7.2, currentAccount: 0.5,
-    inflation: 2.1, policyRate: 4.50, gdpGrowth: 0.7, fxReserves: 195,
-    overallRiskScore: 58, fiscalScore: 30, externalScore: 65, politicalScore: 55,
-  },
-  {
-    country: 'Spain', code: 'ES', region: 'Europe',
-    creditRating: 'A', ratingOutlook: 'Positive',
-    cdsBase: 62, debtToGdp: 107.5, fiscalBalance: -3.6, currentAccount: 2.1,
-    inflation: 3.4, policyRate: 4.50, gdpGrowth: 2.4, fxReserves: 90,
-    overallRiskScore: 68, fiscalScore: 42, externalScore: 75, politicalScore: 70,
-  },
-  {
-    country: 'South Korea', code: 'KR', region: 'Asia',
-    creditRating: 'AA', ratingOutlook: 'Stable',
-    cdsBase: 38, debtToGdp: 54.3, fiscalBalance: -2.6, currentAccount: 3.8,
-    inflation: 2.8, policyRate: 3.50, gdpGrowth: 2.2, fxReserves: 418,
-    overallRiskScore: 82, fiscalScore: 78, externalScore: 88, politicalScore: 75,
-  },
-  {
-    country: 'Brazil', code: 'BR', region: 'Latin America',
-    creditRating: 'BB', ratingOutlook: 'Stable',
-    cdsBase: 165, debtToGdp: 74.4, fiscalBalance: -8.1, currentAccount: -2.5,
-    inflation: 4.5, policyRate: 13.75, gdpGrowth: 2.9, fxReserves: 340,
-    overallRiskScore: 48, fiscalScore: 38, externalScore: 52, politicalScore: 42,
-  },
-  {
-    country: 'India', code: 'IN', region: 'Asia',
-    creditRating: 'BBB-', ratingOutlook: 'Positive',
-    cdsBase: 98, debtToGdp: 83.1, fiscalBalance: -6.4, currentAccount: -1.2,
-    inflation: 4.8, policyRate: 6.50, gdpGrowth: 6.5, fxReserves: 620,
-    overallRiskScore: 60, fiscalScore: 48, externalScore: 65, politicalScore: 62,
-  },
-  {
-    country: 'Mexico', code: 'MX', region: 'Latin America',
-    creditRating: 'BBB', ratingOutlook: 'Negative',
-    cdsBase: 118, debtToGdp: 52.8, fiscalBalance: -3.9, currentAccount: -1.4,
-    inflation: 4.2, policyRate: 11.00, gdpGrowth: 3.2, fxReserves: 210,
-    overallRiskScore: 55, fiscalScore: 58, externalScore: 62, politicalScore: 48,
-  },
-  {
-    country: 'South Africa', code: 'ZA', region: 'Africa/ME',
-    creditRating: 'BB-', ratingOutlook: 'Stable',
-    cdsBase: 225, debtToGdp: 72.8, fiscalBalance: -5.5, currentAccount: -1.8,
-    inflation: 5.3, policyRate: 8.25, gdpGrowth: 0.8, fxReserves: 58,
-    overallRiskScore: 38, fiscalScore: 40, externalScore: 35, politicalScore: 32,
-  },
-  {
-    country: 'Turkey', code: 'TR', region: 'Africa/ME',
-    creditRating: 'B+', ratingOutlook: 'Positive',
-    cdsBase: 310, debtToGdp: 35.2, fiscalBalance: -5.2, currentAccount: -4.1,
-    inflation: 48.5, policyRate: 45.00, gdpGrowth: 4.5, fxReserves: 135,
-    overallRiskScore: 30, fiscalScore: 55, externalScore: 28, politicalScore: 22,
-  },
-  {
-    country: 'Russia', code: 'RU', region: 'Europe',
-    creditRating: 'CCC', ratingOutlook: 'Negative',
-    cdsBase: 1250, debtToGdp: 22.8, fiscalBalance: -2.3, currentAccount: 5.8,
-    inflation: 8.5, policyRate: 16.00, gdpGrowth: 3.6, fxReserves: 580,
-    overallRiskScore: 15, fiscalScore: 65, externalScore: 45, politicalScore: 8,
-  },
-  {
-    country: 'Australia', code: 'AU', region: 'Oceania',
-    creditRating: 'AAA', ratingOutlook: 'Stable',
-    cdsBase: 20, debtToGdp: 52.1, fiscalBalance: -1.4, currentAccount: 1.2,
-    inflation: 3.6, policyRate: 4.35, gdpGrowth: 1.5, fxReserves: 55,
-    overallRiskScore: 90, fiscalScore: 82, externalScore: 85, politicalScore: 90,
-  },
-  {
-    country: 'Canada', code: 'CA', region: 'North America',
-    creditRating: 'AAA', ratingOutlook: 'Stable',
-    cdsBase: 25, debtToGdp: 106.4, fiscalBalance: -1.1, currentAccount: -0.4,
-    inflation: 2.8, policyRate: 4.50, gdpGrowth: 1.2, fxReserves: 108,
-    overallRiskScore: 88, fiscalScore: 60, externalScore: 82, politicalScore: 92,
-  },
-  {
-    country: 'Indonesia', code: 'ID', region: 'Asia',
-    creditRating: 'BBB', ratingOutlook: 'Stable',
-    cdsBase: 88, debtToGdp: 39.2, fiscalBalance: -2.3, currentAccount: -0.1,
-    inflation: 3.1, policyRate: 6.25, gdpGrowth: 5.1, fxReserves: 138,
-    overallRiskScore: 62, fiscalScore: 72, externalScore: 65, politicalScore: 58,
-  },
-  {
-    country: 'Argentina', code: 'AR', region: 'Latin America',
-    creditRating: 'CCC', ratingOutlook: 'Stable',
-    cdsBase: 980, debtToGdp: 88.5, fiscalBalance: -4.4, currentAccount: -1.8,
-    inflation: 142.0, policyRate: 40.00, gdpGrowth: -2.5, fxReserves: 28,
-    overallRiskScore: 12, fiscalScore: 18, externalScore: 15, politicalScore: 20,
-  },
-  {
-    country: 'Poland', code: 'PL', region: 'Europe',
-    creditRating: 'A-', ratingOutlook: 'Stable',
-    cdsBase: 52, debtToGdp: 49.8, fiscalBalance: -5.1, currentAccount: -1.0,
-    inflation: 3.8, policyRate: 5.75, gdpGrowth: 3.5, fxReserves: 175,
-    overallRiskScore: 72, fiscalScore: 68, externalScore: 72, politicalScore: 70,
-  },
+  { country: 'United States',  isoCode: 'US', baseOverallRisk: 18, creditRating: 'AA+', baseCds5y: 32,   baseFxVol: 7.8,  basePoliticalRisk: 22, baseEconomicRisk: 15 },
+  { country: 'United Kingdom', isoCode: 'GB', baseOverallRisk: 24, creditRating: 'AA',  baseCds5y: 35,   baseFxVol: 8.4,  basePoliticalRisk: 28, baseEconomicRisk: 22 },
+  { country: 'Germany',        isoCode: 'DE', baseOverallRisk: 14, creditRating: 'AAA', baseCds5y: 18,   baseFxVol: 7.2,  basePoliticalRisk: 16, baseEconomicRisk: 12 },
+  { country: 'France',         isoCode: 'FR', baseOverallRisk: 26, creditRating: 'AA-', baseCds5y: 42,   baseFxVol: 7.5,  basePoliticalRisk: 32, baseEconomicRisk: 20 },
+  { country: 'Japan',          isoCode: 'JP', baseOverallRisk: 22, creditRating: 'A+',  baseCds5y: 28,   baseFxVol: 9.6,  basePoliticalRisk: 18, baseEconomicRisk: 26 },
+  { country: 'China',          isoCode: 'CN', baseOverallRisk: 42, creditRating: 'A+',  baseCds5y: 68,   baseFxVol: 5.8,  basePoliticalRisk: 55, baseEconomicRisk: 38 },
+  { country: 'India',          isoCode: 'IN', baseOverallRisk: 44, creditRating: 'BBB-',baseCds5y: 98,   baseFxVol: 6.2,  basePoliticalRisk: 40, baseEconomicRisk: 48 },
+  { country: 'Brazil',         isoCode: 'BR', baseOverallRisk: 52, creditRating: 'BB',  baseCds5y: 165,  baseFxVol: 14.5, basePoliticalRisk: 55, baseEconomicRisk: 50 },
+  { country: 'Mexico',         isoCode: 'MX', baseOverallRisk: 48, creditRating: 'BBB', baseCds5y: 118,  baseFxVol: 12.8, basePoliticalRisk: 50, baseEconomicRisk: 45 },
+  { country: 'South Africa',   isoCode: 'ZA', baseOverallRisk: 58, creditRating: 'BB-', baseCds5y: 225,  baseFxVol: 16.2, basePoliticalRisk: 60, baseEconomicRisk: 55 },
+  { country: 'Turkey',         isoCode: 'TR', baseOverallRisk: 68, creditRating: 'B+',  baseCds5y: 310,  baseFxVol: 22.5, basePoliticalRisk: 65, baseEconomicRisk: 72 },
+  { country: 'Russia',         isoCode: 'RU', baseOverallRisk: 82, creditRating: 'CCC', baseCds5y: 1250, baseFxVol: 28.0, basePoliticalRisk: 88, baseEconomicRisk: 75 },
+  { country: 'Argentina',      isoCode: 'AR', baseOverallRisk: 78, creditRating: 'CCC', baseCds5y: 980,  baseFxVol: 35.0, basePoliticalRisk: 70, baseEconomicRisk: 85 },
+  { country: 'Nigeria',        isoCode: 'NG', baseOverallRisk: 62, creditRating: 'B-',  baseCds5y: 480,  baseFxVol: 18.5, basePoliticalRisk: 65, baseEconomicRisk: 60 },
+  { country: 'Egypt',          isoCode: 'EG', baseOverallRisk: 64, creditRating: 'B-',  baseCds5y: 520,  baseFxVol: 20.0, basePoliticalRisk: 58, baseEconomicRisk: 68 },
+  { country: 'Saudi Arabia',   isoCode: 'SA', baseOverallRisk: 30, creditRating: 'A',   baseCds5y: 55,   baseFxVol: 3.2,  basePoliticalRisk: 42, baseEconomicRisk: 25 },
+  { country: 'Australia',      isoCode: 'AU', baseOverallRisk: 16, creditRating: 'AAA', baseCds5y: 20,   baseFxVol: 9.8,  basePoliticalRisk: 12, baseEconomicRisk: 18 },
+  { country: 'South Korea',    isoCode: 'KR', baseOverallRisk: 25, creditRating: 'AA',  baseCds5y: 38,   baseFxVol: 8.8,  basePoliticalRisk: 28, baseEconomicRisk: 22 },
+  { country: 'Indonesia',      isoCode: 'ID', baseOverallRisk: 40, creditRating: 'BBB', baseCds5y: 88,   baseFxVol: 10.5, basePoliticalRisk: 38, baseEconomicRisk: 42 },
+  { country: 'Thailand',       isoCode: 'TH', baseOverallRisk: 36, creditRating: 'BBB+',baseCds5y: 62,   baseFxVol: 7.5,  basePoliticalRisk: 42, baseEconomicRisk: 32 },
+];
+
+// ── Risk Event Seeds ──
+
+interface RiskEventSeed {
+  country: string;
+  event: string;
+  dayOffset: [number, number]; // min/max days from today
+  impactLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+  description: string;
+}
+
+const RISK_EVENT_SEEDS: RiskEventSeed[] = [
+  { country: 'Turkey',       event: 'Central Bank Meeting',    dayOffset: [3, 12],  impactLevel: 'HIGH',   description: 'TCMB rate decision amid elevated inflation and lira pressure' },
+  { country: 'Brazil',       event: 'Central Bank Meeting',    dayOffset: [5, 18],  impactLevel: 'HIGH',   description: 'BCB Selic rate decision; fiscal concerns weigh on BRL outlook' },
+  { country: 'Argentina',    event: 'Debt Maturity',           dayOffset: [8, 30],  impactLevel: 'HIGH',   description: 'USD 4.2B sovereign bond redemption; reserves at critical levels' },
+  { country: 'Egypt',        event: 'IMF Review',              dayOffset: [10, 35], impactLevel: 'HIGH',   description: 'IMF 5th review under EFF; structural reform benchmarks assessed' },
+  { country: 'Nigeria',      event: 'Debt Maturity',           dayOffset: [7, 25],  impactLevel: 'MEDIUM', description: 'Eurobond coupon payment; FX liquidity under scrutiny' },
+  { country: 'South Africa', event: 'Election',                dayOffset: [15, 45], impactLevel: 'MEDIUM', description: 'Provincial by-elections; coalition stability implications' },
+  { country: 'Indonesia',    event: 'Central Bank Meeting',    dayOffset: [4, 15],  impactLevel: 'MEDIUM', description: 'Bank Indonesia policy rate review; IDR stability in focus' },
+  { country: 'Mexico',       event: 'IMF Review',              dayOffset: [12, 40], impactLevel: 'LOW',    description: 'Article IV consultation; nearshoring impact on growth outlook' },
+  { country: 'India',        event: 'Central Bank Meeting',    dayOffset: [6, 20],  impactLevel: 'MEDIUM', description: 'RBI MPC meeting; food inflation and monsoon outlook key factors' },
+  { country: 'Russia',       event: 'Debt Maturity',           dayOffset: [5, 22],  impactLevel: 'HIGH',   description: 'OFZ maturity amid sanctions; limited refinancing options' },
+  { country: 'Saudi Arabia', event: 'OPEC+ Meeting',           dayOffset: [8, 28],  impactLevel: 'MEDIUM', description: 'Production quota review; oil price defense vs. market share' },
+  { country: 'China',        event: 'Central Bank Meeting',    dayOffset: [2, 10],  impactLevel: 'HIGH',   description: 'PBoC LPR fixing; stimulus expectations amid property sector stress' },
+];
+
+// ── FX Reserves Seeds (12 major EM) ──
+
+interface FxReservesSeed {
+  country: string;
+  baseReserves: number;
+  baseMonthsCover: number;
+  baseAdequacyRatio: number;
+}
+
+const FX_RESERVES_SEEDS: FxReservesSeed[] = [
+  { country: 'China',        baseReserves: 3220, baseMonthsCover: 16.4, baseAdequacyRatio: 3.15 },
+  { country: 'India',        baseReserves: 620,  baseMonthsCover: 10.8, baseAdequacyRatio: 1.85 },
+  { country: 'Saudi Arabia', baseReserves: 435,  baseMonthsCover: 28.2, baseAdequacyRatio: 4.20 },
+  { country: 'South Korea',  baseReserves: 418,  baseMonthsCover: 8.2,  baseAdequacyRatio: 1.62 },
+  { country: 'Brazil',       baseReserves: 340,  baseMonthsCover: 18.5, baseAdequacyRatio: 2.45 },
+  { country: 'Mexico',       baseReserves: 210,  baseMonthsCover: 5.4,  baseAdequacyRatio: 1.28 },
+  { country: 'Indonesia',    baseReserves: 138,  baseMonthsCover: 6.5,  baseAdequacyRatio: 1.35 },
+  { country: 'Turkey',       baseReserves: 135,  baseMonthsCover: 4.2,  baseAdequacyRatio: 0.82 },
+  { country: 'Thailand',     baseReserves: 216,  baseMonthsCover: 10.1, baseAdequacyRatio: 2.10 },
+  { country: 'South Africa', baseReserves: 58,   baseMonthsCover: 5.8,  baseAdequacyRatio: 0.95 },
+  { country: 'Nigeria',      baseReserves: 34,   baseMonthsCover: 4.8,  baseAdequacyRatio: 0.72 },
+  { country: 'Argentina',    baseReserves: 28,   baseMonthsCover: 3.2,  baseAdequacyRatio: 0.38 },
 ];
 
 // ── Helpers ──
-
-function jitter(base: number, pct: number): number {
-  return base * (1 + (Math.random() - 0.5) * 2 * pct);
-}
 
 function roundTo(value: number, decimals: number): number {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
 }
 
-function generateCdsHistory(base: number): number[] {
-  const points: number[] = [];
-  let current = base * (0.85 + Math.random() * 0.3);
-  for (let i = 0; i < 20; i++) {
-    current += (Math.random() - 0.48) * base * 0.04;
-    current = Math.max(5, current);
-    points.push(roundTo(current, 1));
+function clamp(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v));
+}
+
+function applyVariation(base: number, rng: () => number, pctRange: number): number {
+  return base * (1 + (rng() - 0.5) * 2 * pctRange);
+}
+
+// ── Data Generation ──
+
+function generateRiskScores(rng: () => number): CountryRiskScore[] {
+  return COUNTRY_SEEDS.map((seed) => {
+    const overallRisk = clamp(Math.round(applyVariation(seed.baseOverallRisk, rng, 0.08)), 0, 100);
+    const cds5y = roundTo(applyVariation(seed.baseCds5y, rng, 0.06), 1);
+    const fxVolatility = roundTo(applyVariation(seed.baseFxVol, rng, 0.10), 1);
+    const politicalRisk = clamp(Math.round(applyVariation(seed.basePoliticalRisk, rng, 0.07)), 0, 100);
+    const economicRisk = clamp(Math.round(applyVariation(seed.baseEconomicRisk, rng, 0.07)), 0, 100);
+    const change1w = roundTo((rng() - 0.48) * seed.baseOverallRisk * 0.08, 1);
+
+    return {
+      country: seed.country,
+      isoCode: seed.isoCode,
+      overallRisk,
+      creditRating: seed.creditRating,
+      cds5y,
+      fxVolatility,
+      politicalRisk,
+      economicRisk,
+      change1w,
+    };
+  });
+}
+
+function generateRiskEvents(rng: () => number): RiskEvent[] {
+  // Pick 8 events from the pool deterministically
+  const shuffled = [...RISK_EVENT_SEEDS];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return points;
+  const selected = shuffled.slice(0, 8);
+
+  const today = new Date();
+  return selected.map((seed) => {
+    const daysOut = seed.dayOffset[0] + Math.floor(rng() * (seed.dayOffset[1] - seed.dayOffset[0]));
+    const eventDate = new Date(today);
+    eventDate.setDate(eventDate.getDate() + daysOut);
+
+    return {
+      country: seed.country,
+      event: seed.event,
+      date: eventDate.toISOString().slice(0, 10),
+      impactLevel: seed.impactLevel,
+      description: seed.description,
+    };
+  }).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-function computeRiskTier(score: number): string {
-  if (score >= 75) return 'LOW';
-  if (score >= 55) return 'MODERATE';
-  if (score >= 35) return 'ELEVATED';
-  return 'HIGH';
+function generateFxReserves(rng: () => number): FxReservesEntry[] {
+  return FX_RESERVES_SEEDS.map((seed) => {
+    const reserves = roundTo(applyVariation(seed.baseReserves, rng, 0.03), 1);
+    const monthsImportCover = roundTo(applyVariation(seed.baseMonthsCover, rng, 0.05), 1);
+    const change3m = roundTo((rng() - 0.45) * 6, 1);
+    const adequacyRatio = roundTo(applyVariation(seed.baseAdequacyRatio, rng, 0.04), 2);
+
+    return {
+      country: seed.country,
+      reserves,
+      monthsImportCover,
+      change3m,
+      adequacyRatio,
+    };
+  });
 }
 
-function computeCdsPercentile(current: number, history: number[]): number {
-  if (history.length === 0) return 50;
-  const sorted = [...history].sort((a, b) => a - b);
-  let count = 0;
-  for (const v of sorted) {
-    if (v < current) count++;
-    else break;
-  }
-  return Math.round((count / sorted.length) * 100);
-}
+function generateSummary(
+  riskScores: CountryRiskScore[],
+  rng: () => number,
+): CountryRiskSummary {
+  // EM countries (exclude US, UK, DE, FR, JP, AU)
+  const dmIsoCodes = new Set(['US', 'GB', 'DE', 'FR', 'JP', 'AU']);
+  const emScores = riskScores.filter((s) => !dmIsoCodes.has(s.isoCode));
 
-function determineAlert(
-  cdsChange1d: number,
-  cdsSpread5y: number,
-  ratingOutlook: string,
-  fiscalBalance: number,
-  debtToGdp: number,
-): string | null {
-  // CDS spike: large 1-day move relative to spread level
-  if (Math.abs(cdsChange1d) > cdsSpread5y * 0.08) return 'CDS_SPIKE';
-  // Downgrade risk: negative outlook + weak fiscal position
-  if (ratingOutlook === 'Negative' && fiscalBalance < -5 && debtToGdp > 90) return 'DOWNGRADE_RISK';
-  // Fiscal stress: very high debt + large deficit
-  if (debtToGdp > 130 && fiscalBalance < -6) return 'FISCAL_STRESS';
-  return null;
-}
-
-function buildEntry(seed: CountrySeed): CountryRiskEntry {
-  const cdsSpread5y = roundTo(jitter(seed.cdsBase, 0.06), 1);
-  const cdsChange1d = roundTo((Math.random() - 0.45) * seed.cdsBase * 0.04, 1);
-  const cdsChange1w = roundTo((Math.random() - 0.42) * seed.cdsBase * 0.08, 1);
-  const cdsHistory = generateCdsHistory(seed.cdsBase);
-  const cdsPercentile = computeCdsPercentile(cdsSpread5y, cdsHistory);
-
-  const inflation = roundTo(jitter(seed.inflation, 0.03), 1);
-  const policyRate = roundTo(seed.policyRate, 2);
-  const realRate = roundTo(policyRate - inflation, 2);
-  const overallRiskScore = Math.max(0, Math.min(100, Math.round(jitter(seed.overallRiskScore, 0.02))));
-
-  const alert = determineAlert(
-    cdsChange1d,
-    cdsSpread5y,
-    seed.ratingOutlook,
-    seed.fiscalBalance,
-    seed.debtToGdp,
+  const avgEmRisk = roundTo(
+    emScores.reduce((sum, s) => sum + s.overallRisk, 0) / emScores.length,
+    1,
+  );
+  const highRiskCount = emScores.filter((s) => s.overallRisk >= 60).length;
+  const avgEmCds = roundTo(
+    emScores.reduce((sum, s) => sum + s.cds5y, 0) / emScores.length,
+    1,
   );
 
-  return {
-    country: seed.country,
-    code: seed.code,
-    region: seed.region,
-    creditRating: seed.creditRating,
-    ratingOutlook: seed.ratingOutlook,
-    cdsSpread5y,
-    cdsChange1d,
-    cdsChange1w,
-    debtToGdp: roundTo(seed.debtToGdp, 1),
-    fiscalBalance: roundTo(seed.fiscalBalance, 1),
-    currentAccount: roundTo(seed.currentAccount, 1),
-    inflation,
-    policyRate,
-    realRate,
-    gdpGrowth: roundTo(seed.gdpGrowth, 1),
-    fxReserves: roundTo(seed.fxReserves, 1),
-    overallRiskScore,
-    fiscalScore: Math.max(0, Math.min(100, Math.round(jitter(seed.fiscalScore, 0.02)))),
-    externalScore: Math.max(0, Math.min(100, Math.round(jitter(seed.externalScore, 0.02)))),
-    politicalScore: Math.max(0, Math.min(100, Math.round(jitter(seed.politicalScore, 0.02)))),
-    riskTier: computeRiskTier(overallRiskScore),
-    cdsPercentile,
-    cdsHistory,
-    alert,
-  };
-}
-
-function computeGlobalRiskIndex(entries: CountryRiskEntry[]): number {
-  // GDP-weighted approximation: use overallRiskScore inversely
-  // Higher scores = safer, so globalRiskIndex = weighted average inverted (100 - avg = risk)
-  const weights: Record<string, number> = {
-    US: 25, CN: 18, JP: 4.5, DE: 4, GB: 3.2, FR: 3, IT: 2.1, ES: 1.6,
-    KR: 1.8, BR: 1.9, IN: 3.5, MX: 1.4, ZA: 0.4, TR: 0.9, RU: 1.8,
-    AU: 1.6, CA: 2.0, ID: 1.3, AR: 0.5, PL: 0.7,
-  };
-  let totalWeight = 0;
-  let weightedSum = 0;
-  for (const entry of entries) {
-    const w = weights[entry.code] ?? 1;
-    weightedSum += (100 - entry.overallRiskScore) * w;
-    totalWeight += w;
+  // Deterministic trend selection
+  const trendRoll = rng();
+  let globalRiskTrend: 'IMPROVING' | 'STABLE' | 'DETERIORATING';
+  if (trendRoll < 0.30) {
+    globalRiskTrend = 'IMPROVING';
+  } else if (trendRoll < 0.65) {
+    globalRiskTrend = 'STABLE';
+  } else {
+    globalRiskTrend = 'DETERIORATING';
   }
-  return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 30;
+
+  return {
+    avgEmRisk,
+    highRiskCount,
+    avgEmCds,
+    globalRiskTrend,
+    timestamp: new Date().toISOString(),
+  };
 }
 
-// ── Cache ──
+function generateCountryRiskData(): CountryRiskResponse {
+  const rng = seededRandom('country-risk');
+  const riskScores = generateRiskScores(rng);
+  const riskEvents = generateRiskEvents(rng);
+  const fxReserves = generateFxReserves(rng);
+  const summary = generateSummary(riskScores, rng);
+
+  return { riskScores, riskEvents, fxReserves, summary };
+}
+
+// ── Cache (5min TTL, stale fallback) ──
 
 let cache: { data: CountryRiskResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,
 };
-const CACHE_TTL = 15 * 60_000; // 15 minutes
+const CACHE_TTL = 5 * 60_000;
 
 // ── Route ──
 
@@ -341,17 +304,9 @@ router.get('/', (_req, res) => {
       return res.json(cache.data);
     }
 
-    const entries = COUNTRY_SEEDS.map(buildEntry);
-    const globalRiskIndex = computeGlobalRiskIndex(entries);
-
-    const result: CountryRiskResponse = {
-      entries,
-      globalRiskIndex,
-      timestamp: new Date().toISOString(),
-    };
-
-    cache = { data: result, expiresAt: now + CACHE_TTL };
-    res.json(result);
+    const data = generateCountryRiskData();
+    cache = { data, expiresAt: now + CACHE_TTL };
+    res.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[CountryRisk] Error:', message);

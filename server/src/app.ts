@@ -99,14 +99,12 @@ import cotReportRouter from './routes/cot-report.js';
 import ivRankRouter from './routes/iv-rank.js';
 import performanceAttributionRouter from './routes/performance-attribution.js';
 import marketMicrostructureRouter from './routes/market-microstructure.js';
-import countryRiskRouter from './routes/country-risk.js';
 import positioningRouter from './routes/positioning.js';
 import repoRatesRouter from './routes/repo-rates.js';
 import xccyBasisRouter from './routes/xccy-basis.js';
 import styleBoxRouter from './routes/style-box.js';
 import swapRatesRouter from './routes/swap-rates.js';
 import earningsCalendarRouter from './routes/earnings-calendar.js';
-import tradeBlotterRouter from './routes/trade-blotter.js';
 import inflationBreakevenRouter from './routes/inflation-breakeven.js';
 import corporateCdsRouter from './routes/corporate-cds.js';
 import eventDrivenRouter from './routes/event-driven.js';
@@ -289,6 +287,9 @@ import marketDepthRouter from './routes/market-depth.js';
 import irsMonitorRouter from './routes/irs-monitor.js';
 import equityCapitalRaiseRouter from './routes/equity-capital-raise.js';
 import volatilitySmileRouter from './routes/volatility-smile.js';
+import tradeBlotterRouter from './routes/trade-blotter.js';
+import repoRateRouter from './routes/repo-rate.js';
+import countryRiskRouter from './routes/country-risk.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -489,14 +490,12 @@ export function createApp() {
   app.use('/api/iv-rank', ivRankRouter);
   app.use('/api/performance-attribution', performanceAttributionRouter);
   app.use('/api/market-microstructure', marketMicrostructureRouter);
-  app.use('/api/country-risk', countryRiskRouter);
   app.use('/api/positioning', positioningRouter);
   app.use('/api/repo-rates', repoRatesRouter);
   app.use('/api/xccy-basis', xccyBasisRouter);
   app.use('/api/style-box', styleBoxRouter);
   app.use('/api/swap-rates', swapRatesRouter);
   app.use('/api/earnings-calendar', earningsCalendarRouter);
-  app.use('/api/trade-blotter', tradeBlotterRouter);
   app.use('/api/inflation-breakeven', inflationBreakevenRouter);
   app.use('/api/corporate-cds', corporateCdsRouter);
   app.use('/api/event-driven', eventDrivenRouter);
@@ -679,6 +678,9 @@ export function createApp() {
   app.use('/api/irs-monitor', irsMonitorRouter);
   app.use('/api/equity-capital-raise', equityCapitalRaiseRouter);
   app.use('/api/volatility-smile', volatilitySmileRouter);
+  app.use('/api/trade-blotter', tradeBlotterRouter);
+  app.use('/api/repo-rate', repoRateRouter);
+  app.use('/api/country-risk', countryRiskRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

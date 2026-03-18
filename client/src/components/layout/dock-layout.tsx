@@ -294,6 +294,7 @@ const MarketDepthPanel = lazy(() => import('../panels/market-depth-panel').then(
 const IrsMonitorPanel = lazy(() => import('../panels/irs-monitor-panel').then(m => ({ default: m.IrsMonitorPanel })));
 const EquityCapitalRaisePanel = lazy(() => import('../panels/equity-capital-raise-panel').then(m => ({ default: m.EquityCapitalRaisePanel })));
 const VolatilitySmilePanel = lazy(() => import('../panels/volatility-smile-panel').then(m => ({ default: m.VolatilitySmilePanel })));
+const RepoRatePanel = lazy(() => import('../panels/repo-rate-panel').then(m => ({ default: m.RepoRatePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -600,6 +601,7 @@ export const PANEL_IDS = {
   IRS_MONITOR: 'irs-monitor',
   EQUITY_CAPITAL_RAISE: 'equity-capital-raise',
   VOLATILITY_SMILE: 'volatility-smile',
+  REPO_RATE: 'repo-rate',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -890,6 +892,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.IRS_MONITOR]: 'IRS MONITOR',
   [PANEL_IDS.EQUITY_CAPITAL_RAISE]: 'EQUITY CAPITAL RAISE',
   [PANEL_IDS.VOLATILITY_SMILE]: 'VOLATILITY SMILE',
+  [PANEL_IDS.REPO_RATE]: 'REPO RATE MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1181,6 +1184,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.IRS_MONITOR]: 'panelIrsMonitor',
   [PANEL_IDS.EQUITY_CAPITAL_RAISE]: 'panelEquityCapitalRaise',
   [PANEL_IDS.VOLATILITY_SMILE]: 'panelVolatilitySmile',
+  [PANEL_IDS.REPO_RATE]: 'panelRepoRate',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1768,6 +1772,7 @@ export function DockLayout() {
       case PANEL_IDS.IRS_MONITOR: content = <LazyWrap><IrsMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_CAPITAL_RAISE: content = <LazyWrap><EquityCapitalRaisePanel /></LazyWrap>; break;
       case PANEL_IDS.VOLATILITY_SMILE: content = <LazyWrap><VolatilitySmilePanel /></LazyWrap>; break;
+      case PANEL_IDS.REPO_RATE: content = <LazyWrap><RepoRatePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
