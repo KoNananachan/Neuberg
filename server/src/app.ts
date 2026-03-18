@@ -280,6 +280,9 @@ import macroRiskRouter from './routes/macro-risk.js';
 import fiAttributionAnalysisRouter from './routes/fi-attribution-analysis.js';
 import equityStyleRouter from './routes/equity-style.js';
 import currencyForecastRouter from './routes/currency-forecast.js';
+import bondLadderRouter from './routes/bond-ladder.js';
+import sectorCreditSpreadRouter from './routes/sector-credit-spread.js';
+import globalPmiDashboardRouter from './routes/global-pmi-dashboard.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -661,6 +664,9 @@ export function createApp() {
   app.use('/api/fi-attribution-analysis', fiAttributionAnalysisRouter);
   app.use('/api/equity-style', equityStyleRouter);
   app.use('/api/currency-forecast', currencyForecastRouter);
+  app.use('/api/bond-ladder', bondLadderRouter);
+  app.use('/api/sector-credit-spread', sectorCreditSpreadRouter);
+  app.use('/api/global-pmi-dashboard', globalPmiDashboardRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

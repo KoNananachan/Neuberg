@@ -285,6 +285,9 @@ const MacroRiskPanel = lazy(() => import('../panels/macro-risk-panel').then(m =>
 const FiAttributionAnalysisPanel = lazy(() => import('../panels/fi-attribution-analysis-panel').then(m => ({ default: m.FiAttributionAnalysisPanel })));
 const EquityStylePanel = lazy(() => import('../panels/equity-style-panel').then(m => ({ default: m.EquityStylePanel })));
 const CurrencyForecastPanel = lazy(() => import('../panels/currency-forecast-panel').then(m => ({ default: m.CurrencyForecastPanel })));
+const BondLadderPanel = lazy(() => import('../panels/bond-ladder-panel').then(m => ({ default: m.BondLadderPanel })));
+const SectorCreditSpreadPanel = lazy(() => import('../panels/sector-credit-spread-panel').then(m => ({ default: m.SectorCreditSpreadPanel })));
+const GlobalPmiDashboardPanel = lazy(() => import('../panels/global-pmi-dashboard-panel').then(m => ({ default: m.GlobalPmiDashboardPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -582,6 +585,9 @@ export const PANEL_IDS = {
   FI_ATTRIBUTION_ANALYSIS: 'fi-attribution-analysis',
   EQUITY_STYLE: 'equity-style',
   CURRENCY_FORECAST: 'currency-forecast',
+  BOND_LADDER: 'bond-ladder',
+  SECTOR_CREDIT_SPREAD: 'sector-credit-spread',
+  GLOBAL_PMI_DASHBOARD: 'global-pmi-dashboard',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -863,6 +869,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.FI_ATTRIBUTION_ANALYSIS]: 'FI ATTRIBUTION',
   [PANEL_IDS.EQUITY_STYLE]: 'EQUITY STYLE',
   [PANEL_IDS.CURRENCY_FORECAST]: 'CURRENCY FORECAST',
+  [PANEL_IDS.BOND_LADDER]: 'BOND LADDER',
+  [PANEL_IDS.SECTOR_CREDIT_SPREAD]: 'SECTOR CREDIT SPREAD',
+  [PANEL_IDS.GLOBAL_PMI_DASHBOARD]: 'GLOBAL PMI',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1145,6 +1154,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.FI_ATTRIBUTION_ANALYSIS]: 'panelFiAttributionAnalysis',
   [PANEL_IDS.EQUITY_STYLE]: 'panelEquityStyle',
   [PANEL_IDS.CURRENCY_FORECAST]: 'panelCurrencyForecast',
+  [PANEL_IDS.BOND_LADDER]: 'panelBondLadder',
+  [PANEL_IDS.SECTOR_CREDIT_SPREAD]: 'panelSectorCreditSpread',
+  [PANEL_IDS.GLOBAL_PMI_DASHBOARD]: 'panelGlobalPmiDashboard',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1723,6 +1735,9 @@ export function DockLayout() {
       case PANEL_IDS.FI_ATTRIBUTION_ANALYSIS: content = <LazyWrap><FiAttributionAnalysisPanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_STYLE: content = <LazyWrap><EquityStylePanel /></LazyWrap>; break;
       case PANEL_IDS.CURRENCY_FORECAST: content = <LazyWrap><CurrencyForecastPanel /></LazyWrap>; break;
+      case PANEL_IDS.BOND_LADDER: content = <LazyWrap><BondLadderPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECTOR_CREDIT_SPREAD: content = <LazyWrap><SectorCreditSpreadPanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_PMI_DASHBOARD: content = <LazyWrap><GlobalPmiDashboardPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
