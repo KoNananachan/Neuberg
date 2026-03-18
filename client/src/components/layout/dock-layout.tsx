@@ -221,6 +221,9 @@ const PortfolioRiskAnalyticsPanel = lazy(() => import('../panels/portfolio-risk-
 const CreditIndexMonitorPanel = lazy(() => import('../panels/credit-index-monitor-panel').then(m => ({ default: m.CreditIndexMonitorPanel })));
 const EquityFinancingPanel = lazy(() => import('../panels/equity-financing-panel').then(m => ({ default: m.EquityFinancingPanel })));
 const GlobalMacroDashboardPanel = lazy(() => import('../panels/global-macro-dashboard-panel').then(m => ({ default: m.GlobalMacroDashboardPanel })));
+const AbsRmbsMonitorPanel = lazy(() => import('../panels/abs-rmbs-monitor-panel').then(m => ({ default: m.AbsRmbsMonitorPanel })));
+const LiquidityRiskMonitorPanel = lazy(() => import('../panels/liquidity-risk-monitor-panel').then(m => ({ default: m.LiquidityRiskMonitorPanel })));
+const FiAttributionPanel = lazy(() => import('../panels/fi-attribution-panel').then(m => ({ default: m.FiAttributionPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -454,6 +457,9 @@ export const PANEL_IDS = {
   CREDIT_INDEX_MONITOR: 'credit-index-monitor',
   EQUITY_FINANCING: 'equity-financing',
   GLOBAL_MACRO_DASHBOARD: 'global-macro-dashboard',
+  ABS_RMBS_MONITOR: 'abs-rmbs-monitor',
+  LIQUIDITY_RISK_MONITOR: 'liquidity-risk-monitor',
+  FI_ATTRIBUTION: 'fi-attribution',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -671,6 +677,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CREDIT_INDEX_MONITOR]: 'CREDIT INDEX MONITOR',
   [PANEL_IDS.EQUITY_FINANCING]: 'EQUITY FINANCING',
   [PANEL_IDS.GLOBAL_MACRO_DASHBOARD]: 'GLOBAL MACRO DASHBOARD',
+  [PANEL_IDS.ABS_RMBS_MONITOR]: 'ABS/RMBS MONITOR',
+  [PANEL_IDS.LIQUIDITY_RISK_MONITOR]: 'LIQUIDITY RISK MONITOR',
+  [PANEL_IDS.FI_ATTRIBUTION]: 'FI ATTRIBUTION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -889,6 +898,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CREDIT_INDEX_MONITOR]: 'panelCreditIndexMonitor',
   [PANEL_IDS.EQUITY_FINANCING]: 'panelEquityFinancing',
   [PANEL_IDS.GLOBAL_MACRO_DASHBOARD]: 'panelGlobalMacroDashboard',
+  [PANEL_IDS.ABS_RMBS_MONITOR]: 'panelAbsRmbsMonitor',
+  [PANEL_IDS.LIQUIDITY_RISK_MONITOR]: 'panelLiquidityRiskMonitor',
+  [PANEL_IDS.FI_ATTRIBUTION]: 'panelFiAttribution',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1403,6 +1415,9 @@ export function DockLayout() {
       case PANEL_IDS.CREDIT_INDEX_MONITOR: content = <LazyWrap><CreditIndexMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_FINANCING: content = <LazyWrap><EquityFinancingPanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_MACRO_DASHBOARD: content = <LazyWrap><GlobalMacroDashboardPanel /></LazyWrap>; break;
+      case PANEL_IDS.ABS_RMBS_MONITOR: content = <LazyWrap><AbsRmbsMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.LIQUIDITY_RISK_MONITOR: content = <LazyWrap><LiquidityRiskMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.FI_ATTRIBUTION: content = <LazyWrap><FiAttributionPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
