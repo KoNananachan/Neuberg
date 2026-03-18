@@ -264,6 +264,8 @@ import municipalBondMonitorRouter from './routes/municipal-bond-monitor.js';
 import structuredCreditRouter from './routes/structured-credit.js';
 import currencyOptionsRouter from './routes/currency-options.js';
 import swapCurveMonitorRouter from './routes/swap-curve-monitor.js';
+import fundFlowAnalyticsRouter from './routes/fund-flow-analytics.js';
+import tradeCostAnalysisRouter from './routes/trade-cost-analysis.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -629,6 +631,8 @@ export function createApp() {
   app.use('/api/structured-credit', structuredCreditRouter);
   app.use('/api/currency-options', currencyOptionsRouter);
   app.use('/api/swap-curve-monitor', swapCurveMonitorRouter);
+  app.use('/api/fund-flow-analytics', fundFlowAnalyticsRouter);
+  app.use('/api/trade-cost-analysis', tradeCostAnalysisRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
