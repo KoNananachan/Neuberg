@@ -209,6 +209,9 @@ import cryptoDerivativesRouter from './routes/crypto-derivatives.js';
 import bondRelativeValueRouter from './routes/bond-relative-value.js';
 import volatilityArbitrageRouter from './routes/volatility-arbitrage.js';
 import systematicStrategyRouter from './routes/systematic-strategy.js';
+import fundingRateMonitorRouter from './routes/funding-rate-monitor.js';
+import emLocalRatesRouter from './routes/em-local-rates.js';
+import portfolioRiskAnalyticsRouter from './routes/portfolio-risk-analytics.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -519,6 +522,9 @@ export function createApp() {
   app.use('/api/bond-relative-value', bondRelativeValueRouter);
   app.use('/api/volatility-arbitrage', volatilityArbitrageRouter);
   app.use('/api/systematic-strategy', systematicStrategyRouter);
+  app.use('/api/funding-rate-monitor', fundingRateMonitorRouter);
+  app.use('/api/em-local-rates', emLocalRatesRouter);
+  app.use('/api/portfolio-risk-analytics', portfolioRiskAnalyticsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

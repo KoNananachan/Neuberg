@@ -215,6 +215,9 @@ const CryptoDerivativesPanel = lazy(() => import('../panels/crypto-derivatives-p
 const BondRelativeValuePanel = lazy(() => import('../panels/bond-relative-value-panel').then(m => ({ default: m.BondRelativeValuePanel })));
 const VolatilityArbitragePanel = lazy(() => import('../panels/volatility-arbitrage-panel').then(m => ({ default: m.VolatilityArbitragePanel })));
 const SystematicStrategyPanel = lazy(() => import('../panels/systematic-strategy-panel').then(m => ({ default: m.SystematicStrategyPanel })));
+const FundingRateMonitorPanel = lazy(() => import('../panels/funding-rate-monitor-panel').then(m => ({ default: m.FundingRateMonitorPanel })));
+const EmLocalRatesPanel = lazy(() => import('../panels/em-local-rates-panel').then(m => ({ default: m.EmLocalRatesPanel })));
+const PortfolioRiskAnalyticsPanel = lazy(() => import('../panels/portfolio-risk-analytics-panel').then(m => ({ default: m.PortfolioRiskAnalyticsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -442,6 +445,9 @@ export const PANEL_IDS = {
   BOND_RELATIVE_VALUE: 'bond-relative-value',
   VOLATILITY_ARBITRAGE: 'volatility-arbitrage',
   SYSTEMATIC_STRATEGY: 'systematic-strategy',
+  FUNDING_RATE_MONITOR: 'funding-rate-monitor',
+  EM_LOCAL_RATES: 'em-local-rates',
+  PORTFOLIO_RISK_ANALYTICS: 'portfolio-risk-analytics',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -653,6 +659,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.BOND_RELATIVE_VALUE]: 'BOND RELATIVE VALUE',
   [PANEL_IDS.VOLATILITY_ARBITRAGE]: 'VOLATILITY ARBITRAGE',
   [PANEL_IDS.SYSTEMATIC_STRATEGY]: 'SYSTEMATIC STRATEGY',
+  [PANEL_IDS.FUNDING_RATE_MONITOR]: 'FUNDING RATE MONITOR',
+  [PANEL_IDS.EM_LOCAL_RATES]: 'EM LOCAL RATES',
+  [PANEL_IDS.PORTFOLIO_RISK_ANALYTICS]: 'PORTFOLIO RISK ANALYTICS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -865,6 +874,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.BOND_RELATIVE_VALUE]: 'panelBondRelativeValue',
   [PANEL_IDS.VOLATILITY_ARBITRAGE]: 'panelVolatilityArbitrage',
   [PANEL_IDS.SYSTEMATIC_STRATEGY]: 'panelSystematicStrategy',
+  [PANEL_IDS.FUNDING_RATE_MONITOR]: 'panelFundingRateMonitor',
+  [PANEL_IDS.EM_LOCAL_RATES]: 'panelEmLocalRates',
+  [PANEL_IDS.PORTFOLIO_RISK_ANALYTICS]: 'panelPortfolioRiskAnalytics',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1373,6 +1385,9 @@ export function DockLayout() {
       case PANEL_IDS.BOND_RELATIVE_VALUE: content = <LazyWrap><BondRelativeValuePanel /></LazyWrap>; break;
       case PANEL_IDS.VOLATILITY_ARBITRAGE: content = <LazyWrap><VolatilityArbitragePanel /></LazyWrap>; break;
       case PANEL_IDS.SYSTEMATIC_STRATEGY: content = <LazyWrap><SystematicStrategyPanel /></LazyWrap>; break;
+      case PANEL_IDS.FUNDING_RATE_MONITOR: content = <LazyWrap><FundingRateMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.EM_LOCAL_RATES: content = <LazyWrap><EmLocalRatesPanel /></LazyWrap>; break;
+      case PANEL_IDS.PORTFOLIO_RISK_ANALYTICS: content = <LazyWrap><PortfolioRiskAnalyticsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
