@@ -194,6 +194,9 @@ const SovereignWealthPanel = lazy(() => import('../panels/sovereign-wealth-panel
 const AgencyMbsTbaPanel = lazy(() => import('../panels/agency-mbs-tba-panel').then(m => ({ default: m.AgencyMbsTbaPanel })));
 const EtfFlowsPanel = lazy(() => import('../panels/etf-flows-panel').then(m => ({ default: m.EtfFlowsPanel })));
 const CreditFlowPanel = lazy(() => import('../panels/credit-flow-panel').then(m => ({ default: m.CreditFlowPanel })));
+const CommoditySeasonalityPanel = lazy(() => import('../panels/commodity-seasonality-panel').then(m => ({ default: m.CommoditySeasonalityPanel })));
+const FxVolatilityPanel = lazy(() => import('../panels/fx-volatility-panel').then(m => ({ default: m.FxVolatilityPanel })));
+const PrimaryDealerPanel = lazy(() => import('../panels/primary-dealer-panel').then(m => ({ default: m.PrimaryDealerPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -400,6 +403,9 @@ export const PANEL_IDS = {
   AGENCY_MBS_TBA: 'agency-mbs-tba',
   ETF_FLOWS: 'etf-flows',
   CREDIT_FLOW: 'credit-flow',
+  COMMODITY_SEASONALITY: 'commodity-seasonality',
+  FX_VOLATILITY: 'fx-volatility',
+  PRIMARY_DEALER: 'primary-dealer',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -590,6 +596,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.AGENCY_MBS_TBA]: 'AGENCY MBS TBA',
   [PANEL_IDS.ETF_FLOWS]: 'ETF FLOWS',
   [PANEL_IDS.CREDIT_FLOW]: 'CREDIT FLOW',
+  [PANEL_IDS.COMMODITY_SEASONALITY]: 'COMMODITY SEASONALITY',
+  [PANEL_IDS.FX_VOLATILITY]: 'FX VOLATILITY',
+  [PANEL_IDS.PRIMARY_DEALER]: 'PRIMARY DEALER',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -781,6 +790,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.AGENCY_MBS_TBA]: 'panelAgencyMbsTba',
   [PANEL_IDS.ETF_FLOWS]: 'panelEtfFlows',
   [PANEL_IDS.CREDIT_FLOW]: 'panelCreditFlow',
+  [PANEL_IDS.COMMODITY_SEASONALITY]: 'panelCommoditySeasonality',
+  [PANEL_IDS.FX_VOLATILITY]: 'panelFxVolatility',
+  [PANEL_IDS.PRIMARY_DEALER]: 'panelPrimaryDealer',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1268,6 +1280,9 @@ export function DockLayout() {
       case PANEL_IDS.AGENCY_MBS_TBA: content = <LazyWrap><AgencyMbsTbaPanel /></LazyWrap>; break;
       case PANEL_IDS.ETF_FLOWS: content = <LazyWrap><EtfFlowsPanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_FLOW: content = <LazyWrap><CreditFlowPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_SEASONALITY: content = <LazyWrap><CommoditySeasonalityPanel /></LazyWrap>; break;
+      case PANEL_IDS.FX_VOLATILITY: content = <LazyWrap><FxVolatilityPanel /></LazyWrap>; break;
+      case PANEL_IDS.PRIMARY_DEALER: content = <LazyWrap><PrimaryDealerPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
