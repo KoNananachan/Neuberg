@@ -212,6 +212,9 @@ import systematicStrategyRouter from './routes/systematic-strategy.js';
 import fundingRateMonitorRouter from './routes/funding-rate-monitor.js';
 import emLocalRatesRouter from './routes/em-local-rates.js';
 import portfolioRiskAnalyticsRouter from './routes/portfolio-risk-analytics.js';
+import creditIndexMonitorRouter from './routes/credit-index-monitor.js';
+import equityFinancingRouter from './routes/equity-financing.js';
+import globalMacroDashboardRouter from './routes/global-macro-dashboard.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -525,6 +528,9 @@ export function createApp() {
   app.use('/api/funding-rate-monitor', fundingRateMonitorRouter);
   app.use('/api/em-local-rates', emLocalRatesRouter);
   app.use('/api/portfolio-risk-analytics', portfolioRiskAnalyticsRouter);
+  app.use('/api/credit-index-monitor', creditIndexMonitorRouter);
+  app.use('/api/equity-financing', equityFinancingRouter);
+  app.use('/api/global-macro-dashboard', globalMacroDashboardRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

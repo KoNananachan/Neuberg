@@ -218,6 +218,9 @@ const SystematicStrategyPanel = lazy(() => import('../panels/systematic-strategy
 const FundingRateMonitorPanel = lazy(() => import('../panels/funding-rate-monitor-panel').then(m => ({ default: m.FundingRateMonitorPanel })));
 const EmLocalRatesPanel = lazy(() => import('../panels/em-local-rates-panel').then(m => ({ default: m.EmLocalRatesPanel })));
 const PortfolioRiskAnalyticsPanel = lazy(() => import('../panels/portfolio-risk-analytics-panel').then(m => ({ default: m.PortfolioRiskAnalyticsPanel })));
+const CreditIndexMonitorPanel = lazy(() => import('../panels/credit-index-monitor-panel').then(m => ({ default: m.CreditIndexMonitorPanel })));
+const EquityFinancingPanel = lazy(() => import('../panels/equity-financing-panel').then(m => ({ default: m.EquityFinancingPanel })));
+const GlobalMacroDashboardPanel = lazy(() => import('../panels/global-macro-dashboard-panel').then(m => ({ default: m.GlobalMacroDashboardPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -448,6 +451,9 @@ export const PANEL_IDS = {
   FUNDING_RATE_MONITOR: 'funding-rate-monitor',
   EM_LOCAL_RATES: 'em-local-rates',
   PORTFOLIO_RISK_ANALYTICS: 'portfolio-risk-analytics',
+  CREDIT_INDEX_MONITOR: 'credit-index-monitor',
+  EQUITY_FINANCING: 'equity-financing',
+  GLOBAL_MACRO_DASHBOARD: 'global-macro-dashboard',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -662,6 +668,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.FUNDING_RATE_MONITOR]: 'FUNDING RATE MONITOR',
   [PANEL_IDS.EM_LOCAL_RATES]: 'EM LOCAL RATES',
   [PANEL_IDS.PORTFOLIO_RISK_ANALYTICS]: 'PORTFOLIO RISK ANALYTICS',
+  [PANEL_IDS.CREDIT_INDEX_MONITOR]: 'CREDIT INDEX MONITOR',
+  [PANEL_IDS.EQUITY_FINANCING]: 'EQUITY FINANCING',
+  [PANEL_IDS.GLOBAL_MACRO_DASHBOARD]: 'GLOBAL MACRO DASHBOARD',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -877,6 +886,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.FUNDING_RATE_MONITOR]: 'panelFundingRateMonitor',
   [PANEL_IDS.EM_LOCAL_RATES]: 'panelEmLocalRates',
   [PANEL_IDS.PORTFOLIO_RISK_ANALYTICS]: 'panelPortfolioRiskAnalytics',
+  [PANEL_IDS.CREDIT_INDEX_MONITOR]: 'panelCreditIndexMonitor',
+  [PANEL_IDS.EQUITY_FINANCING]: 'panelEquityFinancing',
+  [PANEL_IDS.GLOBAL_MACRO_DASHBOARD]: 'panelGlobalMacroDashboard',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1388,6 +1400,9 @@ export function DockLayout() {
       case PANEL_IDS.FUNDING_RATE_MONITOR: content = <LazyWrap><FundingRateMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.EM_LOCAL_RATES: content = <LazyWrap><EmLocalRatesPanel /></LazyWrap>; break;
       case PANEL_IDS.PORTFOLIO_RISK_ANALYTICS: content = <LazyWrap><PortfolioRiskAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_INDEX_MONITOR: content = <LazyWrap><CreditIndexMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_FINANCING: content = <LazyWrap><EquityFinancingPanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_MACRO_DASHBOARD: content = <LazyWrap><GlobalMacroDashboardPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
