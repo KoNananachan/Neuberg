@@ -158,6 +158,9 @@ const MultiFactorPanel = lazy(() => import('../panels/multi-factor-panel').then(
 const TreasuryAuctionsPanel = lazy(() => import('../panels/treasury-auctions-panel').then(m => ({ default: m.TreasuryAuctionsPanel })));
 const CommodityCurvesPanel = lazy(() => import('../panels/commodity-curves-panel').then(m => ({ default: m.CommodityCurvesPanel })));
 const EmBondsPanel = lazy(() => import('../panels/em-bonds-panel').then(m => ({ default: m.EmBondsPanel })));
+const ReitMonitorPanel = lazy(() => import('../panels/reit-monitor-panel').then(m => ({ default: m.ReitMonitorPanel })));
+const MoneyMarketPanel = lazy(() => import('../panels/money-market-panel').then(m => ({ default: m.MoneyMarketPanel })));
+const ConvertibleBondsPanel = lazy(() => import('../panels/convertible-bonds-panel').then(m => ({ default: m.ConvertibleBondsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -328,6 +331,9 @@ export const PANEL_IDS = {
   TREASURY_AUCTIONS: 'treasury-auctions',
   COMMODITY_CURVES: 'commodity-curves',
   EM_BONDS: 'em-bonds',
+  REIT_MONITOR: 'reit-monitor',
+  MONEY_MARKET: 'money-market',
+  CONVERTIBLE_BONDS: 'convertible-bonds',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -482,6 +488,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.TREASURY_AUCTIONS]: 'TREASURY AUCTIONS',
   [PANEL_IDS.COMMODITY_CURVES]: 'COMMODITY CURVES',
   [PANEL_IDS.EM_BONDS]: 'EM BONDS',
+  [PANEL_IDS.REIT_MONITOR]: 'REIT MONITOR',
+  [PANEL_IDS.MONEY_MARKET]: 'MONEY MARKET',
+  [PANEL_IDS.CONVERTIBLE_BONDS]: 'CONVERTIBLE BONDS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -637,6 +646,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.TREASURY_AUCTIONS]: 'panelTreasuryAuctions',
   [PANEL_IDS.COMMODITY_CURVES]: 'panelCommodityCurves',
   [PANEL_IDS.EM_BONDS]: 'panelEmBonds',
+  [PANEL_IDS.REIT_MONITOR]: 'panelReitMonitor',
+  [PANEL_IDS.MONEY_MARKET]: 'panelMoneyMarket',
+  [PANEL_IDS.CONVERTIBLE_BONDS]: 'panelConvertibleBonds',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1088,6 +1100,9 @@ export function DockLayout() {
       case PANEL_IDS.TREASURY_AUCTIONS: content = <LazyWrap><TreasuryAuctionsPanel /></LazyWrap>; break;
       case PANEL_IDS.COMMODITY_CURVES: content = <LazyWrap><CommodityCurvesPanel /></LazyWrap>; break;
       case PANEL_IDS.EM_BONDS: content = <LazyWrap><EmBondsPanel /></LazyWrap>; break;
+      case PANEL_IDS.REIT_MONITOR: content = <LazyWrap><ReitMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.MONEY_MARKET: content = <LazyWrap><MoneyMarketPanel /></LazyWrap>; break;
+      case PANEL_IDS.CONVERTIBLE_BONDS: content = <LazyWrap><ConvertibleBondsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
