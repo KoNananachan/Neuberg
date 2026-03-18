@@ -60,6 +60,9 @@ const RelativeStrengthPanel = lazy(() => import('../panels/relative-strength-pan
 const WatchlistPanel = lazy(() => import('../panels/watchlist-panel').then(m => ({ default: m.WatchlistPanel })));
 const EconomicIndicatorsPanel = lazy(() => import('../panels/economic-indicators-panel').then(m => ({ default: m.EconomicIndicatorsPanel })));
 const FXCrossPanel = lazy(() => import('../panels/fx-cross-panel').then(m => ({ default: m.FxCrossPanel })));
+const PortfolioAnalyticsPanel = lazy(() => import('../panels/portfolio-analytics-panel').then(m => ({ default: m.PortfolioAnalyticsPanel })));
+const FearGreedPanel = lazy(() => import('../panels/fear-greed-panel').then(m => ({ default: m.FearGreedPanel })));
+const SentimentHeatmapPanel = lazy(() => import('../panels/sentiment-heatmap-panel').then(m => ({ default: m.SentimentHeatmapPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -76,7 +79,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 21; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 22; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -132,6 +135,9 @@ export const PANEL_IDS = {
   WATCHLIST: 'watchlist',
   ECON_INDICATORS: 'econ-indicators',
   FX_CROSS: 'fx-cross-rates',
+  PORTFOLIO: 'portfolio-analytics',
+  FEAR_GREED: 'fear-greed',
+  SENTIMENT_HEATMAP: 'sentiment-heatmap',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -188,6 +194,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.WATCHLIST]: 'WATCHLIST',
   [PANEL_IDS.ECON_INDICATORS]: 'ECONOMIC INDICATORS',
   [PANEL_IDS.FX_CROSS]: 'FX CROSS RATES',
+  [PANEL_IDS.PORTFOLIO]: 'PORTFOLIO ANALYTICS',
+  [PANEL_IDS.FEAR_GREED]: 'FEAR & GREED',
+  [PANEL_IDS.SENTIMENT_HEATMAP]: 'SENTIMENT HEATMAP',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -245,6 +254,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.WATCHLIST]: 'panelWatchlist',
   [PANEL_IDS.ECON_INDICATORS]: 'panelEconIndicators',
   [PANEL_IDS.FX_CROSS]: 'panelFXCross',
+  [PANEL_IDS.PORTFOLIO]: 'panelPortfolio',
+  [PANEL_IDS.FEAR_GREED]: 'panelFearGreed',
+  [PANEL_IDS.SENTIMENT_HEATMAP]: 'panelSentimentHeatmap',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -580,6 +592,9 @@ export function DockLayout() {
       case PANEL_IDS.WATCHLIST: content = <LazyWrap><WatchlistPanel /></LazyWrap>; break;
       case PANEL_IDS.ECON_INDICATORS: content = <LazyWrap><EconomicIndicatorsPanel /></LazyWrap>; break;
       case PANEL_IDS.FX_CROSS: content = <LazyWrap><FXCrossPanel /></LazyWrap>; break;
+      case PANEL_IDS.PORTFOLIO: content = <LazyWrap><PortfolioAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.FEAR_GREED: content = <LazyWrap><FearGreedPanel /></LazyWrap>; break;
+      case PANEL_IDS.SENTIMENT_HEATMAP: content = <LazyWrap><SentimentHeatmapPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

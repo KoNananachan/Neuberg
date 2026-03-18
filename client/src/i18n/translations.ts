@@ -1224,6 +1224,12 @@ const en = {
   fxcLegendBuy: '> 1 (buy)',
   fxcLegendSell: '< 1 (sell)',
   fxcLegendPar: '= 1 (par)',
+  // Portfolio Analytics
+  panelPortfolio: 'PORTFOLIO ANALYTICS',
+  // Fear & Greed
+  panelFearGreed: 'FEAR & GREED INDEX',
+  // Sentiment Heatmap
+  panelSentimentHeatmap: 'SENTIMENT HEATMAP',
 };
 
 export type TranslationKey = keyof typeof en;
@@ -2309,6 +2315,9 @@ const zh: Record<TranslationKey, string> = {
   fxcLegendBuy: '> 1 (买)',
   fxcLegendSell: '< 1 (卖)',
   fxcLegendPar: '= 1 (平价)',
+  panelPortfolio: '投资组合分析',
+  panelFearGreed: '恐惧贪婪指数',
+  panelSentimentHeatmap: '情绪热力图',
 };
 
 const ja: Record<TranslationKey, string> = {
@@ -3389,6 +3398,9 @@ const ja: Record<TranslationKey, string> = {
   fxcLegendBuy: '> 1 (買)',
   fxcLegendSell: '< 1 (売)',
   fxcLegendPar: '= 1 (等価)',
+  panelPortfolio: 'ポートフォリオ分析',
+  panelFearGreed: '恐怖・強欲指数',
+  panelSentimentHeatmap: 'センチメントヒートマップ',
 };
 
 const ko: Record<TranslationKey, string> = {
@@ -4469,6 +4481,9 @@ const ko: Record<TranslationKey, string> = {
   fxcLegendBuy: '> 1 (매수)',
   fxcLegendSell: '< 1 (매도)',
   fxcLegendPar: '= 1 (등가)',
+  panelPortfolio: '포트폴리오 분석',
+  panelFearGreed: '공포 탐욕 지수',
+  panelSentimentHeatmap: '센티먼트 히트맵',
 };
 
 const es: Record<TranslationKey, string> = {
@@ -5549,6 +5564,9 @@ const es: Record<TranslationKey, string> = {
   fxcLegendBuy: '> 1 (compra)',
   fxcLegendSell: '< 1 (venta)',
   fxcLegendPar: '= 1 (par)',
+  panelPortfolio: 'ANALISIS DE CARTERA',
+  panelFearGreed: 'INDICE MIEDO Y CODICIA',
+  panelSentimentHeatmap: 'MAPA DE SENTIMIENTO',
 };
 
 const fr: Record<TranslationKey, string> = {
@@ -6629,6 +6647,9 @@ const fr: Record<TranslationKey, string> = {
   fxcLegendBuy: '> 1 (achat)',
   fxcLegendSell: '< 1 (vente)',
   fxcLegendPar: '= 1 (parite)',
+  panelPortfolio: 'ANALYSE DE PORTEFEUILLE',
+  panelFearGreed: 'INDICE PEUR ET AVIDITE',
+  panelSentimentHeatmap: 'CARTE DE SENTIMENT',
 };
 
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
