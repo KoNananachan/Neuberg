@@ -1,0 +1,12 @@
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../client';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useSwapValuation() {
+  return useQuery({
+    queryKey: ['swap-valuation'],
+    queryFn: () => api.get<any>('/swap-valuation'),
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 3 * 60 * 1000,
+  });
+}

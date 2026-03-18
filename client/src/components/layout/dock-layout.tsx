@@ -227,6 +227,9 @@ const FiAttributionPanel = lazy(() => import('../panels/fi-attribution-panel').t
 const RepoRateHeatmapPanel = lazy(() => import('../panels/repo-rate-heatmap-panel').then(m => ({ default: m.RepoRateHeatmapPanel })));
 const TradeCompressionPanel = lazy(() => import('../panels/trade-compression-panel').then(m => ({ default: m.TradeCompressionPanel })));
 const RegulatoryCapitalPanel = lazy(() => import('../panels/regulatory-capital-panel').then(m => ({ default: m.RegulatoryCapitalPanel })));
+const SettlementRiskPanel = lazy(() => import('../panels/settlement-risk-panel').then(m => ({ default: m.SettlementRiskPanel })));
+const SwapValuationPanel = lazy(() => import('../panels/swap-valuation-panel').then(m => ({ default: m.SwapValuationPanel })));
+const CommodityStoragePanel = lazy(() => import('../panels/commodity-storage-panel').then(m => ({ default: m.CommodityStoragePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -466,6 +469,9 @@ export const PANEL_IDS = {
   REPO_RATE_HEATMAP: 'repo-rate-heatmap',
   TRADE_COMPRESSION: 'trade-compression',
   REGULATORY_CAPITAL: 'regulatory-capital',
+  SETTLEMENT_RISK: 'settlement-risk',
+  SWAP_VALUATION: 'swap-valuation',
+  COMMODITY_STORAGE: 'commodity-storage',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -689,6 +695,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.REPO_RATE_HEATMAP]: 'REPO RATE HEATMAP',
   [PANEL_IDS.TRADE_COMPRESSION]: 'TRADE COMPRESSION',
   [PANEL_IDS.REGULATORY_CAPITAL]: 'REGULATORY CAPITAL',
+  [PANEL_IDS.SETTLEMENT_RISK]: 'SETTLEMENT RISK',
+  [PANEL_IDS.SWAP_VALUATION]: 'SWAP VALUATION',
+  [PANEL_IDS.COMMODITY_STORAGE]: 'COMMODITY STORAGE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -913,6 +922,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.REPO_RATE_HEATMAP]: 'panelRepoRateHeatmap',
   [PANEL_IDS.TRADE_COMPRESSION]: 'panelTradeCompression',
   [PANEL_IDS.REGULATORY_CAPITAL]: 'panelRegulatoryCapital',
+  [PANEL_IDS.SETTLEMENT_RISK]: 'panelSettlementRisk',
+  [PANEL_IDS.SWAP_VALUATION]: 'panelSwapValuation',
+  [PANEL_IDS.COMMODITY_STORAGE]: 'panelCommodityStorage',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1433,6 +1445,9 @@ export function DockLayout() {
       case PANEL_IDS.REPO_RATE_HEATMAP: content = <LazyWrap><RepoRateHeatmapPanel /></LazyWrap>; break;
       case PANEL_IDS.TRADE_COMPRESSION: content = <LazyWrap><TradeCompressionPanel /></LazyWrap>; break;
       case PANEL_IDS.REGULATORY_CAPITAL: content = <LazyWrap><RegulatoryCapitalPanel /></LazyWrap>; break;
+      case PANEL_IDS.SETTLEMENT_RISK: content = <LazyWrap><SettlementRiskPanel /></LazyWrap>; break;
+      case PANEL_IDS.SWAP_VALUATION: content = <LazyWrap><SwapValuationPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_STORAGE: content = <LazyWrap><CommodityStoragePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
