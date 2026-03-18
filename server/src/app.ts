@@ -98,6 +98,9 @@ import carryTradeRouter from './routes/carry-trade.js';
 import cotReportRouter from './routes/cot-report.js';
 import ivRankRouter from './routes/iv-rank.js';
 import performanceAttributionRouter from './routes/performance-attribution.js';
+import marketMicrostructureRouter from './routes/market-microstructure.js';
+import countryRiskRouter from './routes/country-risk.js';
+import positioningRouter from './routes/positioning.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -297,6 +300,9 @@ export function createApp() {
   app.use('/api/cot-report', cotReportRouter);
   app.use('/api/iv-rank', ivRankRouter);
   app.use('/api/performance-attribution', performanceAttributionRouter);
+  app.use('/api/market-microstructure', marketMicrostructureRouter);
+  app.use('/api/country-risk', countryRiskRouter);
+  app.use('/api/positioning', positioningRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

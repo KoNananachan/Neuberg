@@ -105,6 +105,9 @@ const CarryTradePanel = lazy(() => import('../panels/carry-trade-panel').then(m 
 const CotReportPanel = lazy(() => import('../panels/cot-report-panel').then(m => ({ default: m.CotReportPanel })));
 const IvRankPanel = lazy(() => import('../panels/iv-rank-panel').then(m => ({ default: m.IvRankPanel })));
 const PerformanceAttributionPanel = lazy(() => import('../panels/performance-attribution-panel').then(m => ({ default: m.PerformanceAttributionPanel })));
+const MarketMicrostructurePanel = lazy(() => import('../panels/market-microstructure-panel').then(m => ({ default: m.MarketMicrostructurePanel })));
+const CountryRiskPanel = lazy(() => import('../panels/country-risk-panel').then(m => ({ default: m.CountryRiskPanel })));
+const PositioningPanel = lazy(() => import('../panels/positioning-panel').then(m => ({ default: m.PositioningPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -222,6 +225,9 @@ export const PANEL_IDS = {
   COT_REPORT: 'cot-report',
   IV_RANK: 'iv-rank',
   PERFORMANCE_ATTRIBUTION: 'performance-attribution',
+  MARKET_MICROSTRUCTURE: 'market-microstructure',
+  COUNTRY_RISK: 'country-risk',
+  POSITIONING: 'positioning',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -323,6 +329,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.COT_REPORT]: 'COT REPORT',
   [PANEL_IDS.IV_RANK]: 'IV RANK',
   [PANEL_IDS.PERFORMANCE_ATTRIBUTION]: 'PERFORMANCE ATTRIBUTION',
+  [PANEL_IDS.MARKET_MICROSTRUCTURE]: 'MARKET MICROSTRUCTURE',
+  [PANEL_IDS.COUNTRY_RISK]: 'COUNTRY RISK',
+  [PANEL_IDS.POSITIONING]: 'POSITIONING & FLOWS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -425,6 +434,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.COT_REPORT]: 'panelCotReport',
   [PANEL_IDS.IV_RANK]: 'panelIvRank',
   [PANEL_IDS.PERFORMANCE_ATTRIBUTION]: 'panelPerformanceAttribution',
+  [PANEL_IDS.MARKET_MICROSTRUCTURE]: 'panelMarketMicrostructure',
+  [PANEL_IDS.COUNTRY_RISK]: 'panelCountryRisk',
+  [PANEL_IDS.POSITIONING]: 'panelPositioning',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -823,6 +835,9 @@ export function DockLayout() {
       case PANEL_IDS.COT_REPORT: content = <LazyWrap><CotReportPanel /></LazyWrap>; break;
       case PANEL_IDS.IV_RANK: content = <LazyWrap><IvRankPanel /></LazyWrap>; break;
       case PANEL_IDS.PERFORMANCE_ATTRIBUTION: content = <LazyWrap><PerformanceAttributionPanel /></LazyWrap>; break;
+      case PANEL_IDS.MARKET_MICROSTRUCTURE: content = <LazyWrap><MarketMicrostructurePanel /></LazyWrap>; break;
+      case PANEL_IDS.COUNTRY_RISK: content = <LazyWrap><CountryRiskPanel /></LazyWrap>; break;
+      case PANEL_IDS.POSITIONING: content = <LazyWrap><PositioningPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
