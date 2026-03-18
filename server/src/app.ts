@@ -47,6 +47,8 @@ import analystRouter from './routes/analyst.js';
 import financialsRouter from './routes/financials.js';
 import futuresRouter from './routes/futures.js';
 import comparisonRouter from './routes/comparison.js';
+import shortInterestRouter from './routes/short-interest.js';
+import fxConverterRouter from './routes/fx-converter.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -195,6 +197,8 @@ export function createApp() {
   app.use('/api/financials', financialsRouter);
   app.use('/api/futures', futuresRouter);
   app.use('/api/comparison', comparisonRouter);
+  app.use('/api/short-interest', shortInterestRouter);
+  app.use('/api/fx-rates', fxConverterRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
