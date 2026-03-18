@@ -317,6 +317,9 @@ import primeBrokerageRouter from './routes/prime-brokerage.js';
 import electionRiskRouter from './routes/election-risk.js';
 import cvaMonitorRouter from './routes/cva-monitor.js';
 import algoExecutionRouter from './routes/algo-execution.js';
+import securitiesClassActionRouter from './routes/securities-class-action.js';
+import proxyVotingRouter from './routes/proxy-voting.js';
+import indexRebalanceRouter from './routes/index-rebalance.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -735,6 +738,9 @@ export function createApp() {
   app.use('/api/election-risk', electionRiskRouter);
   app.use('/api/cva-monitor', cvaMonitorRouter);
   app.use('/api/algo-execution', algoExecutionRouter);
+  app.use('/api/securities-class-action', securitiesClassActionRouter);
+  app.use('/api/proxy-voting', proxyVotingRouter);
+  app.use('/api/index-rebalance', indexRebalanceRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

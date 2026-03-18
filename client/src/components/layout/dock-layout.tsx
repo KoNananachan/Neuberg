@@ -322,6 +322,9 @@ const PrimeBrokeragePanel = lazy(() => import('../panels/prime-brokerage-panel')
 const ElectionRiskPanel = lazy(() => import('../panels/election-risk-panel').then(m => ({ default: m.ElectionRiskPanel })));
 const CvaMonitorPanel = lazy(() => import('../panels/cva-monitor-panel').then(m => ({ default: m.CvaMonitorPanel })));
 const AlgoExecutionPanel = lazy(() => import('../panels/algo-execution-panel').then(m => ({ default: m.AlgoExecutionPanel })));
+const SecuritiesClassActionPanel = lazy(() => import('../panels/securities-class-action-panel').then(m => ({ default: m.SecuritiesClassActionPanel })));
+const ProxyVotingPanel = lazy(() => import('../panels/proxy-voting-panel').then(m => ({ default: m.ProxyVotingPanel })));
+const IndexRebalancePanel = lazy(() => import('../panels/index-rebalance-panel').then(m => ({ default: m.IndexRebalancePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -656,6 +659,9 @@ export const PANEL_IDS = {
   ELECTION_RISK: 'election-risk',
   CVA_MONITOR: 'cva-monitor',
   ALGO_EXECUTION: 'algo-execution',
+  SECURITIES_CLASS_ACTION: 'securities-class-action',
+  PROXY_VOTING: 'proxy-voting',
+  INDEX_REBALANCE: 'index-rebalance',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -974,6 +980,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.ELECTION_RISK]: 'ELECTION RISK',
   [PANEL_IDS.CVA_MONITOR]: 'CVA MONITOR',
   [PANEL_IDS.ALGO_EXECUTION]: 'ALGO EXECUTION',
+  [PANEL_IDS.SECURITIES_CLASS_ACTION]: 'SECURITIES CLASS ACTION',
+  [PANEL_IDS.PROXY_VOTING]: 'PROXY VOTING',
+  [PANEL_IDS.INDEX_REBALANCE]: 'INDEX REBALANCE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1293,6 +1302,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.ELECTION_RISK]: 'panelElectionRisk',
   [PANEL_IDS.CVA_MONITOR]: 'panelCvaMonitor',
   [PANEL_IDS.ALGO_EXECUTION]: 'panelAlgoExecution',
+  [PANEL_IDS.SECURITIES_CLASS_ACTION]: 'panelSecuritiesClassAction',
+  [PANEL_IDS.PROXY_VOTING]: 'panelProxyVoting',
+  [PANEL_IDS.INDEX_REBALANCE]: 'panelIndexRebalance',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1908,6 +1920,9 @@ export function DockLayout() {
       case PANEL_IDS.ELECTION_RISK: content = <LazyWrap><ElectionRiskPanel /></LazyWrap>; break;
       case PANEL_IDS.CVA_MONITOR: content = <LazyWrap><CvaMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.ALGO_EXECUTION: content = <LazyWrap><AlgoExecutionPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECURITIES_CLASS_ACTION: content = <LazyWrap><SecuritiesClassActionPanel /></LazyWrap>; break;
+      case PANEL_IDS.PROXY_VOTING: content = <LazyWrap><ProxyVotingPanel /></LazyWrap>; break;
+      case PANEL_IDS.INDEX_REBALANCE: content = <LazyWrap><IndexRebalancePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
