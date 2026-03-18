@@ -167,6 +167,9 @@ const SwaptionVolPanel = lazy(() => import('../panels/swaption-vol-panel').then(
 const DistressedDebtPanel = lazy(() => import('../panels/distressed-debt-panel').then(m => ({ default: m.DistressedDebtPanel })));
 const RateCapsFloorsPanel = lazy(() => import('../panels/rate-caps-floors-panel').then(m => ({ default: m.RateCapsFloorsPanel })));
 const DividendSwapsPanel = lazy(() => import('../panels/dividend-swaps-panel').then(m => ({ default: m.DividendSwapsPanel })));
+const SecuritiesLendingPanel = lazy(() => import('../panels/securities-lending-panel').then(m => ({ default: m.SecuritiesLendingPanel })));
+const VarianceSwapsPanel = lazy(() => import('../panels/variance-swaps-panel').then(m => ({ default: m.VarianceSwapsPanel })));
+const CarbonCreditsPanel = lazy(() => import('../panels/carbon-credits-panel').then(m => ({ default: m.CarbonCreditsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -346,6 +349,9 @@ export const PANEL_IDS = {
   DISTRESSED_DEBT: 'distressed-debt',
   RATE_CAPS_FLOORS: 'rate-caps-floors',
   DIVIDEND_SWAPS: 'dividend-swaps',
+  SECURITIES_LENDING: 'securities-lending',
+  VARIANCE_SWAPS: 'variance-swaps',
+  CARBON_CREDITS: 'carbon-credits',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -509,6 +515,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.DISTRESSED_DEBT]: 'DISTRESSED DEBT',
   [PANEL_IDS.RATE_CAPS_FLOORS]: 'RATE CAPS/FLOORS',
   [PANEL_IDS.DIVIDEND_SWAPS]: 'DIVIDEND SWAPS',
+  [PANEL_IDS.SECURITIES_LENDING]: 'SECURITIES LENDING',
+  [PANEL_IDS.VARIANCE_SWAPS]: 'VARIANCE SWAPS',
+  [PANEL_IDS.CARBON_CREDITS]: 'CARBON CREDITS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -673,6 +682,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.DISTRESSED_DEBT]: 'panelDistressedDebt',
   [PANEL_IDS.RATE_CAPS_FLOORS]: 'panelRateCapsFloors',
   [PANEL_IDS.DIVIDEND_SWAPS]: 'panelDividendSwaps',
+  [PANEL_IDS.SECURITIES_LENDING]: 'panelSecuritiesLending',
+  [PANEL_IDS.VARIANCE_SWAPS]: 'panelVarianceSwaps',
+  [PANEL_IDS.CARBON_CREDITS]: 'panelCarbonCredits',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1133,6 +1145,9 @@ export function DockLayout() {
       case PANEL_IDS.DISTRESSED_DEBT: content = <LazyWrap><DistressedDebtPanel /></LazyWrap>; break;
       case PANEL_IDS.RATE_CAPS_FLOORS: content = <LazyWrap><RateCapsFloorsPanel /></LazyWrap>; break;
       case PANEL_IDS.DIVIDEND_SWAPS: content = <LazyWrap><DividendSwapsPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECURITIES_LENDING: content = <LazyWrap><SecuritiesLendingPanel /></LazyWrap>; break;
+      case PANEL_IDS.VARIANCE_SWAPS: content = <LazyWrap><VarianceSwapsPanel /></LazyWrap>; break;
+      case PANEL_IDS.CARBON_CREDITS: content = <LazyWrap><CarbonCreditsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
