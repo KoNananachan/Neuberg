@@ -96,6 +96,9 @@ const MacroHeatmapPanel = lazy(() => import('../panels/macro-heatmap-panel').the
 const FactorExposurePanel = lazy(() => import('../panels/factor-exposure-panel').then(m => ({ default: m.FactorExposurePanel })));
 const CapitalFlowsPanel = lazy(() => import('../panels/capital-flows-panel').then(m => ({ default: m.CapitalFlowsPanel })));
 const TailRiskPanel = lazy(() => import('../panels/tail-risk-panel').then(m => ({ default: m.TailRiskPanel })));
+const LiquidityPanel = lazy(() => import('../panels/liquidity-panel').then(m => ({ default: m.LiquidityPanel })));
+const CommoditySpreadsPanel = lazy(() => import('../panels/commodity-spreads-panel').then(m => ({ default: m.CommoditySpreadsPanel })));
+const SentimentDashboardPanel = lazy(() => import('../panels/sentiment-dashboard-panel').then(m => ({ default: m.SentimentDashboardPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -204,6 +207,9 @@ export const PANEL_IDS = {
   FACTOR_EXPOSURE: 'factor-exposure',
   CAPITAL_FLOWS: 'capital-flows',
   TAIL_RISK: 'tail-risk',
+  LIQUIDITY: 'liquidity',
+  COMMODITY_SPREADS: 'commodity-spreads',
+  SENTIMENT_DASHBOARD: 'sentiment-dashboard',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -296,6 +302,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.FACTOR_EXPOSURE]: 'FACTOR EXPOSURE',
   [PANEL_IDS.CAPITAL_FLOWS]: 'GLOBAL CAPITAL FLOWS',
   [PANEL_IDS.TAIL_RISK]: 'TAIL RISK MONITOR',
+  [PANEL_IDS.LIQUIDITY]: 'LIQUIDITY MONITOR',
+  [PANEL_IDS.COMMODITY_SPREADS]: 'COMMODITY SPREADS',
+  [PANEL_IDS.SENTIMENT_DASHBOARD]: 'SENTIMENT DASHBOARD',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -389,6 +398,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.FACTOR_EXPOSURE]: 'panelFactorExposure',
   [PANEL_IDS.CAPITAL_FLOWS]: 'panelCapitalFlows',
   [PANEL_IDS.TAIL_RISK]: 'panelTailRisk',
+  [PANEL_IDS.LIQUIDITY]: 'panelLiquidity',
+  [PANEL_IDS.COMMODITY_SPREADS]: 'panelCommoditySpreads',
+  [PANEL_IDS.SENTIMENT_DASHBOARD]: 'panelSentimentDashboard',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -778,6 +790,9 @@ export function DockLayout() {
       case PANEL_IDS.FACTOR_EXPOSURE: content = <LazyWrap><FactorExposurePanel /></LazyWrap>; break;
       case PANEL_IDS.CAPITAL_FLOWS: content = <LazyWrap><CapitalFlowsPanel /></LazyWrap>; break;
       case PANEL_IDS.TAIL_RISK: content = <LazyWrap><TailRiskPanel /></LazyWrap>; break;
+      case PANEL_IDS.LIQUIDITY: content = <LazyWrap><LiquidityPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_SPREADS: content = <LazyWrap><CommoditySpreadsPanel /></LazyWrap>; break;
+      case PANEL_IDS.SENTIMENT_DASHBOARD: content = <LazyWrap><SentimentDashboardPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

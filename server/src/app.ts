@@ -89,6 +89,9 @@ import macroHeatmapRouter from './routes/macro-heatmap.js';
 import factorExposureRouter from './routes/factor-exposure.js';
 import capitalFlowsRouter from './routes/capital-flows.js';
 import tailRiskRouter from './routes/tail-risk.js';
+import liquidityRouter from './routes/liquidity.js';
+import commoditySpreadsRouter from './routes/commodity-spreads.js';
+import sentimentDashboardRouter from './routes/sentiment-dashboard.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -279,6 +282,9 @@ export function createApp() {
   app.use('/api/factor-exposure', factorExposureRouter);
   app.use('/api/capital-flows', capitalFlowsRouter);
   app.use('/api/tail-risk', tailRiskRouter);
+  app.use('/api/liquidity', liquidityRouter);
+  app.use('/api/commodity-spreads', commoditySpreadsRouter);
+  app.use('/api/sentiment-dashboard', sentimentDashboardRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
