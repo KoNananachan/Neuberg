@@ -134,6 +134,9 @@ const ImpliedCorrelationPanel = lazy(() => import('../panels/implied-correlation
 const EarningsQualityPanel = lazy(() => import('../panels/earnings-quality-panel').then(m => ({ default: m.EarningsQualityPanel })));
 const VolSurfacePanel = lazy(() => import('../panels/vol-surface-panel').then(m => ({ default: m.VolSurfacePanel })));
 const GlobalFlowsPanel = lazy(() => import('../panels/global-flows-panel').then(m => ({ default: m.GlobalFlowsPanel })));
+const RegressionAnalysisPanel = lazy(() => import('../panels/regression-analysis-panel').then(m => ({ default: m.RegressionAnalysisPanel })));
+const CovenantMonitorPanel = lazy(() => import('../panels/covenant-monitor-panel').then(m => ({ default: m.CovenantMonitorPanel })));
+const MarketInternalsPanel = lazy(() => import('../panels/market-internals-panel').then(m => ({ default: m.MarketInternalsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -280,6 +283,9 @@ export const PANEL_IDS = {
   EARNINGS_QUALITY: 'earnings-quality',
   VOL_SURFACE: 'vol-surface',
   GLOBAL_FLOWS: 'global-flows',
+  REGRESSION_ANALYSIS: 'regression-analysis',
+  COVENANT_MONITOR: 'covenant-monitor',
+  MARKET_INTERNALS: 'market-internals',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -410,6 +416,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.EARNINGS_QUALITY]: 'EARNINGS QUALITY',
   [PANEL_IDS.VOL_SURFACE]: 'VOL SURFACE',
   [PANEL_IDS.GLOBAL_FLOWS]: 'GLOBAL FLOWS',
+  [PANEL_IDS.REGRESSION_ANALYSIS]: 'REGRESSION ANALYSIS',
+  [PANEL_IDS.COVENANT_MONITOR]: 'COVENANT MONITOR',
+  [PANEL_IDS.MARKET_INTERNALS]: 'MARKET INTERNALS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -541,6 +550,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.EARNINGS_QUALITY]: 'panelEarningsQuality',
   [PANEL_IDS.VOL_SURFACE]: 'panelVolSurface',
   [PANEL_IDS.GLOBAL_FLOWS]: 'panelGlobalFlows',
+  [PANEL_IDS.REGRESSION_ANALYSIS]: 'panelRegressionAnalysis',
+  [PANEL_IDS.COVENANT_MONITOR]: 'panelCovenantMonitor',
+  [PANEL_IDS.MARKET_INTERNALS]: 'panelMarketInternals',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -968,6 +980,9 @@ export function DockLayout() {
       case PANEL_IDS.EARNINGS_QUALITY: content = <LazyWrap><EarningsQualityPanel /></LazyWrap>; break;
       case PANEL_IDS.VOL_SURFACE: content = <LazyWrap><VolSurfacePanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_FLOWS: content = <LazyWrap><GlobalFlowsPanel /></LazyWrap>; break;
+      case PANEL_IDS.REGRESSION_ANALYSIS: content = <LazyWrap><RegressionAnalysisPanel /></LazyWrap>; break;
+      case PANEL_IDS.COVENANT_MONITOR: content = <LazyWrap><CovenantMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.MARKET_INTERNALS: content = <LazyWrap><MarketInternalsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

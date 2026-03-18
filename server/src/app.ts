@@ -128,6 +128,9 @@ import impliedCorrelationRouter from './routes/implied-correlation.js';
 import earningsQualityRouter from './routes/earnings-quality.js';
 import volSurfaceRouter from './routes/vol-surface.js';
 import globalFlowsRouter from './routes/global-flows.js';
+import regressionAnalysisRouter from './routes/regression-analysis.js';
+import covenantMonitorRouter from './routes/covenant-monitor.js';
+import marketInternalsRouter from './routes/market-internals.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -357,6 +360,9 @@ export function createApp() {
   app.use('/api/earnings-quality', earningsQualityRouter);
   app.use('/api/vol-surface', volSurfaceRouter);
   app.use('/api/global-flows', globalFlowsRouter);
+  app.use('/api/regression-analysis', regressionAnalysisRouter);
+  app.use('/api/covenant-monitor', covenantMonitorRouter);
+  app.use('/api/market-internals', marketInternalsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
