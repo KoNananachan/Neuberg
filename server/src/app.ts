@@ -227,6 +227,9 @@ import commodityStorageRouter from './routes/commodity-storage.js';
 import counterpartyExposureRouter from './routes/counterparty-exposure.js';
 import marketImpactModelRouter from './routes/market-impact-model.js';
 import structuredNotesRouter from './routes/structured-notes.js';
+import securitiesFinanceRouter from './routes/securities-finance.js';
+import creditCurveBuilderRouter from './routes/credit-curve-builder.js';
+import executionAnalyticsRouter from './routes/execution-analytics.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -555,6 +558,9 @@ export function createApp() {
   app.use('/api/counterparty-exposure', counterpartyExposureRouter);
   app.use('/api/market-impact-model', marketImpactModelRouter);
   app.use('/api/structured-notes', structuredNotesRouter);
+  app.use('/api/securities-finance', securitiesFinanceRouter);
+  app.use('/api/credit-curve-builder', creditCurveBuilderRouter);
+  app.use('/api/execution-analytics', executionAnalyticsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

@@ -233,6 +233,9 @@ const CommodityStoragePanel = lazy(() => import('../panels/commodity-storage-pan
 const CounterpartyExposurePanel = lazy(() => import('../panels/counterparty-exposure-panel').then(m => ({ default: m.CounterpartyExposurePanel })));
 const MarketImpactModelPanel = lazy(() => import('../panels/market-impact-model-panel').then(m => ({ default: m.MarketImpactModelPanel })));
 const StructuredNotesPanel = lazy(() => import('../panels/structured-notes-panel').then(m => ({ default: m.StructuredNotesPanel })));
+const SecuritiesFinancePanel = lazy(() => import('../panels/securities-finance-panel').then(m => ({ default: m.SecuritiesFinancePanel })));
+const CreditCurveBuilderPanel = lazy(() => import('../panels/credit-curve-builder-panel').then(m => ({ default: m.CreditCurveBuilderPanel })));
+const ExecutionAnalyticsPanel = lazy(() => import('../panels/execution-analytics-panel').then(m => ({ default: m.ExecutionAnalyticsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -478,6 +481,9 @@ export const PANEL_IDS = {
   COUNTERPARTY_EXPOSURE: 'counterparty-exposure',
   MARKET_IMPACT_MODEL: 'market-impact-model',
   STRUCTURED_NOTES: 'structured-notes',
+  SECURITIES_FINANCE: 'securities-finance',
+  CREDIT_CURVE_BUILDER: 'credit-curve-builder',
+  EXECUTION_ANALYTICS: 'execution-analytics',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -707,6 +713,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.COUNTERPARTY_EXPOSURE]: 'COUNTERPARTY EXPOSURE',
   [PANEL_IDS.MARKET_IMPACT_MODEL]: 'MARKET IMPACT MODEL',
   [PANEL_IDS.STRUCTURED_NOTES]: 'STRUCTURED NOTES',
+  [PANEL_IDS.SECURITIES_FINANCE]: 'SECURITIES FINANCE',
+  [PANEL_IDS.CREDIT_CURVE_BUILDER]: 'CREDIT CURVE BUILDER',
+  [PANEL_IDS.EXECUTION_ANALYTICS]: 'EXECUTION ANALYTICS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -937,6 +946,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.COUNTERPARTY_EXPOSURE]: 'panelCounterpartyExposure',
   [PANEL_IDS.MARKET_IMPACT_MODEL]: 'panelMarketImpactModel',
   [PANEL_IDS.STRUCTURED_NOTES]: 'panelStructuredNotes',
+  [PANEL_IDS.SECURITIES_FINANCE]: 'panelSecuritiesFinance',
+  [PANEL_IDS.CREDIT_CURVE_BUILDER]: 'panelCreditCurveBuilder',
+  [PANEL_IDS.EXECUTION_ANALYTICS]: 'panelExecutionAnalytics',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1463,6 +1475,9 @@ export function DockLayout() {
       case PANEL_IDS.COUNTERPARTY_EXPOSURE: content = <LazyWrap><CounterpartyExposurePanel /></LazyWrap>; break;
       case PANEL_IDS.MARKET_IMPACT_MODEL: content = <LazyWrap><MarketImpactModelPanel /></LazyWrap>; break;
       case PANEL_IDS.STRUCTURED_NOTES: content = <LazyWrap><StructuredNotesPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECURITIES_FINANCE: content = <LazyWrap><SecuritiesFinancePanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_CURVE_BUILDER: content = <LazyWrap><CreditCurveBuilderPanel /></LazyWrap>; break;
+      case PANEL_IDS.EXECUTION_ANALYTICS: content = <LazyWrap><ExecutionAnalyticsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
