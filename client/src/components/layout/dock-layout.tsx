@@ -170,6 +170,9 @@ const DividendSwapsPanel = lazy(() => import('../panels/dividend-swaps-panel').t
 const SecuritiesLendingPanel = lazy(() => import('../panels/securities-lending-panel').then(m => ({ default: m.SecuritiesLendingPanel })));
 const VarianceSwapsPanel = lazy(() => import('../panels/variance-swaps-panel').then(m => ({ default: m.VarianceSwapsPanel })));
 const CarbonCreditsPanel = lazy(() => import('../panels/carbon-credits-panel').then(m => ({ default: m.CarbonCreditsPanel })));
+const WeatherDerivativesPanel = lazy(() => import('../panels/weather-derivatives-panel').then(m => ({ default: m.WeatherDerivativesPanel })));
+const DarkPoolPanel = lazy(() => import('../panels/dark-pool-panel').then(m => ({ default: m.DarkPoolPanel })));
+const TotalReturnSwapsPanel = lazy(() => import('../panels/total-return-swaps-panel').then(m => ({ default: m.TotalReturnSwapsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -352,6 +355,9 @@ export const PANEL_IDS = {
   SECURITIES_LENDING: 'securities-lending',
   VARIANCE_SWAPS: 'variance-swaps',
   CARBON_CREDITS: 'carbon-credits',
+  WEATHER_DERIVATIVES: 'weather-derivatives',
+  DARK_POOL: 'dark-pool',
+  TOTAL_RETURN_SWAPS: 'total-return-swaps',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -518,6 +524,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SECURITIES_LENDING]: 'SECURITIES LENDING',
   [PANEL_IDS.VARIANCE_SWAPS]: 'VARIANCE SWAPS',
   [PANEL_IDS.CARBON_CREDITS]: 'CARBON CREDITS',
+  [PANEL_IDS.WEATHER_DERIVATIVES]: 'WEATHER DERIVATIVES',
+  [PANEL_IDS.DARK_POOL]: 'DARK POOL ANALYTICS',
+  [PANEL_IDS.TOTAL_RETURN_SWAPS]: 'TOTAL RETURN SWAPS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -685,6 +694,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SECURITIES_LENDING]: 'panelSecuritiesLending',
   [PANEL_IDS.VARIANCE_SWAPS]: 'panelVarianceSwaps',
   [PANEL_IDS.CARBON_CREDITS]: 'panelCarbonCredits',
+  [PANEL_IDS.WEATHER_DERIVATIVES]: 'panelWeatherDerivatives',
+  [PANEL_IDS.DARK_POOL]: 'panelDarkPool',
+  [PANEL_IDS.TOTAL_RETURN_SWAPS]: 'panelTotalReturnSwaps',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1148,6 +1160,9 @@ export function DockLayout() {
       case PANEL_IDS.SECURITIES_LENDING: content = <LazyWrap><SecuritiesLendingPanel /></LazyWrap>; break;
       case PANEL_IDS.VARIANCE_SWAPS: content = <LazyWrap><VarianceSwapsPanel /></LazyWrap>; break;
       case PANEL_IDS.CARBON_CREDITS: content = <LazyWrap><CarbonCreditsPanel /></LazyWrap>; break;
+      case PANEL_IDS.WEATHER_DERIVATIVES: content = <LazyWrap><WeatherDerivativesPanel /></LazyWrap>; break;
+      case PANEL_IDS.DARK_POOL: content = <LazyWrap><DarkPoolPanel /></LazyWrap>; break;
+      case PANEL_IDS.TOTAL_RETURN_SWAPS: content = <LazyWrap><TotalReturnSwapsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

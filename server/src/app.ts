@@ -164,6 +164,9 @@ import dividendSwapsRouter from './routes/dividend-swaps.js';
 import securitiesLendingRouter from './routes/securities-lending.js';
 import varianceSwapsRouter from './routes/variance-swaps.js';
 import carbonCreditsRouter from './routes/carbon-credits.js';
+import weatherDerivativesRouter from './routes/weather-derivatives.js';
+import darkPoolRouter from './routes/dark-pool.js';
+import totalReturnSwapsRouter from './routes/total-return-swaps.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -429,6 +432,9 @@ export function createApp() {
   app.use('/api/securities-lending', securitiesLendingRouter);
   app.use('/api/variance-swaps', varianceSwapsRouter);
   app.use('/api/carbon-credits', carbonCreditsRouter);
+  app.use('/api/weather-derivatives', weatherDerivativesRouter);
+  app.use('/api/dark-pool', darkPoolRouter);
+  app.use('/api/total-return-swaps', totalReturnSwapsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
