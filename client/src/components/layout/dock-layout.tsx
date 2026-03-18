@@ -328,6 +328,9 @@ const IndexRebalancePanel = lazy(() => import('../panels/index-rebalance-panel')
 const ShareholderActivismPanel = lazy(() => import('../panels/shareholder-activism-panel').then(m => ({ default: m.ShareholderActivismPanel })));
 const FundFlowTrackerPanel = lazy(() => import('../panels/fund-flow-tracker-panel').then(m => ({ default: m.FundFlowTrackerPanel })));
 const InsiderTransactionPanel = lazy(() => import('../panels/insider-transaction-panel').then(m => ({ default: m.InsiderTransactionPanel })));
+const ShortSqueezePanel = lazy(() => import('../panels/short-squeeze-panel').then(m => ({ default: m.ShortSqueezePanel })));
+const SpacMonitorPanel = lazy(() => import('../panels/spac-monitor-panel').then(m => ({ default: m.SpacMonitorPanel })));
+const BlockTradePanel = lazy(() => import('../panels/block-trade-panel').then(m => ({ default: m.BlockTradePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -668,6 +671,9 @@ export const PANEL_IDS = {
   SHAREHOLDER_ACTIVISM: 'shareholder-activism',
   FUND_FLOW_TRACKER: 'fund-flow-tracker',
   INSIDER_TRANSACTION: 'insider-transaction',
+  SHORT_SQUEEZE: 'short-squeeze',
+  SPAC_MONITOR: 'spac-monitor',
+  BLOCK_TRADE: 'block-trade',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -992,6 +998,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SHAREHOLDER_ACTIVISM]: 'SHAREHOLDER ACTIVISM',
   [PANEL_IDS.FUND_FLOW_TRACKER]: 'FUND FLOW TRACKER',
   [PANEL_IDS.INSIDER_TRANSACTION]: 'INSIDER TRANSACTION',
+  [PANEL_IDS.SHORT_SQUEEZE]: 'SHORT SQUEEZE',
+  [PANEL_IDS.SPAC_MONITOR]: 'SPAC MONITOR',
+  [PANEL_IDS.BLOCK_TRADE]: 'BLOCK TRADE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1317,6 +1326,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SHAREHOLDER_ACTIVISM]: 'panelShareholderActivism',
   [PANEL_IDS.FUND_FLOW_TRACKER]: 'panelFundFlowTracker',
   [PANEL_IDS.INSIDER_TRANSACTION]: 'panelInsiderTransaction',
+  [PANEL_IDS.SHORT_SQUEEZE]: 'panelShortSqueeze',
+  [PANEL_IDS.SPAC_MONITOR]: 'panelSpacMonitor',
+  [PANEL_IDS.BLOCK_TRADE]: 'panelBlockTrade',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1938,6 +1950,9 @@ export function DockLayout() {
       case PANEL_IDS.SHAREHOLDER_ACTIVISM: content = <LazyWrap><ShareholderActivismPanel /></LazyWrap>; break;
       case PANEL_IDS.FUND_FLOW_TRACKER: content = <LazyWrap><FundFlowTrackerPanel /></LazyWrap>; break;
       case PANEL_IDS.INSIDER_TRANSACTION: content = <LazyWrap><InsiderTransactionPanel /></LazyWrap>; break;
+      case PANEL_IDS.SHORT_SQUEEZE: content = <LazyWrap><ShortSqueezePanel /></LazyWrap>; break;
+      case PANEL_IDS.SPAC_MONITOR: content = <LazyWrap><SpacMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.BLOCK_TRADE: content = <LazyWrap><BlockTradePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

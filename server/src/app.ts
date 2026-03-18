@@ -323,6 +323,9 @@ import indexRebalanceRouter from './routes/index-rebalance.js';
 import shareholderActivismRouter from './routes/shareholder-activism.js';
 import fundFlowTrackerRouter from './routes/fund-flow-tracker.js';
 import insiderTransactionRouter from './routes/insider-transaction.js';
+import shortSqueezeRouter from './routes/short-squeeze.js';
+import spacMonitorRouter from './routes/spac-monitor.js';
+import blockTradeRouter from './routes/block-trade.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -747,6 +750,9 @@ export function createApp() {
   app.use('/api/shareholder-activism', shareholderActivismRouter);
   app.use('/api/fund-flow-tracker', fundFlowTrackerRouter);
   app.use('/api/insider-transaction', insiderTransactionRouter);
+  app.use('/api/short-squeeze', shortSqueezeRouter);
+  app.use('/api/spac-monitor', spacMonitorRouter);
+  app.use('/api/block-trade', blockTradeRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
