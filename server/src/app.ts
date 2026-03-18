@@ -356,6 +356,9 @@ import collateralOptimizationRouter from './routes/collateral-optimization.js';
 import crossMarginingRouter from './routes/cross-margining.js';
 import fundManagerRankingRouter from './routes/fund-manager-ranking.js';
 import priceDiscoveryRouter from './routes/price-discovery.js';
+import operationalRiskRouter from './routes/operational-risk.js';
+import transitionManagementRouter from './routes/transition-management.js';
+import securitiesValuationRouter from './routes/securities-valuation.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -813,6 +816,9 @@ export function createApp() {
   app.use('/api/cross-margining', crossMarginingRouter);
   app.use('/api/fund-manager-ranking', fundManagerRankingRouter);
   app.use('/api/price-discovery', priceDiscoveryRouter);
+  app.use('/api/operational-risk', operationalRiskRouter);
+  app.use('/api/transition-management', transitionManagementRouter);
+  app.use('/api/securities-valuation', securitiesValuationRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

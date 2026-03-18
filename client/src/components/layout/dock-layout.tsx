@@ -361,6 +361,9 @@ const CollateralOptimizationPanel = lazy(() => import('../panels/collateral-opti
 const CrossMarginingPanel = lazy(() => import('../panels/cross-margining-panel').then(m => ({ default: m.CrossMarginingPanel })));
 const FundManagerRankingPanel = lazy(() => import('../panels/fund-manager-ranking-panel').then(m => ({ default: m.FundManagerRankingPanel })));
 const PriceDiscoveryPanel = lazy(() => import('../panels/price-discovery-panel').then(m => ({ default: m.PriceDiscoveryPanel })));
+const OperationalRiskPanel = lazy(() => import('../panels/operational-risk-panel').then(m => ({ default: m.OperationalRiskPanel })));
+const TransitionManagementPanel = lazy(() => import('../panels/transition-management-panel').then(m => ({ default: m.TransitionManagementPanel })));
+const SecuritiesValuationPanel = lazy(() => import('../panels/securities-valuation-panel').then(m => ({ default: m.SecuritiesValuationPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -734,6 +737,9 @@ export const PANEL_IDS = {
   CROSS_MARGINING: 'cross-margining',
   FUND_MANAGER_RANKING: 'fund-manager-ranking',
   PRICE_DISCOVERY: 'price-discovery',
+  OPERATIONAL_RISK: 'operational-risk',
+  TRANSITION_MANAGEMENT: 'transition-management',
+  SECURITIES_VALUATION: 'securities-valuation',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1091,6 +1097,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CROSS_MARGINING]: 'CROSS MARGINING',
   [PANEL_IDS.FUND_MANAGER_RANKING]: 'FUND MANAGER RANKING',
   [PANEL_IDS.PRICE_DISCOVERY]: 'PRICE DISCOVERY',
+  [PANEL_IDS.OPERATIONAL_RISK]: 'OPERATIONAL RISK',
+  [PANEL_IDS.TRANSITION_MANAGEMENT]: 'TRANSITION MANAGEMENT',
+  [PANEL_IDS.SECURITIES_VALUATION]: 'SECURITIES VALUATION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1449,6 +1458,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CROSS_MARGINING]: 'panelCrossMargining',
   [PANEL_IDS.FUND_MANAGER_RANKING]: 'panelFundManagerRanking',
   [PANEL_IDS.PRICE_DISCOVERY]: 'panelPriceDiscovery',
+  [PANEL_IDS.OPERATIONAL_RISK]: 'panelOperationalRisk',
+  [PANEL_IDS.TRANSITION_MANAGEMENT]: 'panelTransitionManagement',
+  [PANEL_IDS.SECURITIES_VALUATION]: 'panelSecuritiesValuation',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2103,6 +2115,9 @@ export function DockLayout() {
       case PANEL_IDS.CROSS_MARGINING: content = <LazyWrap><CrossMarginingPanel /></LazyWrap>; break;
       case PANEL_IDS.FUND_MANAGER_RANKING: content = <LazyWrap><FundManagerRankingPanel /></LazyWrap>; break;
       case PANEL_IDS.PRICE_DISCOVERY: content = <LazyWrap><PriceDiscoveryPanel /></LazyWrap>; break;
+      case PANEL_IDS.OPERATIONAL_RISK: content = <LazyWrap><OperationalRiskPanel /></LazyWrap>; break;
+      case PANEL_IDS.TRANSITION_MANAGEMENT: content = <LazyWrap><TransitionManagementPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECURITIES_VALUATION: content = <LazyWrap><SecuritiesValuationPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
