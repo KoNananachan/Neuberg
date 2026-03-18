@@ -291,6 +291,9 @@ const GlobalPmiDashboardPanel = lazy(() => import('../panels/global-pmi-dashboar
 const EarningsWhisperPanel = lazy(() => import('../panels/earnings-whisper-panel').then(m => ({ default: m.EarningsWhisperPanel })));
 const PortfolioHedgingPanel = lazy(() => import('../panels/portfolio-hedging-panel').then(m => ({ default: m.PortfolioHedgingPanel })));
 const MarketDepthPanel = lazy(() => import('../panels/market-depth-panel').then(m => ({ default: m.MarketDepthPanel })));
+const IrsMonitorPanel = lazy(() => import('../panels/irs-monitor-panel').then(m => ({ default: m.IrsMonitorPanel })));
+const EquityCapitalRaisePanel = lazy(() => import('../panels/equity-capital-raise-panel').then(m => ({ default: m.EquityCapitalRaisePanel })));
+const VolatilitySmilePanel = lazy(() => import('../panels/volatility-smile-panel').then(m => ({ default: m.VolatilitySmilePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -594,6 +597,9 @@ export const PANEL_IDS = {
   EARNINGS_WHISPER: 'earnings-whisper',
   PORTFOLIO_HEDGING: 'portfolio-hedging',
   MARKET_DEPTH: 'market-depth',
+  IRS_MONITOR: 'irs-monitor',
+  EQUITY_CAPITAL_RAISE: 'equity-capital-raise',
+  VOLATILITY_SMILE: 'volatility-smile',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -881,6 +887,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.EARNINGS_WHISPER]: 'EARNINGS WHISPER',
   [PANEL_IDS.PORTFOLIO_HEDGING]: 'PORTFOLIO HEDGING',
   [PANEL_IDS.MARKET_DEPTH]: 'MARKET DEPTH',
+  [PANEL_IDS.IRS_MONITOR]: 'IRS MONITOR',
+  [PANEL_IDS.EQUITY_CAPITAL_RAISE]: 'EQUITY CAPITAL RAISE',
+  [PANEL_IDS.VOLATILITY_SMILE]: 'VOLATILITY SMILE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1169,6 +1178,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.EARNINGS_WHISPER]: 'panelEarningsWhisper',
   [PANEL_IDS.PORTFOLIO_HEDGING]: 'panelPortfolioHedging',
   [PANEL_IDS.MARKET_DEPTH]: 'panelMarketDepth',
+  [PANEL_IDS.IRS_MONITOR]: 'panelIrsMonitor',
+  [PANEL_IDS.EQUITY_CAPITAL_RAISE]: 'panelEquityCapitalRaise',
+  [PANEL_IDS.VOLATILITY_SMILE]: 'panelVolatilitySmile',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1753,6 +1765,9 @@ export function DockLayout() {
       case PANEL_IDS.EARNINGS_WHISPER: content = <LazyWrap><EarningsWhisperPanel /></LazyWrap>; break;
       case PANEL_IDS.PORTFOLIO_HEDGING: content = <LazyWrap><PortfolioHedgingPanel /></LazyWrap>; break;
       case PANEL_IDS.MARKET_DEPTH: content = <LazyWrap><MarketDepthPanel /></LazyWrap>; break;
+      case PANEL_IDS.IRS_MONITOR: content = <LazyWrap><IrsMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_CAPITAL_RAISE: content = <LazyWrap><EquityCapitalRaisePanel /></LazyWrap>; break;
+      case PANEL_IDS.VOLATILITY_SMILE: content = <LazyWrap><VolatilitySmilePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

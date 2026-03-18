@@ -286,6 +286,9 @@ import globalPmiDashboardRouter from './routes/global-pmi-dashboard.js';
 import earningsWhisperRouter from './routes/earnings-whisper.js';
 import portfolioHedgingRouter from './routes/portfolio-hedging.js';
 import marketDepthRouter from './routes/market-depth.js';
+import irsMonitorRouter from './routes/irs-monitor.js';
+import equityCapitalRaiseRouter from './routes/equity-capital-raise.js';
+import volatilitySmileRouter from './routes/volatility-smile.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -673,6 +676,9 @@ export function createApp() {
   app.use('/api/earnings-whisper', earningsWhisperRouter);
   app.use('/api/portfolio-hedging', portfolioHedgingRouter);
   app.use('/api/market-depth', marketDepthRouter);
+  app.use('/api/irs-monitor', irsMonitorRouter);
+  app.use('/api/equity-capital-raise', equityCapitalRaiseRouter);
+  app.use('/api/volatility-smile', volatilitySmileRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
