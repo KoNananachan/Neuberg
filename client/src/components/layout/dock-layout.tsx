@@ -367,6 +367,7 @@ const SecuritiesValuationPanel = lazy(() => import('../panels/securities-valuati
 const BenchmarkAnalyticsPanel = lazy(() => import('../panels/benchmark-analytics-panel').then(m => ({ default: m.BenchmarkAnalyticsPanel })));
 const CounterpartyRiskPanel = lazy(() => import('../panels/counterparty-risk-panel').then(m => ({ default: m.CounterpartyRiskPanel })));
 const EquityValuationPanel = lazy(() => import('../panels/equity-valuation-panel').then(m => ({ default: m.EquityValuationPanel })));
+const MacroIndicatorsPanel = lazy(() => import('../panels/macro-indicators-panel').then(m => ({ default: m.MacroIndicatorsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -746,6 +747,7 @@ export const PANEL_IDS = {
   BENCHMARK_ANALYTICS: 'benchmark-analytics',
   COUNTERPARTY_RISK: 'counterparty-risk',
   EQUITY_VALUATION: 'equity-valuation',
+  MACRO_INDICATORS: 'macro-indicators',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1109,6 +1111,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.BENCHMARK_ANALYTICS]: 'BENCHMARK ANALYTICS',
   [PANEL_IDS.COUNTERPARTY_RISK]: 'COUNTERPARTY RISK',
   [PANEL_IDS.EQUITY_VALUATION]: 'EQUITY VALUATION',
+  [PANEL_IDS.MACRO_INDICATORS]: 'MACRO INDICATORS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1473,6 +1476,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.BENCHMARK_ANALYTICS]: 'panelBenchmarkAnalytics',
   [PANEL_IDS.COUNTERPARTY_RISK]: 'panelCounterpartyRisk',
   [PANEL_IDS.EQUITY_VALUATION]: 'panelEquityValuation',
+  [PANEL_IDS.MACRO_INDICATORS]: 'panelMacroIndicators',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2133,6 +2137,7 @@ export function DockLayout() {
       case PANEL_IDS.BENCHMARK_ANALYTICS: content = <LazyWrap><BenchmarkAnalyticsPanel /></LazyWrap>; break;
       case PANEL_IDS.COUNTERPARTY_RISK: content = <LazyWrap><CounterpartyRiskPanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_VALUATION: content = <LazyWrap><EquityValuationPanel /></LazyWrap>; break;
+      case PANEL_IDS.MACRO_INDICATORS: content = <LazyWrap><MacroIndicatorsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

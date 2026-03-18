@@ -31,32 +31,17 @@ function surpriseColor(n: number | null): string {
   return n >= 0 ? 'text-green-400' : 'text-red-400';
 }
 
+function moveColor(n: number | null): string {
+  if (n == null) return 'text-neutral/40';
+  return n >= 0 ? 'text-green-400' : 'text-red-400';
+}
+
 function beatRateColor(rate: number | null): string {
   if (rate == null) return 'text-neutral/40';
   if (rate >= 80) return 'text-green-400';
   if (rate >= 60) return 'text-green-400/70';
-  if (rate >= 40) return 'text-orange-400';
+  if (rate >= 40) return 'text-yellow-400';
   return 'text-red-400';
-}
-
-function consensusBadge(consensus: string | null): { label: string; cls: string } {
-  switch (consensus?.toUpperCase()) {
-    case 'BUY':
-    case 'STRONG BUY':
-      return { label: consensus.toUpperCase(), cls: 'text-green-400 bg-green-500/10' };
-    case 'HOLD':
-      return { label: 'HOLD', cls: 'text-yellow-400 bg-yellow-500/10' };
-    case 'SELL':
-    case 'STRONG SELL':
-      return { label: consensus.toUpperCase(), cls: 'text-red-400 bg-red-500/10' };
-    default:
-      return { label: consensus ?? '--', cls: 'text-neutral/40 bg-white/5' };
-  }
-}
-
-function directionArrow(n: number | null): string {
-  if (n == null) return '';
-  return n >= 0 ? '\u2191' : '\u2193';
 }
 
 // ── Section Header ──
@@ -64,20 +49,20 @@ function directionArrow(n: number | null): string {
 function SectionHeader({ title }: { title: string }) {
   return (
     <div className="px-2 py-1 bg-white/[0.02] border-b border-border/20">
-      <span className="text-[9px] font-mono font-bold text-orange-400 uppercase tracking-wider">
+      <span className="text-[9px] font-mono font-bold text-yellow-400 uppercase tracking-wider">
         {title}
       </span>
     </div>
   );
 }
 
-// ── Section 1: This Week's Earnings ──
+// ── Section 1: Upcoming Earnings ──
 
-function ThisWeekEarnings({ items }: { items: any[] }) {
+function UpcomingEarnings({ items }: { items: any[] }) {
   if (!items || items.length === 0) {
     return (
       <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
-        No earnings this week
+        No upcoming earnings
       </div>
     );
   }
@@ -87,64 +72,49 @@ function ThisWeekEarnings({ items }: { items: any[] }) {
       <table className="w-full text-[9px] font-mono">
         <thead>
           <tr className="bg-white/[0.03] border-b border-border/20">
-            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Ticker</th>
+            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Date</th>
+            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Ticker</th>
             <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Company</th>
-            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Date</th>
             <th className="text-center px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Time</th>
             <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">EPS Est</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">EPS Act</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Surprise</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Revenue</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Rev Est</th>
           </tr>
         </thead>
         <tbody>
-          {items.map((e: any, i: number) => {
-            const reported = e.reported === true;
-            const surprise = e.epsSurprise ?? null;
-
-            return (
-              <tr
-                key={`${e.symbol}-${e.date}-${i}`}
-                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
-              >
-                <td className="px-2 py-1 font-bold text-orange-400">{e.symbol}</td>
-                <td className="px-1.5 py-1 text-neutral/50 truncate max-w-[100px]">{e.name}</td>
-                <td className="px-1.5 py-1 text-neutral/60 whitespace-nowrap">{fmtDate(e.date)}</td>
-                <td className="px-1 py-1 text-center">
-                  {e.time === 'BMO' ? (
-                    <span className="text-[8px] px-1 py-0.5 text-blue-400 bg-blue-500/10">BMO</span>
-                  ) : e.time === 'AMC' ? (
-                    <span className="text-[8px] px-1 py-0.5 text-purple-400 bg-purple-500/10">AMC</span>
-                  ) : (
-                    <span className="text-[8px] px-1 py-0.5 text-neutral/40 bg-white/5">{e.time ?? '--'}</span>
-                  )}
-                </td>
-                <td className="text-right px-1.5 py-1 text-neutral/60">{fmtEps(e.epsEstimate)}</td>
-                <td className={`text-right px-1.5 py-1 font-bold ${reported ? surpriseColor(surprise) : 'text-neutral/30'}`}>
-                  {reported ? fmtEps(e.epsActual) : '--'}
-                </td>
-                <td className={`text-right px-1.5 py-1 font-bold ${surpriseColor(surprise)}`}>
-                  {surprise != null ? fmtPct(surprise) : '--'}
-                </td>
-                <td className="text-right px-1.5 py-1 text-neutral/50">
-                  {fmtRevenue(e.revenueEstimate ?? e.revenue ?? null)}
-                </td>
-              </tr>
-            );
-          })}
+          {items.map((e: any, i: number) => (
+            <tr
+              key={`upcoming-${e.symbol}-${e.date}-${i}`}
+              className="border-b border-border/10 hover:bg-yellow-400/[0.02] transition-colors"
+            >
+              <td className="px-2 py-1 text-neutral/60 whitespace-nowrap">{fmtDate(e.date)}</td>
+              <td className="px-1.5 py-1 font-bold text-yellow-400">{e.symbol}</td>
+              <td className="px-1.5 py-1 text-neutral/50 truncate max-w-[120px]">{e.name ?? e.company ?? '--'}</td>
+              <td className="px-1 py-1 text-center">
+                {e.time === 'BMO' ? (
+                  <span className="text-[8px] px-1 py-0.5 text-blue-400 bg-blue-500/10">BMO</span>
+                ) : e.time === 'AMC' ? (
+                  <span className="text-[8px] px-1 py-0.5 text-purple-400 bg-purple-500/10">AMC</span>
+                ) : (
+                  <span className="text-[8px] px-1 py-0.5 text-neutral/40 bg-white/5">{e.time ?? '--'}</span>
+                )}
+              </td>
+              <td className="text-right px-1.5 py-1 text-neutral/60">{fmtEps(e.epsEstimate)}</td>
+              <td className="text-right px-1.5 py-1 text-neutral/50">{fmtRevenue(e.revenueEstimate ?? null)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
   );
 }
 
-// ── Section 2: Recent Surprises ──
+// ── Section 2: Recent Results ──
 
-function RecentSurprises({ items }: { items: any[] }) {
+function RecentResults({ items }: { items: any[] }) {
   if (!items || items.length === 0) {
     return (
       <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
-        No recent surprises
+        No recent results
       </div>
     );
   }
@@ -155,194 +125,118 @@ function RecentSurprises({ items }: { items: any[] }) {
         <thead>
           <tr className="bg-white/[0.03] border-b border-border/20">
             <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Ticker</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Surprise%</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Reaction</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">EPS Act</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">EPS Est</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Surprise %</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Revenue</th>
+            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Stock Move</th>
           </tr>
         </thead>
         <tbody>
-          {items.slice(0, 10).map((e: any, i: number) => {
+          {items.map((e: any, i: number) => {
             const surprise = e.epsSurprise ?? e.surprise ?? null;
-            const reaction = e.priceReaction ?? e.reaction ?? null;
+            const stockMove = e.priceReaction ?? e.stockMove ?? e.reaction ?? null;
 
             return (
               <tr
-                key={`surprise-${e.symbol}-${i}`}
-                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
+                key={`result-${e.symbol}-${i}`}
+                className="border-b border-border/10 hover:bg-yellow-400/[0.02] transition-colors"
               >
-                <td className="px-2 py-1 font-bold text-orange-400">{e.symbol}</td>
+                <td className="px-2 py-1 font-bold text-yellow-400">{e.symbol}</td>
+                <td className={`text-right px-1.5 py-1 font-bold ${surpriseColor(surprise)}`}>
+                  {fmtEps(e.epsActual)}
+                </td>
+                <td className="text-right px-1.5 py-1 text-neutral/50">
+                  {fmtEps(e.epsEstimate)}
+                </td>
                 <td className={`text-right px-1.5 py-1 font-bold ${surpriseColor(surprise)}`}>
                   {fmtPct(surprise)}
                 </td>
-                <td className={`text-right px-1.5 py-1 font-bold ${surpriseColor(reaction)}`}>
-                  <span>{directionArrow(reaction)} {fmtPct(reaction)}</span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ── Section 3: Revision Trends ──
-
-function RevisionTrends({ items }: { items: any[] }) {
-  if (!items || items.length === 0) {
-    return (
-      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
-        No revision data
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[9px] font-mono">
-        <thead>
-          <tr className="bg-white/[0.03] border-b border-border/20">
-            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Ticker</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Current</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">30D Ago</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Rev%</th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Up</th>
-            <th className="text-right px-1 py-1 text-neutral/40 uppercase tracking-wider font-medium">Down</th>
-            <th className="text-center px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Consensus</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((e: any, i: number) => {
-            const revPct = e.revisionPct ?? e.revision ?? null;
-            const badge = consensusBadge(e.consensus);
-
-            return (
-              <tr
-                key={`revision-${e.symbol}-${i}`}
-                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
-              >
-                <td className="px-2 py-1 font-bold text-orange-400">{e.symbol}</td>
-                <td className="text-right px-1.5 py-1 text-neutral/70">{fmtEps(e.current ?? e.currentEstimate ?? null)}</td>
-                <td className="text-right px-1.5 py-1 text-neutral/50">{fmtEps(e.thirtyDaysAgo ?? e.previous ?? null)}</td>
-                <td className={`text-right px-1.5 py-1 font-bold ${surpriseColor(revPct)}`}>
-                  {fmtPct(revPct)}
-                </td>
-                <td className="text-right px-1 py-1 text-green-400">{e.up ?? e.upRevisions ?? '--'}</td>
-                <td className="text-right px-1 py-1 text-red-400">{e.down ?? e.downRevisions ?? '--'}</td>
-                <td className="text-center px-1.5 py-1">
-                  <span className={`text-[8px] px-1.5 py-0.5 ${badge.cls}`}>
-                    {badge.label}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ── Section 4: Sector Summary ──
-
-function SectorSummary({ items }: { items: any[] }) {
-  if (!items || items.length === 0) {
-    return (
-      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
-        No sector data
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[9px] font-mono">
-        <thead>
-          <tr className="bg-white/[0.03] border-b border-border/20">
-            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Sector</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Reported</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Beat Rate</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Avg Surprise</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Avg Reaction</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((s: any, i: number) => {
-            const beatRate = s.beatRate ?? s.beatPct ?? null;
-            const avgSurprise = s.avgSurprise ?? null;
-            const avgReaction = s.avgReaction ?? null;
-
-            return (
-              <tr
-                key={`sector-${s.sector ?? s.name}-${i}`}
-                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
-              >
-                <td className="px-2 py-1 text-neutral/70 uppercase">{s.sector ?? s.name ?? '--'}</td>
-                <td className="text-right px-1.5 py-1 text-neutral/60">{s.reported ?? s.count ?? '--'}</td>
-                <td className={`text-right px-1.5 py-1 font-bold ${beatRateColor(beatRate)}`}>
-                  {beatRate != null ? `${beatRate.toFixed(0)}%` : '--'}
-                </td>
-                <td className={`text-right px-1.5 py-1 ${surpriseColor(avgSurprise)}`}>
-                  {fmtPct(avgSurprise)}
-                </td>
-                <td className={`text-right px-1.5 py-1 ${surpriseColor(avgReaction)}`}>
-                  {fmtPct(avgReaction)}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ── Section 5: Upcoming Highlights ──
-
-function UpcomingHighlights({ items }: { items: any[] }) {
-  if (!items || items.length === 0) {
-    return (
-      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
-        No upcoming highlights
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[9px] font-mono">
-        <thead>
-          <tr className="bg-white/[0.03] border-b border-border/20">
-            <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Ticker</th>
-            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Company</th>
-            <th className="text-left px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Date</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Impl Move</th>
-            <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Analysts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((e: any, i: number) => {
-            const impliedMove = e.impliedMove ?? e.expectedMove ?? null;
-            const analysts = e.analystCount ?? e.analysts ?? null;
-
-            return (
-              <tr
-                key={`upcoming-${e.symbol}-${i}`}
-                className="border-b border-border/10 hover:bg-orange-400/[0.02] transition-colors"
-              >
-                <td className="px-2 py-1 font-bold text-orange-400">{e.symbol}</td>
-                <td className="px-1.5 py-1 text-neutral/50 truncate max-w-[100px]">{e.name ?? e.company ?? '--'}</td>
-                <td className="px-1.5 py-1 text-neutral/60 whitespace-nowrap">{fmtDate(e.date)}</td>
-                <td className="text-right px-1.5 py-1 text-orange-400/80">
-                  {impliedMove != null ? `${impliedMove.toFixed(1)}%` : '--'}
-                </td>
                 <td className="text-right px-1.5 py-1 text-neutral/50">
-                  {analysts ?? '--'}
+                  {fmtRevenue(e.revenue ?? e.revenueActual ?? null)}
+                </td>
+                <td className={`text-right px-1.5 py-1 font-bold ${moveColor(stockMove)}`}>
+                  {fmtPct(stockMove)}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// ── Section 3: Summary Stats ──
+
+function SummaryStats({ summary }: { summary: any }) {
+  if (!summary) {
+    return (
+      <div className="px-2 py-3 text-[9px] font-mono text-neutral/30 uppercase tracking-wider text-center">
+        No summary data
+      </div>
+    );
+  }
+
+  const beatRate = summary?.beatRate ?? summary?.beatPct ?? null;
+  const avgSurprise = summary?.avgSurprise ?? null;
+  const sectors: any[] = summary?.sectors ?? summary?.sectorBreakdown ?? [];
+
+  return (
+    <div>
+      {/* Aggregate stats */}
+      <div className="grid grid-cols-2 gap-px bg-border/10 border-b border-border/20">
+        <div className="px-2 py-1.5 bg-black">
+          <div className="text-[7px] font-mono text-neutral/40 uppercase tracking-wider mb-0.5">Beat Rate</div>
+          <div className={`text-[11px] font-mono font-bold ${beatRateColor(beatRate)}`}>
+            {beatRate != null ? `${beatRate.toFixed(0)}%` : '--'}
+          </div>
+        </div>
+        <div className="px-2 py-1.5 bg-black">
+          <div className="text-[7px] font-mono text-neutral/40 uppercase tracking-wider mb-0.5">Avg Surprise</div>
+          <div className={`text-[11px] font-mono font-bold ${surpriseColor(avgSurprise)}`}>
+            {fmtPct(avgSurprise)}
+          </div>
+        </div>
+      </div>
+
+      {/* Sector breakdown */}
+      {sectors.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[9px] font-mono">
+            <thead>
+              <tr className="bg-white/[0.03] border-b border-border/20">
+                <th className="text-left px-2 py-1 text-neutral/40 uppercase tracking-wider font-medium">Sector</th>
+                <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Reported</th>
+                <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Beat Rate</th>
+                <th className="text-right px-1.5 py-1 text-neutral/40 uppercase tracking-wider font-medium">Avg Surprise</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sectors.map((s: any, i: number) => {
+                const sBeatRate = s.beatRate ?? s.beatPct ?? null;
+                const sAvgSurprise = s.avgSurprise ?? null;
+
+                return (
+                  <tr
+                    key={`sector-${s.sector ?? s.name}-${i}`}
+                    className="border-b border-border/10 hover:bg-yellow-400/[0.02] transition-colors"
+                  >
+                    <td className="px-2 py-1 text-neutral/70 uppercase">{s.sector ?? s.name ?? '--'}</td>
+                    <td className="text-right px-1.5 py-1 text-neutral/60">{s.reported ?? s.count ?? '--'}</td>
+                    <td className={`text-right px-1.5 py-1 font-bold ${beatRateColor(sBeatRate)}`}>
+                      {sBeatRate != null ? `${sBeatRate.toFixed(0)}%` : '--'}
+                    </td>
+                    <td className={`text-right px-1.5 py-1 ${surpriseColor(sAvgSurprise)}`}>
+                      {fmtPct(sAvgSurprise)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -351,64 +245,44 @@ function UpcomingHighlights({ items }: { items: any[] }) {
 
 export function EarningsCalendarPanel() {
   const t = useT();
-  const { data, isLoading, error } = useEarningsCalendar();
+  const { data, isLoading } = useEarningsCalendar();
   const d = data as any;
 
   if (isLoading) {
     return (
       <div className="h-full bg-black flex items-center justify-center">
         <span className="text-[9px] font-mono text-neutral/40 uppercase tracking-wider">
-          {t('loading')}
+          Loading...
         </span>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="h-full bg-black flex items-center justify-center">
-        <span className="text-[9px] font-mono text-red-400 uppercase tracking-wider">
-          FAILED TO LOAD
-        </span>
-      </div>
-    );
-  }
-
-  // Extract sections from the data, with flexible key access
-  const thisWeekItems: any[] = d?.thisWeek ?? d?.events ?? [];
-  const recentSurprises: any[] = d?.recentSurprises ?? d?.surprises ?? thisWeekItems.filter((e: any) => e.reported);
-  const revisionTrends: any[] = d?.revisionTrends ?? d?.revisions ?? [];
-  const sectorSummary: any[] = d?.sectorSummary ?? d?.sectors ?? [];
-  const upcomingHighlights: any[] = d?.upcomingHighlights ?? d?.upcoming ?? thisWeekItems.filter((e: any) => !e.reported);
+  const upcomingItems: any[] = d?.upcoming ?? d?.thisWeek?.filter((e: any) => !e.reported) ?? d?.events?.filter((e: any) => !e.reported) ?? [];
+  const recentItems: any[] = d?.recentResults ?? d?.results ?? d?.recentSurprises ?? d?.thisWeek?.filter((e: any) => e.reported) ?? [];
+  const summaryData = d?.summary ?? d?.stats ?? (d?.sectorSummary ? { sectors: d.sectorSummary, beatRate: d.beatRate, avgSurprise: d.avgSurprise } : null);
 
   return (
     <div className="h-full bg-black text-[9px] font-mono overflow-y-auto">
-      {/* ── Header ── */}
-      <div className="px-2 py-1.5 border-b border-border/20 bg-black sticky top-0 z-10">
-        <span className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider">
-          {t('panelEarningsCalendar' as any) || 'EARNINGS CALENDAR & ESTIMATES'}
+      {/* ── Header with accent bar ── */}
+      <div className="px-2 py-1.5 border-b border-border/20 bg-black sticky top-0 z-10 flex items-center gap-2">
+        <div className="w-0.5 h-3 bg-yellow-400" />
+        <span className="text-[10px] font-mono font-bold text-yellow-400 uppercase tracking-wider">
+          Earnings Calendar
         </span>
       </div>
 
-      {/* ── Section 1: This Week's Earnings ── */}
-      <SectionHeader title="THIS WEEK'S EARNINGS" />
-      <ThisWeekEarnings items={thisWeekItems} />
+      {/* ── Section 1: Upcoming Earnings ── */}
+      <SectionHeader title="UPCOMING EARNINGS" />
+      <UpcomingEarnings items={upcomingItems} />
 
-      {/* ── Section 2: Recent Surprises ── */}
-      <SectionHeader title="RECENT SURPRISES" />
-      <RecentSurprises items={recentSurprises} />
+      {/* ── Section 2: Recent Results ── */}
+      <SectionHeader title="RECENT RESULTS" />
+      <RecentResults items={recentItems} />
 
-      {/* ── Section 3: Revision Trends ── */}
-      <SectionHeader title="REVISION TRENDS" />
-      <RevisionTrends items={revisionTrends} />
-
-      {/* ── Section 4: Sector Summary ── */}
-      <SectionHeader title="SECTOR SUMMARY" />
-      <SectorSummary items={sectorSummary} />
-
-      {/* ── Section 5: Upcoming Highlights ── */}
-      <SectionHeader title="UPCOMING HIGHLIGHTS" />
-      <UpcomingHighlights items={upcomingHighlights} />
+      {/* ── Section 3: Summary Stats ── */}
+      <SectionHeader title="SUMMARY STATS" />
+      <SummaryStats summary={summaryData} />
     </div>
   );
 }
