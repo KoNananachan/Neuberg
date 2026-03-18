@@ -155,6 +155,9 @@ const TradeIdeasPanel = lazy(() => import('../panels/trade-ideas-panel').then(m 
 const DebtIssuancePanel = lazy(() => import('../panels/debt-issuance-panel').then(m => ({ default: m.DebtIssuancePanel })));
 const FxOptionsPanel = lazy(() => import('../panels/fx-options-panel').then(m => ({ default: m.FxOptionsPanel })));
 const MultiFactorPanel = lazy(() => import('../panels/multi-factor-panel').then(m => ({ default: m.MultiFactorPanel })));
+const TreasuryAuctionsPanel = lazy(() => import('../panels/treasury-auctions-panel').then(m => ({ default: m.TreasuryAuctionsPanel })));
+const CommodityCurvesPanel = lazy(() => import('../panels/commodity-curves-panel').then(m => ({ default: m.CommodityCurvesPanel })));
+const EmBondsPanel = lazy(() => import('../panels/em-bonds-panel').then(m => ({ default: m.EmBondsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -322,6 +325,9 @@ export const PANEL_IDS = {
   DEBT_ISSUANCE: 'debt-issuance',
   FX_OPTIONS: 'fx-options',
   MULTI_FACTOR: 'multi-factor',
+  TREASURY_AUCTIONS: 'treasury-auctions',
+  COMMODITY_CURVES: 'commodity-curves',
+  EM_BONDS: 'em-bonds',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -473,6 +479,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.DEBT_ISSUANCE]: 'DEBT ISSUANCE',
   [PANEL_IDS.FX_OPTIONS]: 'FX OPTIONS',
   [PANEL_IDS.MULTI_FACTOR]: 'MULTI-FACTOR MODEL',
+  [PANEL_IDS.TREASURY_AUCTIONS]: 'TREASURY AUCTIONS',
+  [PANEL_IDS.COMMODITY_CURVES]: 'COMMODITY CURVES',
+  [PANEL_IDS.EM_BONDS]: 'EM BONDS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -625,6 +634,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.DEBT_ISSUANCE]: 'panelDebtIssuance',
   [PANEL_IDS.FX_OPTIONS]: 'panelFxOptions',
   [PANEL_IDS.MULTI_FACTOR]: 'panelMultiFactor',
+  [PANEL_IDS.TREASURY_AUCTIONS]: 'panelTreasuryAuctions',
+  [PANEL_IDS.COMMODITY_CURVES]: 'panelCommodityCurves',
+  [PANEL_IDS.EM_BONDS]: 'panelEmBonds',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1073,6 +1085,9 @@ export function DockLayout() {
       case PANEL_IDS.DEBT_ISSUANCE: content = <LazyWrap><DebtIssuancePanel /></LazyWrap>; break;
       case PANEL_IDS.FX_OPTIONS: content = <LazyWrap><FxOptionsPanel /></LazyWrap>; break;
       case PANEL_IDS.MULTI_FACTOR: content = <LazyWrap><MultiFactorPanel /></LazyWrap>; break;
+      case PANEL_IDS.TREASURY_AUCTIONS: content = <LazyWrap><TreasuryAuctionsPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_CURVES: content = <LazyWrap><CommodityCurvesPanel /></LazyWrap>; break;
+      case PANEL_IDS.EM_BONDS: content = <LazyWrap><EmBondsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
