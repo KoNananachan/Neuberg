@@ -276,6 +276,9 @@ const GlobalTradeFlowPanel = lazy(() => import('../panels/global-trade-flow-pane
 const RealEstateAnalyticsPanel = lazy(() => import('../panels/real-estate-analytics-panel').then(m => ({ default: m.RealEstateAnalyticsPanel })));
 const InflationMonitorPanel = lazy(() => import('../panels/inflation-monitor-panel').then(m => ({ default: m.InflationMonitorPanel })));
 const MergerArbitragePanel = lazy(() => import('../panels/merger-arbitrage-panel').then(m => ({ default: m.MergerArbitragePanel })));
+const SovereignDebtPanel = lazy(() => import('../panels/sovereign-debt-panel').then(m => ({ default: m.SovereignDebtPanel })));
+const EtfPremiumPanel = lazy(() => import('../panels/etf-premium-panel').then(m => ({ default: m.EtfPremiumPanel })));
+const CommodityDemandPanel = lazy(() => import('../panels/commodity-demand-panel').then(m => ({ default: m.CommodityDemandPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -564,6 +567,9 @@ export const PANEL_IDS = {
   REAL_ESTATE_ANALYTICS: 'real-estate-analytics',
   INFLATION_MONITOR: 'inflation-monitor',
   MERGER_ARBITRAGE: 'merger-arbitrage',
+  SOVEREIGN_DEBT: 'sovereign-debt',
+  ETF_PREMIUM: 'etf-premium',
+  COMMODITY_DEMAND: 'commodity-demand',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -836,6 +842,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.REAL_ESTATE_ANALYTICS]: 'REAL ESTATE ANALYTICS',
   [PANEL_IDS.INFLATION_MONITOR]: 'INFLATION MONITOR',
   [PANEL_IDS.MERGER_ARBITRAGE]: 'MERGER ARBITRAGE',
+  [PANEL_IDS.SOVEREIGN_DEBT]: 'SOVEREIGN DEBT',
+  [PANEL_IDS.ETF_PREMIUM]: 'ETF PREMIUM/DISCOUNT',
+  [PANEL_IDS.COMMODITY_DEMAND]: 'COMMODITY DEMAND',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1109,6 +1118,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.REAL_ESTATE_ANALYTICS]: 'panelRealEstateAnalytics',
   [PANEL_IDS.INFLATION_MONITOR]: 'panelInflationMonitor',
   [PANEL_IDS.MERGER_ARBITRAGE]: 'panelMergerArbitrage',
+  [PANEL_IDS.SOVEREIGN_DEBT]: 'panelSovereignDebt',
+  [PANEL_IDS.ETF_PREMIUM]: 'panelEtfPremium',
+  [PANEL_IDS.COMMODITY_DEMAND]: 'panelCommodityDemand',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1678,6 +1690,9 @@ export function DockLayout() {
       case PANEL_IDS.REAL_ESTATE_ANALYTICS: content = <LazyWrap><RealEstateAnalyticsPanel /></LazyWrap>; break;
       case PANEL_IDS.INFLATION_MONITOR: content = <LazyWrap><InflationMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.MERGER_ARBITRAGE: content = <LazyWrap><MergerArbitragePanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_DEBT: content = <LazyWrap><SovereignDebtPanel /></LazyWrap>; break;
+      case PANEL_IDS.ETF_PREMIUM: content = <LazyWrap><EtfPremiumPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_DEMAND: content = <LazyWrap><CommodityDemandPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
