@@ -84,6 +84,9 @@ const PortfolioOptimizerPanel = lazy(() => import('../panels/portfolio-optimizer
 const BacktestPanel = lazy(() => import('../panels/backtest-panel').then(m => ({ default: m.BacktestPanel })));
 const MacroDashboardPanel = lazy(() => import('../panels/macro-dashboard-panel').then(m => ({ default: m.MacroDashboardPanel })));
 const EarningsSurprisePanel = lazy(() => import('../panels/earnings-surprise-panel').then(m => ({ default: m.EarningsSurprisePanel })));
+const FuturesCurvePanel = lazy(() => import('../panels/futures-curve-panel').then(m => ({ default: m.FuturesCurvePanel })));
+const CreditSpreadsPanel = lazy(() => import('../panels/credit-spreads-panel').then(m => ({ default: m.CreditSpreadsPanel })));
+const IntermarketPanel = lazy(() => import('../panels/intermarket-panel').then(m => ({ default: m.IntermarketPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -180,6 +183,9 @@ export const PANEL_IDS = {
   BACKTEST: 'backtest',
   MACRO_DASHBOARD: 'macro-dashboard',
   EARNINGS_SURPRISE: 'earnings-surprise',
+  FUTURES_CURVE: 'futures-curve',
+  CREDIT_SPREADS: 'credit-spreads',
+  INTERMARKET: 'intermarket',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -260,6 +266,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.BACKTEST]: 'STRATEGY BACKTEST',
   [PANEL_IDS.MACRO_DASHBOARD]: 'MACRO DASHBOARD',
   [PANEL_IDS.EARNINGS_SURPRISE]: 'EARNINGS SURPRISE',
+  [PANEL_IDS.FUTURES_CURVE]: 'FUTURES CURVE',
+  [PANEL_IDS.CREDIT_SPREADS]: 'CREDIT SPREADS',
+  [PANEL_IDS.INTERMARKET]: 'INTERMARKET DIVERGENCE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -341,6 +350,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.BACKTEST]: 'panelBacktest',
   [PANEL_IDS.MACRO_DASHBOARD]: 'panelMacroDashboard',
   [PANEL_IDS.EARNINGS_SURPRISE]: 'panelEarningsSurprise',
+  [PANEL_IDS.FUTURES_CURVE]: 'panelFuturesCurve',
+  [PANEL_IDS.CREDIT_SPREADS]: 'panelCreditSpreads',
+  [PANEL_IDS.INTERMARKET]: 'panelIntermarket',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -718,6 +730,9 @@ export function DockLayout() {
       case PANEL_IDS.BACKTEST: content = <LazyWrap><BacktestPanel /></LazyWrap>; break;
       case PANEL_IDS.MACRO_DASHBOARD: content = <LazyWrap><MacroDashboardPanel /></LazyWrap>; break;
       case PANEL_IDS.EARNINGS_SURPRISE: content = <LazyWrap><EarningsSurprisePanel /></LazyWrap>; break;
+      case PANEL_IDS.FUTURES_CURVE: content = <LazyWrap><FuturesCurvePanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_SPREADS: content = <LazyWrap><CreditSpreadsPanel /></LazyWrap>; break;
+      case PANEL_IDS.INTERMARKET: content = <LazyWrap><IntermarketPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

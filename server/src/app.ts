@@ -77,6 +77,9 @@ import portfolioOptimizerRouter from './routes/portfolio-optimizer.js';
 import backtestRouter from './routes/backtest.js';
 import macroDashboardRouter from './routes/macro-dashboard.js';
 import earningsSurpriseRouter from './routes/earnings-surprise.js';
+import futuresCurveRouter from './routes/futures-curve.js';
+import creditSpreadsRouter from './routes/credit-spreads.js';
+import intermarketRouter from './routes/intermarket.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -255,6 +258,9 @@ export function createApp() {
   app.use('/api/backtest', backtestRouter);
   app.use('/api/macro-dashboard', macroDashboardRouter);
   app.use('/api/earnings-surprise', earningsSurpriseRouter);
+  app.use('/api/futures-curve', futuresCurveRouter);
+  app.use('/api/credit-spreads', creditSpreadsRouter);
+  app.use('/api/intermarket', intermarketRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
