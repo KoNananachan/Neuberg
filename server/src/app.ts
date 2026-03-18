@@ -308,6 +308,9 @@ import swapExecutionRouter from './routes/swap-execution.js';
 import debtCeilingRouter from './routes/debt-ceiling.js';
 import securitizationRouter from './routes/securitization.js';
 import municipalCreditRouter from './routes/municipal-credit.js';
+import commoditySpreadRouter from './routes/commodity-spread.js';
+import inflationSwapRouter from './routes/inflation-swap.js';
+import creditDefaultIndexRouter from './routes/credit-default-index.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -717,6 +720,9 @@ export function createApp() {
   app.use('/api/debt-ceiling', debtCeilingRouter);
   app.use('/api/securitization', securitizationRouter);
   app.use('/api/municipal-credit', municipalCreditRouter);
+  app.use('/api/commodity-spread', commoditySpreadRouter);
+  app.use('/api/inflation-swap', inflationSwapRouter);
+  app.use('/api/credit-default-index', creditDefaultIndexRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

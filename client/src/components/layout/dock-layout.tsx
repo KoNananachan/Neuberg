@@ -313,6 +313,9 @@ const SwapExecutionPanel = lazy(() => import('../panels/swap-execution-panel').t
 const DebtCeilingPanel = lazy(() => import('../panels/debt-ceiling-panel').then(m => ({ default: m.DebtCeilingPanel })));
 const SecuritizationPanel = lazy(() => import('../panels/securitization-panel').then(m => ({ default: m.SecuritizationPanel })));
 const MunicipalCreditPanel = lazy(() => import('../panels/municipal-credit-panel').then(m => ({ default: m.MunicipalCreditPanel })));
+const CommoditySpreadPanel = lazy(() => import('../panels/commodity-spread-panel').then(m => ({ default: m.CommoditySpreadPanel })));
+const InflationSwapPanel = lazy(() => import('../panels/inflation-swap-panel').then(m => ({ default: m.InflationSwapPanel })));
+const CreditDefaultIndexPanel = lazy(() => import('../panels/credit-default-index-panel').then(m => ({ default: m.CreditDefaultIndexPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -638,6 +641,9 @@ export const PANEL_IDS = {
   DEBT_CEILING: 'debt-ceiling',
   SECURITIZATION: 'securitization',
   MUNICIPAL_CREDIT: 'municipal-credit',
+  COMMODITY_SPREAD: 'commodity-spread',
+  INFLATION_SWAP: 'inflation-swap',
+  CREDIT_DEFAULT_INDEX: 'credit-default-index',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -947,6 +953,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.DEBT_CEILING]: 'DEBT CEILING',
   [PANEL_IDS.SECURITIZATION]: 'SECURITIZATION',
   [PANEL_IDS.MUNICIPAL_CREDIT]: 'MUNICIPAL CREDIT',
+  [PANEL_IDS.COMMODITY_SPREAD]: 'COMMODITY SPREAD',
+  [PANEL_IDS.INFLATION_SWAP]: 'INFLATION SWAP',
+  [PANEL_IDS.CREDIT_DEFAULT_INDEX]: 'CREDIT DEFAULT INDEX',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1257,6 +1266,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.DEBT_CEILING]: 'panelDebtCeiling',
   [PANEL_IDS.SECURITIZATION]: 'panelSecuritization',
   [PANEL_IDS.MUNICIPAL_CREDIT]: 'panelMunicipalCredit',
+  [PANEL_IDS.COMMODITY_SPREAD]: 'panelCommoditySpread',
+  [PANEL_IDS.INFLATION_SWAP]: 'panelInflationSwap',
+  [PANEL_IDS.CREDIT_DEFAULT_INDEX]: 'panelCreditDefaultIndex',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1863,6 +1875,9 @@ export function DockLayout() {
       case PANEL_IDS.DEBT_CEILING: content = <LazyWrap><DebtCeilingPanel /></LazyWrap>; break;
       case PANEL_IDS.SECURITIZATION: content = <LazyWrap><SecuritizationPanel /></LazyWrap>; break;
       case PANEL_IDS.MUNICIPAL_CREDIT: content = <LazyWrap><MunicipalCreditPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_SPREAD: content = <LazyWrap><CommoditySpreadPanel /></LazyWrap>; break;
+      case PANEL_IDS.INFLATION_SWAP: content = <LazyWrap><InflationSwapPanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_DEFAULT_INDEX: content = <LazyWrap><CreditDefaultIndexPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
