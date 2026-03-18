@@ -92,6 +92,9 @@ import tailRiskRouter from './routes/tail-risk.js';
 import liquidityRouter from './routes/liquidity.js';
 import commoditySpreadsRouter from './routes/commodity-spreads.js';
 import sentimentDashboardRouter from './routes/sentiment-dashboard.js';
+import riskParityRouter from './routes/risk-parity.js';
+import marketAnomaliesRouter from './routes/market-anomalies.js';
+import carryTradeRouter from './routes/carry-trade.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -285,6 +288,9 @@ export function createApp() {
   app.use('/api/liquidity', liquidityRouter);
   app.use('/api/commodity-spreads', commoditySpreadsRouter);
   app.use('/api/sentiment-dashboard', sentimentDashboardRouter);
+  app.use('/api/risk-parity', riskParityRouter);
+  app.use('/api/market-anomalies', marketAnomaliesRouter);
+  app.use('/api/carry-trade', carryTradeRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
