@@ -245,6 +245,9 @@ const RiskDashboardPanel = lazy(() => import('../panels/risk-dashboard-panel').t
 const BenchmarkTrackerPanel = lazy(() => import('../panels/benchmark-tracker-panel').then(m => ({ default: m.BenchmarkTrackerPanel })));
 const LiquidityCoveragePanel = lazy(() => import('../panels/liquidity-coverage-panel').then(m => ({ default: m.LiquidityCoveragePanel })));
 const MarketSentimentIndexPanel = lazy(() => import('../panels/market-sentiment-index-panel').then(m => ({ default: m.MarketSentimentIndexPanel })));
+const PortfolioStressTestPanel = lazy(() => import('../panels/portfolio-stress-test-panel').then(m => ({ default: m.PortfolioStressTestPanel })));
+const GlobalLiquidityMonitorPanel = lazy(() => import('../panels/global-liquidity-monitor-panel').then(m => ({ default: m.GlobalLiquidityMonitorPanel })));
+const TradeRecapPanel = lazy(() => import('../panels/trade-recap-panel').then(m => ({ default: m.TradeRecapPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -502,6 +505,9 @@ export const PANEL_IDS = {
   BENCHMARK_TRACKER: 'benchmark-tracker',
   LIQUIDITY_COVERAGE: 'liquidity-coverage',
   MARKET_SENTIMENT_INDEX: 'market-sentiment-index',
+  PORTFOLIO_STRESS_TEST: 'portfolio-stress-test',
+  GLOBAL_LIQUIDITY_MONITOR: 'global-liquidity-monitor',
+  TRADE_RECAP: 'trade-recap',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -743,6 +749,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.BENCHMARK_TRACKER]: 'BENCHMARK TRACKER',
   [PANEL_IDS.LIQUIDITY_COVERAGE]: 'LIQUIDITY COVERAGE',
   [PANEL_IDS.MARKET_SENTIMENT_INDEX]: 'MARKET SENTIMENT INDEX',
+  [PANEL_IDS.PORTFOLIO_STRESS_TEST]: 'PORTFOLIO STRESS TEST',
+  [PANEL_IDS.GLOBAL_LIQUIDITY_MONITOR]: 'GLOBAL LIQUIDITY MONITOR',
+  [PANEL_IDS.TRADE_RECAP]: 'TRADE RECAP',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -985,6 +994,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.BENCHMARK_TRACKER]: 'panelBenchmarkTracker',
   [PANEL_IDS.LIQUIDITY_COVERAGE]: 'panelLiquidityCoverage',
   [PANEL_IDS.MARKET_SENTIMENT_INDEX]: 'panelMarketSentimentIndex',
+  [PANEL_IDS.PORTFOLIO_STRESS_TEST]: 'panelPortfolioStressTest',
+  [PANEL_IDS.GLOBAL_LIQUIDITY_MONITOR]: 'panelGlobalLiquidityMonitor',
+  [PANEL_IDS.TRADE_RECAP]: 'panelTradeRecap',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1523,6 +1535,9 @@ export function DockLayout() {
       case PANEL_IDS.BENCHMARK_TRACKER: content = <LazyWrap><BenchmarkTrackerPanel /></LazyWrap>; break;
       case PANEL_IDS.LIQUIDITY_COVERAGE: content = <LazyWrap><LiquidityCoveragePanel /></LazyWrap>; break;
       case PANEL_IDS.MARKET_SENTIMENT_INDEX: content = <LazyWrap><MarketSentimentIndexPanel /></LazyWrap>; break;
+      case PANEL_IDS.PORTFOLIO_STRESS_TEST: content = <LazyWrap><PortfolioStressTestPanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_LIQUIDITY_MONITOR: content = <LazyWrap><GlobalLiquidityMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.TRADE_RECAP: content = <LazyWrap><TradeRecapPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

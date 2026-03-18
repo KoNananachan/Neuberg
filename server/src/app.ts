@@ -239,6 +239,9 @@ import riskDashboardRouter from './routes/risk-dashboard.js';
 import benchmarkTrackerRouter from './routes/benchmark-tracker.js';
 import liquidityCoverageRouter from './routes/liquidity-coverage.js';
 import marketSentimentIndexRouter from './routes/market-sentiment-index.js';
+import portfolioStressTestRouter from './routes/portfolio-stress-test.js';
+import globalLiquidityMonitorRouter from './routes/global-liquidity-monitor.js';
+import tradeRecapRouter from './routes/trade-recap.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -579,6 +582,9 @@ export function createApp() {
   app.use('/api/benchmark-tracker', benchmarkTrackerRouter);
   app.use('/api/liquidity-coverage', liquidityCoverageRouter);
   app.use('/api/market-sentiment-index', marketSentimentIndexRouter);
+  app.use('/api/portfolio-stress-test', portfolioStressTestRouter);
+  app.use('/api/global-liquidity-monitor', globalLiquidityMonitorRouter);
+  app.use('/api/trade-recap', tradeRecapRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
