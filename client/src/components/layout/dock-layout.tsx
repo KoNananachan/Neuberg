@@ -310,6 +310,9 @@ const CapitalStructurePanel = lazy(() => import('../panels/capital-structure-pan
 const CrossBorderMaPanel = lazy(() => import('../panels/cross-border-ma-panel').then(m => ({ default: m.CrossBorderMaPanel })));
 const CreditRiskTransferPanel = lazy(() => import('../panels/credit-risk-transfer-panel').then(m => ({ default: m.CreditRiskTransferPanel })));
 const SwapExecutionPanel = lazy(() => import('../panels/swap-execution-panel').then(m => ({ default: m.SwapExecutionPanel })));
+const DebtCeilingPanel = lazy(() => import('../panels/debt-ceiling-panel').then(m => ({ default: m.DebtCeilingPanel })));
+const SecuritizationPanel = lazy(() => import('../panels/securitization-panel').then(m => ({ default: m.SecuritizationPanel })));
+const MunicipalCreditPanel = lazy(() => import('../panels/municipal-credit-panel').then(m => ({ default: m.MunicipalCreditPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -632,6 +635,9 @@ export const PANEL_IDS = {
   CROSS_BORDER_MA: 'cross-border-ma',
   CREDIT_RISK_TRANSFER: 'credit-risk-transfer',
   SWAP_EXECUTION: 'swap-execution',
+  DEBT_CEILING: 'debt-ceiling',
+  SECURITIZATION: 'securitization',
+  MUNICIPAL_CREDIT: 'municipal-credit',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -938,6 +944,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CROSS_BORDER_MA]: 'CROSS-BORDER M&A',
   [PANEL_IDS.CREDIT_RISK_TRANSFER]: 'CREDIT RISK TRANSFER',
   [PANEL_IDS.SWAP_EXECUTION]: 'SWAP EXECUTION',
+  [PANEL_IDS.DEBT_CEILING]: 'DEBT CEILING',
+  [PANEL_IDS.SECURITIZATION]: 'SECURITIZATION',
+  [PANEL_IDS.MUNICIPAL_CREDIT]: 'MUNICIPAL CREDIT',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1245,6 +1254,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CROSS_BORDER_MA]: 'panelCrossBorderMa',
   [PANEL_IDS.CREDIT_RISK_TRANSFER]: 'panelCreditRiskTransfer',
   [PANEL_IDS.SWAP_EXECUTION]: 'panelSwapExecution',
+  [PANEL_IDS.DEBT_CEILING]: 'panelDebtCeiling',
+  [PANEL_IDS.SECURITIZATION]: 'panelSecuritization',
+  [PANEL_IDS.MUNICIPAL_CREDIT]: 'panelMunicipalCredit',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1848,6 +1860,9 @@ export function DockLayout() {
       case PANEL_IDS.CROSS_BORDER_MA: content = <LazyWrap><CrossBorderMaPanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_RISK_TRANSFER: content = <LazyWrap><CreditRiskTransferPanel /></LazyWrap>; break;
       case PANEL_IDS.SWAP_EXECUTION: content = <LazyWrap><SwapExecutionPanel /></LazyWrap>; break;
+      case PANEL_IDS.DEBT_CEILING: content = <LazyWrap><DebtCeilingPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECURITIZATION: content = <LazyWrap><SecuritizationPanel /></LazyWrap>; break;
+      case PANEL_IDS.MUNICIPAL_CREDIT: content = <LazyWrap><MunicipalCreditPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
