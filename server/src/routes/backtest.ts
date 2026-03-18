@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+router.use(requireAuth);
 
 // ── Types ──
 

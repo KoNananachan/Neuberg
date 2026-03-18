@@ -1,9 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useVolRiskPremium } from '../../api/hooks/use-vol-risk-premium';
 
-type TFn = (key: string) => string;
-const tr = (t: TFn, key: string, fallback: string): string => { try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; } };
-
 const ACCENT = '#fb923c'; // orange-400
 const ACCENT_DIM = 'rgba(251,146,60,0.08)';
 

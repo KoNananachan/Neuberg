@@ -1,9 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEsgRatings } from '../../api/hooks/use-esg-ratings';
 
-type TFn = (key: string) => string;
-const tr = (t: TFn, key: string, fallback: string): string => { try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; } };
-
 const ACCENT = '#34d399'; // emerald-400
 const ACCENT_DIM = 'rgba(52,211,153,0.08)';
 

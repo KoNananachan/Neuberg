@@ -1,9 +1,6 @@
 import { useState, useMemo } from 'react';
 import { usePrivateCredit } from '../../api/hooks/use-private-credit';
 
-type TFn = (key: string) => string;
-const tr = (t: TFn, key: string, fallback: string): string => { try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; } };
-
 const ACCENT = '#c084fc'; // purple-400
 const ACCENT_DIM = 'rgba(192,132,252,0.08)';
 
