@@ -119,6 +119,9 @@ import supplyChainRouter from './routes/supply-chain.js';
 import gammaExposureRouter from './routes/gamma-exposure.js';
 import sovereignSpreadsRouter from './routes/sovereign-spreads.js';
 import earningsRevisionsRouter from './routes/earnings-revisions.js';
+import dividendForecastRouter from './routes/dividend-forecast.js';
+import creditRatingsRouter from './routes/credit-ratings.js';
+import volatilityConeRouter from './routes/volatility-cone.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -339,6 +342,9 @@ export function createApp() {
   app.use('/api/gamma-exposure', gammaExposureRouter);
   app.use('/api/sovereign-spreads', sovereignSpreadsRouter);
   app.use('/api/earnings-revisions', earningsRevisionsRouter);
+  app.use('/api/dividend-forecast', dividendForecastRouter);
+  app.use('/api/credit-ratings', creditRatingsRouter);
+  app.use('/api/volatility-cone', volatilityConeRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

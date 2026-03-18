@@ -125,6 +125,9 @@ const SupplyChainPanel = lazy(() => import('../panels/supply-chain-panel').then(
 const GammaExposurePanel = lazy(() => import('../panels/gamma-exposure-panel').then(m => ({ default: m.GammaExposurePanel })));
 const SovereignSpreadsPanel = lazy(() => import('../panels/sovereign-spreads-panel').then(m => ({ default: m.SovereignSpreadsPanel })));
 const EarningsRevisionsPanel = lazy(() => import('../panels/earnings-revisions-panel').then(m => ({ default: m.EarningsRevisionsPanel })));
+const DividendForecastPanel = lazy(() => import('../panels/dividend-forecast-panel').then(m => ({ default: m.DividendForecastPanel })));
+const CreditRatingsPanel = lazy(() => import('../panels/credit-ratings-panel').then(m => ({ default: m.CreditRatingsPanel })));
+const VolatilityConePanel = lazy(() => import('../panels/volatility-cone-panel').then(m => ({ default: m.VolatilityConePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -262,6 +265,9 @@ export const PANEL_IDS = {
   GAMMA_EXPOSURE: 'gamma-exposure',
   SOVEREIGN_SPREADS: 'sovereign-spreads',
   EARNINGS_REVISIONS: 'earnings-revisions',
+  DIVIDEND_FORECAST: 'dividend-forecast',
+  CREDIT_RATINGS: 'credit-ratings',
+  VOLATILITY_CONE: 'volatility-cone',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -383,6 +389,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.GAMMA_EXPOSURE]: 'GAMMA EXPOSURE',
   [PANEL_IDS.SOVEREIGN_SPREADS]: 'SOVEREIGN SPREADS',
   [PANEL_IDS.EARNINGS_REVISIONS]: 'EARNINGS REVISIONS',
+  [PANEL_IDS.DIVIDEND_FORECAST]: 'DIVIDEND FORECAST',
+  [PANEL_IDS.CREDIT_RATINGS]: 'CREDIT RATINGS',
+  [PANEL_IDS.VOLATILITY_CONE]: 'VOLATILITY CONE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -505,6 +514,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.GAMMA_EXPOSURE]: 'panelGammaExposure',
   [PANEL_IDS.SOVEREIGN_SPREADS]: 'panelSovereignSpreads',
   [PANEL_IDS.EARNINGS_REVISIONS]: 'panelEarningsRevisions',
+  [PANEL_IDS.DIVIDEND_FORECAST]: 'panelDividendForecast',
+  [PANEL_IDS.CREDIT_RATINGS]: 'panelCreditRatings',
+  [PANEL_IDS.VOLATILITY_CONE]: 'panelVolatilityCone',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -923,6 +935,9 @@ export function DockLayout() {
       case PANEL_IDS.GAMMA_EXPOSURE: content = <LazyWrap><GammaExposurePanel /></LazyWrap>; break;
       case PANEL_IDS.SOVEREIGN_SPREADS: content = <LazyWrap><SovereignSpreadsPanel /></LazyWrap>; break;
       case PANEL_IDS.EARNINGS_REVISIONS: content = <LazyWrap><EarningsRevisionsPanel /></LazyWrap>; break;
+      case PANEL_IDS.DIVIDEND_FORECAST: content = <LazyWrap><DividendForecastPanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_RATINGS: content = <LazyWrap><CreditRatingsPanel /></LazyWrap>; break;
+      case PANEL_IDS.VOLATILITY_CONE: content = <LazyWrap><VolatilityConePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
