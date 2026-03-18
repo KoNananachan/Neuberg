@@ -334,6 +334,9 @@ const BlockTradePanel = lazy(() => import('../panels/block-trade-panel').then(m 
 const RegulatoryFilingPanel = lazy(() => import('../panels/regulatory-filing-panel').then(m => ({ default: m.RegulatoryFilingPanel })));
 const TaxLossHarvestPanel = lazy(() => import('../panels/tax-loss-harvest-panel').then(m => ({ default: m.TaxLossHarvestPanel })));
 const DividendCapturePanel = lazy(() => import('../panels/dividend-capture-panel').then(m => ({ default: m.DividendCapturePanel })));
+const CreditRatingMigrationPanel = lazy(() => import('../panels/credit-rating-migration-panel').then(m => ({ default: m.CreditRatingMigrationPanel })));
+const MergerArbMonitorPanel = lazy(() => import('../panels/merger-arb-monitor-panel').then(m => ({ default: m.MergerArbMonitorPanel })));
+const MarketMakingPanel = lazy(() => import('../panels/market-making-panel').then(m => ({ default: m.MarketMakingPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -680,6 +683,9 @@ export const PANEL_IDS = {
   REGULATORY_FILING: 'regulatory-filing',
   TAX_LOSS_HARVEST: 'tax-loss-harvest',
   DIVIDEND_CAPTURE: 'dividend-capture',
+  CREDIT_RATING_MIGRATION: 'credit-rating-migration',
+  MERGER_ARB_MONITOR: 'merger-arb-monitor',
+  MARKET_MAKING: 'market-making',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1010,6 +1016,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.REGULATORY_FILING]: 'REGULATORY FILING',
   [PANEL_IDS.TAX_LOSS_HARVEST]: 'TAX LOSS HARVEST',
   [PANEL_IDS.DIVIDEND_CAPTURE]: 'DIVIDEND CAPTURE',
+  [PANEL_IDS.CREDIT_RATING_MIGRATION]: 'CREDIT RATING MIGRATION',
+  [PANEL_IDS.MERGER_ARB_MONITOR]: 'MERGER ARB MONITOR',
+  [PANEL_IDS.MARKET_MAKING]: 'MARKET MAKING',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1341,6 +1350,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.REGULATORY_FILING]: 'panelRegulatoryFiling',
   [PANEL_IDS.TAX_LOSS_HARVEST]: 'panelTaxLossHarvest',
   [PANEL_IDS.DIVIDEND_CAPTURE]: 'panelDividendCapture',
+  [PANEL_IDS.CREDIT_RATING_MIGRATION]: 'panelCreditRatingMigration',
+  [PANEL_IDS.MERGER_ARB_MONITOR]: 'panelMergerArbMonitor',
+  [PANEL_IDS.MARKET_MAKING]: 'panelMarketMaking',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1968,6 +1980,9 @@ export function DockLayout() {
       case PANEL_IDS.REGULATORY_FILING: content = <LazyWrap><RegulatoryFilingPanel /></LazyWrap>; break;
       case PANEL_IDS.TAX_LOSS_HARVEST: content = <LazyWrap><TaxLossHarvestPanel /></LazyWrap>; break;
       case PANEL_IDS.DIVIDEND_CAPTURE: content = <LazyWrap><DividendCapturePanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_RATING_MIGRATION: content = <LazyWrap><CreditRatingMigrationPanel /></LazyWrap>; break;
+      case PANEL_IDS.MERGER_ARB_MONITOR: content = <LazyWrap><MergerArbMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.MARKET_MAKING: content = <LazyWrap><MarketMakingPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

@@ -329,6 +329,9 @@ import blockTradeRouter from './routes/block-trade.js';
 import regulatoryFilingRouter from './routes/regulatory-filing.js';
 import taxLossHarvestRouter from './routes/tax-loss-harvest.js';
 import dividendCaptureRouter from './routes/dividend-capture.js';
+import creditRatingMigrationRouter from './routes/credit-rating-migration.js';
+import mergerArbMonitorRouter from './routes/merger-arb-monitor.js';
+import marketMakingRouter from './routes/market-making.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -759,6 +762,9 @@ export function createApp() {
   app.use('/api/regulatory-filing', regulatoryFilingRouter);
   app.use('/api/tax-loss-harvest', taxLossHarvestRouter);
   app.use('/api/dividend-capture', dividendCaptureRouter);
+  app.use('/api/credit-rating-migration', creditRatingMigrationRouter);
+  app.use('/api/merger-arb-monitor', mergerArbMonitorRouter);
+  app.use('/api/market-making', marketMakingRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
