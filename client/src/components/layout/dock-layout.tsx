@@ -197,6 +197,9 @@ const CreditFlowPanel = lazy(() => import('../panels/credit-flow-panel').then(m 
 const CommoditySeasonalityPanel = lazy(() => import('../panels/commodity-seasonality-panel').then(m => ({ default: m.CommoditySeasonalityPanel })));
 const FxVolatilityPanel = lazy(() => import('../panels/fx-volatility-panel').then(m => ({ default: m.FxVolatilityPanel })));
 const PrimaryDealerPanel = lazy(() => import('../panels/primary-dealer-panel').then(m => ({ default: m.PrimaryDealerPanel })));
+const RealEstateCapitalPanel = lazy(() => import('../panels/real-estate-capital-panel').then(m => ({ default: m.RealEstateCapitalPanel })));
+const ElectricityMarketsPanel = lazy(() => import('../panels/electricity-markets-panel').then(m => ({ default: m.ElectricityMarketsPanel })));
+const SyndicatedLoansPanel = lazy(() => import('../panels/syndicated-loans-panel').then(m => ({ default: m.SyndicatedLoansPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -406,6 +409,9 @@ export const PANEL_IDS = {
   COMMODITY_SEASONALITY: 'commodity-seasonality',
   FX_VOLATILITY: 'fx-volatility',
   PRIMARY_DEALER: 'primary-dealer',
+  REAL_ESTATE_CAPITAL: 'real-estate-capital',
+  ELECTRICITY_MARKETS: 'electricity-markets',
+  SYNDICATED_LOANS: 'syndicated-loans',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -599,6 +605,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.COMMODITY_SEASONALITY]: 'COMMODITY SEASONALITY',
   [PANEL_IDS.FX_VOLATILITY]: 'FX VOLATILITY',
   [PANEL_IDS.PRIMARY_DEALER]: 'PRIMARY DEALER',
+  [PANEL_IDS.REAL_ESTATE_CAPITAL]: 'REAL ESTATE CAPITAL',
+  [PANEL_IDS.ELECTRICITY_MARKETS]: 'ELECTRICITY MARKETS',
+  [PANEL_IDS.SYNDICATED_LOANS]: 'SYNDICATED LOANS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -793,6 +802,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.COMMODITY_SEASONALITY]: 'panelCommoditySeasonality',
   [PANEL_IDS.FX_VOLATILITY]: 'panelFxVolatility',
   [PANEL_IDS.PRIMARY_DEALER]: 'panelPrimaryDealer',
+  [PANEL_IDS.REAL_ESTATE_CAPITAL]: 'panelRealEstateCapital',
+  [PANEL_IDS.ELECTRICITY_MARKETS]: 'panelElectricityMarkets',
+  [PANEL_IDS.SYNDICATED_LOANS]: 'panelSyndicatedLoans',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1283,6 +1295,9 @@ export function DockLayout() {
       case PANEL_IDS.COMMODITY_SEASONALITY: content = <LazyWrap><CommoditySeasonalityPanel /></LazyWrap>; break;
       case PANEL_IDS.FX_VOLATILITY: content = <LazyWrap><FxVolatilityPanel /></LazyWrap>; break;
       case PANEL_IDS.PRIMARY_DEALER: content = <LazyWrap><PrimaryDealerPanel /></LazyWrap>; break;
+      case PANEL_IDS.REAL_ESTATE_CAPITAL: content = <LazyWrap><RealEstateCapitalPanel /></LazyWrap>; break;
+      case PANEL_IDS.ELECTRICITY_MARKETS: content = <LazyWrap><ElectricityMarketsPanel /></LazyWrap>; break;
+      case PANEL_IDS.SYNDICATED_LOANS: content = <LazyWrap><SyndicatedLoansPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

@@ -191,6 +191,9 @@ import creditFlowRouter from './routes/credit-flow.js';
 import commoditySeasonalityRouter from './routes/commodity-seasonality.js';
 import fxVolatilityRouter from './routes/fx-volatility.js';
 import primaryDealerRouter from './routes/primary-dealer.js';
+import realEstateCapitalRouter from './routes/real-estate-capital.js';
+import electricityMarketsRouter from './routes/electricity-markets.js';
+import syndicatedLoansRouter from './routes/syndicated-loans.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -483,6 +486,9 @@ export function createApp() {
   app.use('/api/commodity-seasonality', commoditySeasonalityRouter);
   app.use('/api/fx-volatility', fxVolatilityRouter);
   app.use('/api/primary-dealer', primaryDealerRouter);
+  app.use('/api/real-estate-capital', realEstateCapitalRouter);
+  app.use('/api/electricity-markets', electricityMarketsRouter);
+  app.use('/api/syndicated-loans', syndicatedLoansRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
