@@ -1,117 +1,62 @@
 import { Router } from 'express';
-
 const router = Router();
+function mulberry32(a: number) { return function(){let t=(a+=0x6d2b79f5);t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}; }
+function hashSeed(str: string): number { let hash=0;for(let i=0;i<str.length;i++){const char=str.charCodeAt(i);hash=((hash<<5)-hash)+char;hash|=0;}return Math.abs(hash); }
+let cache: { data: any; ts: number } | null = null;
+const TTL = 5 * 60 * 1000;
 
-function mulberry32(a: number) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = Math.imul(31, h) + str.charCodeAt(i) | 0; } return h; }
+// --- Static ETF Definitions ---
 
-// --- Static Data ---
-
-interface ETFFlowDef {
+interface ETFDef {
   ticker: string;
   name: string;
-  aum: number;          // $B
-  baseDailyFlow: number; // $M
   category: string;
+  baseAum: number;         // $B
+  baseFlow1d: number;      // $M
+  baseCreation: number;    // units
+  baseRedemption: number;  // units
 }
 
-const INFLOW_ETFS: ETFFlowDef[] = [
-  { ticker: 'SPY', name: 'SPDR S&P 500 ETF Trust', aum: 523, baseDailyFlow: 1450, category: 'US Equity' },
-  { ticker: 'VOO', name: 'Vanguard S&P 500 ETF', aum: 435, baseDailyFlow: 980, category: 'US Equity' },
-  { ticker: 'IVV', name: 'iShares Core S&P 500 ETF', aum: 412, baseDailyFlow: 870, category: 'US Equity' },
-  { ticker: 'QQQ', name: 'Invesco QQQ Trust', aum: 265, baseDailyFlow: 640, category: 'US Equity' },
-  { ticker: 'AGG', name: 'iShares Core US Aggregate Bond ETF', aum: 112, baseDailyFlow: 310, category: 'US Bond' },
-  { ticker: 'BND', name: 'Vanguard Total Bond Market ETF', aum: 108, baseDailyFlow: 275, category: 'US Bond' },
-  { ticker: 'VTI', name: 'Vanguard Total Stock Market ETF', aum: 385, baseDailyFlow: 520, category: 'US Equity' },
-  { ticker: 'GLD', name: 'SPDR Gold Shares', aum: 64, baseDailyFlow: 220, category: 'Commodity' },
-  { ticker: 'IEFA', name: 'iShares Core MSCI EAFE ETF', aum: 118, baseDailyFlow: 185, category: 'Intl Equity' },
-  { ticker: 'LQD', name: 'iShares iBoxx $ Investment Grade Corp Bond ETF', aum: 36, baseDailyFlow: 165, category: 'Corp Bond' },
+const ETF_DEFS: ETFDef[] = [
+  { ticker: 'SPY',  name: 'SPDR S&P 500 ETF Trust',                     category: 'US Equity',    baseAum: 523,  baseFlow1d: 1450,  baseCreation: 85,  baseRedemption: 62 },
+  { ticker: 'IVV',  name: 'iShares Core S&P 500 ETF',                   category: 'US Equity',    baseAum: 412,  baseFlow1d: 870,   baseCreation: 68,  baseRedemption: 50 },
+  { ticker: 'VOO',  name: 'Vanguard S&P 500 ETF',                       category: 'US Equity',    baseAum: 435,  baseFlow1d: 980,   baseCreation: 60,  baseRedemption: 48 },
+  { ticker: 'QQQ',  name: 'Invesco QQQ Trust',                          category: 'US Equity',    baseAum: 265,  baseFlow1d: 640,   baseCreation: 72,  baseRedemption: 55 },
+  { ticker: 'IWM',  name: 'iShares Russell 2000 ETF',                   category: 'US Equity',    baseAum: 68,   baseFlow1d: 320,   baseCreation: 40,  baseRedemption: 35 },
+  { ticker: 'VTI',  name: 'Vanguard Total Stock Market ETF',            category: 'US Equity',    baseAum: 385,  baseFlow1d: 520,   baseCreation: 55,  baseRedemption: 42 },
+  { ticker: 'EFA',  name: 'iShares MSCI EAFE ETF',                      category: 'Intl Equity',  baseAum: 78,   baseFlow1d: 185,   baseCreation: 35,  baseRedemption: 28 },
+  { ticker: 'EEM',  name: 'iShares MSCI Emerging Markets ETF',          category: 'Intl Equity',  baseAum: 22,   baseFlow1d: -125,  baseCreation: 28,  baseRedemption: 36 },
+  { ticker: 'AGG',  name: 'iShares Core US Aggregate Bond ETF',         category: 'Fixed Income', baseAum: 112,  baseFlow1d: 310,   baseCreation: 48,  baseRedemption: 38 },
+  { ticker: 'BND',  name: 'Vanguard Total Bond Market ETF',             category: 'Fixed Income', baseAum: 108,  baseFlow1d: 275,   baseCreation: 42,  baseRedemption: 35 },
+  { ticker: 'GLD',  name: 'SPDR Gold Shares',                           category: 'Commodity',    baseAum: 64,   baseFlow1d: 220,   baseCreation: 42,  baseRedemption: 30 },
+  { ticker: 'TLT',  name: 'iShares 20+ Year Treasury Bond ETF',         category: 'Fixed Income', baseAum: 55,   baseFlow1d: 190,   baseCreation: 38,  baseRedemption: 35 },
+  { ticker: 'XLF',  name: 'Financial Select Sector SPDR Fund',          category: 'US Equity',    baseAum: 42,   baseFlow1d: 160,   baseCreation: 25,  baseRedemption: 22 },
+  { ticker: 'XLK',  name: 'Technology Select Sector SPDR Fund',         category: 'US Equity',    baseAum: 62,   baseFlow1d: 210,   baseCreation: 30,  baseRedemption: 24 },
+  { ticker: 'XLE',  name: 'Energy Select Sector SPDR Fund',             category: 'US Equity',    baseAum: 38,   baseFlow1d: -110,  baseCreation: 20,  baseRedemption: 28 },
+  { ticker: 'ARKK', name: 'ARK Innovation ETF',                         category: 'Alternatives', baseAum: 6.8,  baseFlow1d: -95,   baseCreation: 8,   baseRedemption: 18 },
+  { ticker: 'HYG',  name: 'iShares iBoxx $ High Yield Corporate Bond ETF', category: 'Fixed Income', baseAum: 18, baseFlow1d: -180,  baseCreation: 32,  baseRedemption: 40 },
+  { ticker: 'LQD',  name: 'iShares iBoxx $ Investment Grade Corp Bond ETF', category: 'Fixed Income', baseAum: 36, baseFlow1d: 165,  baseCreation: 30,  baseRedemption: 25 },
+  { ticker: 'VWO',  name: 'Vanguard FTSE Emerging Markets ETF',         category: 'Intl Equity',  baseAum: 75,   baseFlow1d: 90,    baseCreation: 32,  baseRedemption: 26 },
+  { ticker: 'IEFA', name: 'iShares Core MSCI EAFE ETF',                 category: 'Intl Equity',  baseAum: 118,  baseFlow1d: 240,   baseCreation: 38,  baseRedemption: 30 },
 ];
 
-const OUTFLOW_ETFS: ETFFlowDef[] = [
-  { ticker: 'ARKK', name: 'ARK Innovation ETF', aum: 6.8, baseDailyFlow: -95, category: 'US Equity' },
-  { ticker: 'HYG', name: 'iShares iBoxx $ High Yield Corp Bond ETF', aum: 18, baseDailyFlow: -180, category: 'HY Bond' },
-  { ticker: 'EEM', name: 'iShares MSCI Emerging Markets ETF', aum: 22, baseDailyFlow: -125, category: 'EM Equity' },
-  { ticker: 'XLE', name: 'Energy Select Sector SPDR Fund', aum: 38, baseDailyFlow: -110, category: 'US Equity' },
-  { ticker: 'BITO', name: 'ProShares Bitcoin Strategy ETF', aum: 2.1, baseDailyFlow: -72, category: 'Crypto' },
-  { ticker: 'SQQQ', name: 'ProShares UltraPro Short QQQ', aum: 4.5, baseDailyFlow: -88, category: 'Inverse' },
-  { ticker: 'TQQQ', name: 'ProShares UltraPro QQQ', aum: 22, baseDailyFlow: -105, category: 'Leveraged' },
-  { ticker: 'JNK', name: 'SPDR Bloomberg High Yield Bond ETF', aum: 8.2, baseDailyFlow: -68, category: 'HY Bond' },
-  { ticker: 'EMB', name: 'iShares JP Morgan USD Emerging Markets Bond ETF', aum: 16, baseDailyFlow: -92, category: 'EM Equity' },
-  { ticker: 'SLV', name: 'iShares Silver Trust', aum: 11, baseDailyFlow: -55, category: 'Commodity' },
-];
+// --- Category base data ---
 
 interface CategoryDef {
   category: string;
-  baseDailyFlow: number;  // $M
-  baseWeeklyFlow: number; // $M
-  baseMonthlyFlow: number; // $M
-  baseNetCreations: number; // share units
+  baseAum: number;         // $B
+  baseFlow1d: number;      // $M
+  baseFlow1w: number;      // $M
+  baseFlowMtd: number;     // $M
 }
 
 const CATEGORY_DEFS: CategoryDef[] = [
-  { category: 'US Equity', baseDailyFlow: 3200, baseWeeklyFlow: 14500, baseMonthlyFlow: 52000, baseNetCreations: 4200 },
-  { category: 'Intl Equity', baseDailyFlow: 680, baseWeeklyFlow: 3100, baseMonthlyFlow: 11200, baseNetCreations: 890 },
-  { category: 'EM Equity', baseDailyFlow: -220, baseWeeklyFlow: -980, baseMonthlyFlow: -3500, baseNetCreations: -310 },
-  { category: 'US Bond', baseDailyFlow: 850, baseWeeklyFlow: 3800, baseMonthlyFlow: 14000, baseNetCreations: 1650 },
-  { category: 'Corp Bond', baseDailyFlow: 310, baseWeeklyFlow: 1400, baseMonthlyFlow: 5200, baseNetCreations: 520 },
-  { category: 'HY Bond', baseDailyFlow: -180, baseWeeklyFlow: -820, baseMonthlyFlow: -2900, baseNetCreations: -280 },
-  { category: 'Muni', baseDailyFlow: 125, baseWeeklyFlow: 560, baseMonthlyFlow: 2100, baseNetCreations: 210 },
-  { category: 'Commodity', baseDailyFlow: 280, baseWeeklyFlow: 1250, baseMonthlyFlow: 4500, baseNetCreations: 380 },
-  { category: 'Real Estate', baseDailyFlow: -95, baseWeeklyFlow: -420, baseMonthlyFlow: -1500, baseNetCreations: -140 },
-  { category: 'Crypto', baseDailyFlow: -150, baseWeeklyFlow: -680, baseMonthlyFlow: -2400, baseNetCreations: -195 },
-  { category: 'Leveraged', baseDailyFlow: -110, baseWeeklyFlow: -500, baseMonthlyFlow: -1800, baseNetCreations: -160 },
-  { category: 'Inverse', baseDailyFlow: -75, baseWeeklyFlow: -340, baseMonthlyFlow: -1200, baseNetCreations: -105 },
+  { category: 'US Equity',    baseAum: 4200, baseFlow1d: 4800,  baseFlow1w: 22000,  baseFlowMtd: 68000 },
+  { category: 'Intl Equity',  baseAum: 1350, baseFlow1d: 580,   baseFlow1w: 2600,   baseFlowMtd: 9200 },
+  { category: 'Fixed Income', baseAum: 1820, baseFlow1d: 920,   baseFlow1w: 4100,   baseFlowMtd: 15500 },
+  { category: 'Commodity',    baseAum: 310,  baseFlow1d: 260,   baseFlow1w: 1150,   baseFlowMtd: 4200 },
+  { category: 'Alternatives', baseAum: 95,   baseFlow1d: -120,  baseFlow1w: -540,   baseFlowMtd: -1900 },
 ];
-
-interface CreationRedemptionDef {
-  ticker: string;
-  baseCreation: number;   // units
-  baseRedemption: number;  // units
-  navPerUnit: number;      // $M per unit
-}
-
-const CR_DEFS: CreationRedemptionDef[] = [
-  { ticker: 'SPY', baseCreation: 85, baseRedemption: 62, navPerUnit: 5.2 },
-  { ticker: 'QQQ', baseCreation: 72, baseRedemption: 55, navPerUnit: 4.8 },
-  { ticker: 'IVV', baseCreation: 68, baseRedemption: 50, navPerUnit: 5.1 },
-  { ticker: 'VOO', baseCreation: 60, baseRedemption: 48, navPerUnit: 4.9 },
-  { ticker: 'VTI', baseCreation: 55, baseRedemption: 42, navPerUnit: 3.8 },
-  { ticker: 'AGG', baseCreation: 48, baseRedemption: 38, navPerUnit: 1.2 },
-  { ticker: 'GLD', baseCreation: 42, baseRedemption: 30, navPerUnit: 2.1 },
-  { ticker: 'TLT', baseCreation: 38, baseRedemption: 35, navPerUnit: 1.5 },
-  { ticker: 'HYG', baseCreation: 32, baseRedemption: 40, navPerUnit: 0.9 },
-  { ticker: 'EEM', baseCreation: 28, baseRedemption: 36, navPerUnit: 1.1 },
-  { ticker: 'LQD', baseCreation: 30, baseRedemption: 25, navPerUnit: 1.3 },
-  { ticker: 'IEFA', baseCreation: 35, baseRedemption: 28, navPerUnit: 1.8 },
-  { ticker: 'XLF', baseCreation: 25, baseRedemption: 22, navPerUnit: 0.7 },
-  { ticker: 'ARKK', baseCreation: 8, baseRedemption: 18, navPerUnit: 0.3 },
-  { ticker: 'TQQQ', baseCreation: 15, baseRedemption: 22, navPerUnit: 0.5 },
-];
-
-interface SectorDef {
-  sector: string;
-  baseWeeklyFlow: number; // $M
-}
-
-const SECTOR_ROTATION_DEFS: SectorDef[] = [
-  { sector: 'Information Technology', baseWeeklyFlow: 1800 },
-  { sector: 'Health Care', baseWeeklyFlow: 650 },
-  { sector: 'Financials', baseWeeklyFlow: 480 },
-  { sector: 'Consumer Discretionary', baseWeeklyFlow: -320 },
-  { sector: 'Communication Services', baseWeeklyFlow: 280 },
-  { sector: 'Industrials', baseWeeklyFlow: 350 },
-  { sector: 'Consumer Staples', baseWeeklyFlow: -180 },
-  { sector: 'Energy', baseWeeklyFlow: -420 },
-  { sector: 'Utilities', baseWeeklyFlow: 150 },
-  { sector: 'Real Estate', baseWeeklyFlow: -260 },
-  { sector: 'Materials', baseWeeklyFlow: 120 },
-];
-
-// --- Cache ---
-
-const CACHE_TTL = 5 * 60 * 1000;
-let cache: { data: unknown; ts: number } | null = null;
 
 // --- Generator ---
 
@@ -121,112 +66,86 @@ function generate() {
   const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
   const round2 = (v: number) => Math.round(v * 100) / 100;
 
-  // --- Top Inflows (10 ETFs) ---
-  const topInflows = INFLOW_ETFS.map(etf => {
-    const dailyFlow = round2(Math.abs(etf.baseDailyFlow) * jitter(1, 0.3));
-    const weeklyFlow = round2(dailyFlow * jitter(4.5, 0.25));
-    const monthlyFlow = round2(weeklyFlow * jitter(3.8, 0.3));
-    const aum = round2(jitter(etf.aum, 0.05));
-    const flowPercent = round2((dailyFlow / (aum * 1000)) * 100);
+  // --- Top Flows (all 20 ETFs) ---
+  const topFlows = ETF_DEFS.map(etf => {
+    const sign = etf.baseFlow1d >= 0 ? 1 : -1;
+    const flow1d = round2(sign * Math.abs(etf.baseFlow1d) * jitter(1, 0.3));
+    const flow1w = round2(flow1d * jitter(4.5, 0.25));
+    const flow1m = round2(flow1w * jitter(3.8, 0.3));
+    const ytdFlow = round2(flow1m * jitter(2.8, 0.35) / 1000); // $B
+    const aum = round2(jitter(etf.baseAum, 0.05));
+    const creationUnits = Math.round(etf.baseCreation * jitter(1, 0.35));
+    const redemptionUnits = Math.round(etf.baseRedemption * jitter(1, 0.35));
     return {
       ticker: etf.ticker,
       name: etf.name,
       aum,
-      dailyFlow,
-      weeklyFlow,
-      monthlyFlow,
-      flowPercent,
-      category: etf.category,
-    };
-  }).sort((a, b) => b.dailyFlow - a.dailyFlow);
-
-  // --- Top Outflows (10 ETFs) ---
-  const topOutflows = OUTFLOW_ETFS.map(etf => {
-    const dailyFlow = round2(-Math.abs(etf.baseDailyFlow) * jitter(1, 0.3));
-    const weeklyFlow = round2(dailyFlow * jitter(4.5, 0.25));
-    const monthlyFlow = round2(weeklyFlow * jitter(3.8, 0.3));
-    const aum = round2(jitter(etf.aum, 0.05));
-    const flowPercent = round2((dailyFlow / (aum * 1000)) * 100);
-    return {
-      ticker: etf.ticker,
-      name: etf.name,
-      aum,
-      dailyFlow,
-      weeklyFlow,
-      monthlyFlow,
-      flowPercent,
-      category: etf.category,
-    };
-  }).sort((a, b) => a.dailyFlow - b.dailyFlow);
-
-  // --- Category Summary (12 categories) ---
-  const categorySummary = CATEGORY_DEFS.map(cat => {
-    const sign = cat.baseDailyFlow >= 0 ? 1 : -1;
-    const dailyFlow = round2(sign * Math.abs(cat.baseDailyFlow) * jitter(1, 0.3));
-    const weeklyFlow = round2(sign * Math.abs(cat.baseWeeklyFlow) * jitter(1, 0.25));
-    const monthlyFlow = round2(sign * Math.abs(cat.baseMonthlyFlow) * jitter(1, 0.3));
-    const netCreations = Math.round(cat.baseNetCreations * jitter(1, 0.35));
-    return {
-      category: cat.category,
-      dailyFlow,
-      weeklyFlow,
-      monthlyFlow,
-      netCreations,
-    };
-  });
-
-  // --- Creation/Redemption Activity (15 ETFs) ---
-  const creationRedemption = CR_DEFS.map(cr => {
-    const creationUnits = Math.round(cr.baseCreation * jitter(1, 0.35));
-    const redemptionUnits = Math.round(cr.baseRedemption * jitter(1, 0.35));
-    const netUnits = creationUnits - redemptionUnits;
-    const impliedFlow = round2(netUnits * cr.navPerUnit);
-    const premiumDiscount = round2((rng() - 0.45) * 30); // bps, slight positive bias
-    return {
-      ticker: cr.ticker,
+      flow1d,
+      flow1w,
+      flow1m,
+      ytdFlow,
       creationUnits,
       redemptionUnits,
-      netUnits,
-      impliedFlow,
-      premiumDiscount,
+      category: etf.category,
+    };
+  }).sort((a, b) => b.flow1d - a.flow1d);
+
+  // --- Category Summary ---
+  const categorySummary = CATEGORY_DEFS.map(cat => {
+    const sign = cat.baseFlow1d >= 0 ? 1 : -1;
+    const flow1d = round2(sign * Math.abs(cat.baseFlow1d) * jitter(1, 0.3));
+    const flow1w = round2(sign * Math.abs(cat.baseFlow1w) * jitter(1, 0.25));
+    const flowMtd = round2(sign * Math.abs(cat.baseFlowMtd) * jitter(1, 0.3));
+    const aum = round2(jitter(cat.baseAum, 0.04));
+    return {
+      category: cat.category,
+      flow1d,
+      flow1w,
+      flowMtd,
+      aum,
     };
   });
 
-  // --- Sector Rotation Signal (11 GICS sectors) ---
-  type FlowMomentum = 'strong inflow' | 'inflow' | 'neutral' | 'outflow' | 'strong outflow';
-  type RotationSignal = 'overweight' | 'neutral' | 'underweight';
+  // --- Largest Inflows (top 10) ---
+  const sortedByFlow = [...topFlows].sort((a, b) => b.flow1d - a.flow1d);
+  const largestInflows = sortedByFlow.slice(0, 10).map(e => ({
+    ticker: e.ticker,
+    name: e.name,
+    flow1d: e.flow1d,
+    aum: e.aum,
+    category: e.category,
+  }));
 
-  const sectorRotation = SECTOR_ROTATION_DEFS.map(sec => {
-    const weeklyFlow = round2(sec.baseWeeklyFlow * jitter(1, 0.4));
-    const monthlyFlow = round2(weeklyFlow * jitter(3.8, 0.3));
+  // --- Largest Outflows (top 10) ---
+  const largestOutflows = sortedByFlow.slice(-10).reverse().map(e => ({
+    ticker: e.ticker,
+    name: e.name,
+    flow1d: e.flow1d,
+    aum: e.aum,
+    category: e.category,
+  }));
 
-    let flowMomentum: FlowMomentum;
-    if (weeklyFlow > 800) flowMomentum = 'strong inflow';
-    else if (weeklyFlow > 200) flowMomentum = 'inflow';
-    else if (weeklyFlow > -200) flowMomentum = 'neutral';
-    else if (weeklyFlow > -800) flowMomentum = 'outflow';
-    else flowMomentum = 'strong outflow';
-
-    let rotationSignal: RotationSignal;
-    if (monthlyFlow > 2000) rotationSignal = 'overweight';
-    else if (monthlyFlow < -2000) rotationSignal = 'underweight';
-    else rotationSignal = 'neutral';
-
+  // --- Creation/Redemption Activity ---
+  const creationRedemption = ETF_DEFS.map(etf => {
+    const sharesCreated = Math.round(etf.baseCreation * jitter(1, 0.4));
+    const sharesRedeemed = Math.round(etf.baseRedemption * jitter(1, 0.4));
+    const net = sharesCreated - sharesRedeemed;
+    const premiumDiscount = round2((rng() - 0.45) * 0.6); // % range roughly -0.27 to +0.33
     return {
-      sector: sec.sector,
-      weeklyFlow,
-      monthlyFlow,
-      flowMomentum,
-      rotationSignal,
+      etf: etf.ticker,
+      sharesCreated,
+      sharesRedeemed,
+      net,
+      premiumDiscountPct: premiumDiscount,
     };
   });
 
   return {
-    topInflows,
-    topOutflows,
+    topFlows,
     categorySummary,
+    largestInflows,
+    largestOutflows,
     creationRedemption,
-    sectorRotation,
     timestamp: new Date().toISOString(),
   };
 }
@@ -236,7 +155,7 @@ function generate() {
 router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-    if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
+    if (cache && now - cache.ts < TTL) return res.json(cache.data);
     const data = generate();
     cache = { data, ts: now };
     res.json(data);

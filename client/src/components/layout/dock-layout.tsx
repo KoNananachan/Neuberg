@@ -371,6 +371,8 @@ const MacroIndicatorsPanel = lazy(() => import('../panels/macro-indicators-panel
 const VolatilitySkewPanel = lazy(() => import('../panels/volatility-skew-panel').then(m => ({ default: m.VolatilitySkewPanel })));
 const OrderBookPanel = lazy(() => import('../panels/order-book-panel').then(m => ({ default: m.OrderBookPanel })));
 
+const FixedIncomeLadderPanel = lazy(() => import('../panels/fixed-income-ladder-panel').then(m => ({ default: m.FixedIncomeLadderPanel })));
+
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={
@@ -752,6 +754,7 @@ export const PANEL_IDS = {
   MACRO_INDICATORS: 'macro-indicators',
   VOLATILITY_SKEW: 'volatility-skew',
   ORDER_BOOK: 'order-book',
+  FIXED_INCOME_LADDER: 'fixed-income-ladder',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1118,6 +1121,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MACRO_INDICATORS]: 'MACRO INDICATORS',
   [PANEL_IDS.VOLATILITY_SKEW]: 'VOLATILITY SKEW',
   [PANEL_IDS.ORDER_BOOK]: 'ORDER BOOK',
+  [PANEL_IDS.FIXED_INCOME_LADDER]: 'FIXED INCOME LADDER',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1485,6 +1489,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MACRO_INDICATORS]: 'panelMacroIndicators',
   [PANEL_IDS.VOLATILITY_SKEW]: 'panelVolatilitySkew',
   [PANEL_IDS.ORDER_BOOK]: 'panelOrderBook',
+  [PANEL_IDS.FIXED_INCOME_LADDER]: 'panelFixedIncomeLadder',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2148,6 +2153,7 @@ export function DockLayout() {
       case PANEL_IDS.MACRO_INDICATORS: content = <LazyWrap><MacroIndicatorsPanel /></LazyWrap>; break;
       case PANEL_IDS.VOLATILITY_SKEW: content = <LazyWrap><VolatilitySkewPanel /></LazyWrap>; break;
       case PANEL_IDS.ORDER_BOOK: content = <LazyWrap><OrderBookPanel /></LazyWrap>; break;
+      case PANEL_IDS.FIXED_INCOME_LADDER: content = <LazyWrap><FixedIncomeLadderPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

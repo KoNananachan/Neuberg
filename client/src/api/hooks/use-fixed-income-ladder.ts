@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../client';
 
-export function useDividendForecast() {
+export function useFixedIncomeLadder() {
   return useQuery({
-    queryKey: ['dividend-forecast'],
-    queryFn: () => api.get<any>('/dividend-forecast'),
+    queryKey: ['fixed-income-ladder'],
+    queryFn: () => api.get<any>('/fixed-income-ladder'),
     refetchInterval: 5 * 60 * 1000,
     staleTime: 3 * 60 * 1000,
   });

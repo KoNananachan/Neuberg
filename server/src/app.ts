@@ -365,6 +365,7 @@ import equityValuationRouter from './routes/equity-valuation.js';
 import macroIndicatorsRouter from './routes/macro-indicators.js';
 import volatilitySkewRouter from './routes/volatility-skew.js';
 import orderBookRouter from './routes/order-book.js';
+import fixedIncomeLadderRouter from './routes/fixed-income-ladder.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -831,6 +832,7 @@ export function createApp() {
   app.use('/api/macro-indicators', macroIndicatorsRouter);
   app.use('/api/volatility-skew', volatilitySkewRouter);
   app.use('/api/order-book', orderBookRouter);
+  app.use('/api/fixed-income-ladder', fixedIncomeLadderRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
