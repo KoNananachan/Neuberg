@@ -185,6 +185,9 @@ const CreditAuctionPanel = lazy(() => import('../panels/credit-auction-panel').t
 const MuniYieldCurvesPanel = lazy(() => import('../panels/muni-yield-curves-panel').then(m => ({ default: m.MuniYieldCurvesPanel })));
 const StructuredProductsPanel = lazy(() => import('../panels/structured-products-panel').then(m => ({ default: m.StructuredProductsPanel })));
 const PensionFundPanel = lazy(() => import('../panels/pension-fund-panel').then(m => ({ default: m.PensionFundPanel })));
+const SwapSpreadMonitorPanel = lazy(() => import('../panels/swap-spread-monitor-panel').then(m => ({ default: m.SwapSpreadMonitorPanel })));
+const EquityLinkedNotesPanel = lazy(() => import('../panels/equity-linked-notes-panel').then(m => ({ default: m.EquityLinkedNotesPanel })));
+const TradeFinancePanel = lazy(() => import('../panels/trade-finance-panel').then(m => ({ default: m.TradeFinancePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -382,6 +385,9 @@ export const PANEL_IDS = {
   MUNI_YIELD_CURVES: 'muni-yield-curves',
   STRUCTURED_PRODUCTS: 'structured-products',
   PENSION_FUND: 'pension-fund',
+  SWAP_SPREAD_MONITOR: 'swap-spread-monitor',
+  EQUITY_LINKED_NOTES: 'equity-linked-notes',
+  TRADE_FINANCE: 'trade-finance',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -563,6 +569,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MUNI_YIELD_CURVES]: 'MUNI YIELD CURVES',
   [PANEL_IDS.STRUCTURED_PRODUCTS]: 'STRUCTURED PRODUCTS',
   [PANEL_IDS.PENSION_FUND]: 'PENSION FUND',
+  [PANEL_IDS.SWAP_SPREAD_MONITOR]: 'SWAP SPREAD MONITOR',
+  [PANEL_IDS.EQUITY_LINKED_NOTES]: 'EQUITY LINKED NOTES',
+  [PANEL_IDS.TRADE_FINANCE]: 'TRADE FINANCE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -745,6 +754,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MUNI_YIELD_CURVES]: 'panelMuniYieldCurves',
   [PANEL_IDS.STRUCTURED_PRODUCTS]: 'panelStructuredProducts',
   [PANEL_IDS.PENSION_FUND]: 'panelPensionFund',
+  [PANEL_IDS.SWAP_SPREAD_MONITOR]: 'panelSwapSpreadMonitor',
+  [PANEL_IDS.EQUITY_LINKED_NOTES]: 'panelEquityLinkedNotes',
+  [PANEL_IDS.TRADE_FINANCE]: 'panelTradeFinance',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -1223,6 +1235,9 @@ export function DockLayout() {
       case PANEL_IDS.MUNI_YIELD_CURVES: content = <LazyWrap><MuniYieldCurvesPanel /></LazyWrap>; break;
       case PANEL_IDS.STRUCTURED_PRODUCTS: content = <LazyWrap><StructuredProductsPanel /></LazyWrap>; break;
       case PANEL_IDS.PENSION_FUND: content = <LazyWrap><PensionFundPanel /></LazyWrap>; break;
+      case PANEL_IDS.SWAP_SPREAD_MONITOR: content = <LazyWrap><SwapSpreadMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_LINKED_NOTES: content = <LazyWrap><EquityLinkedNotesPanel /></LazyWrap>; break;
+      case PANEL_IDS.TRADE_FINANCE: content = <LazyWrap><TradeFinancePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
