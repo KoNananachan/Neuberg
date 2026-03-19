@@ -487,6 +487,7 @@ import creditValuationAdjustmentRouter from './routes/credit-valuation-adjustmen
 import interestRateVolSurfaceRouter from './routes/interest-rate-vol-surface.js';
 import municipalCreditAnalysisRouter from './routes/municipal-credit-analysis.js';
 import structuredProductsAnalyzerRouter from './routes/structured-products-analyzer.js';
+import riskScenarioAnalysisRouter from './routes/risk-scenario-analysis.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1075,6 +1076,7 @@ export function createApp() {
   app.use('/api/interest-rate-vol-surface', interestRateVolSurfaceRouter);
   app.use('/api/municipal-credit-analysis', municipalCreditAnalysisRouter);
   app.use('/api/structured-products-analyzer', structuredProductsAnalyzerRouter);
+  app.use('/api/risk-scenario-analysis', riskScenarioAnalysisRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

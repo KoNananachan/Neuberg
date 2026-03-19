@@ -6,104 +6,152 @@ const router = Router();
 
 function mulberry32(a: number) {
   return function () {
-    let t = (a += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
-function hashSeed(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
+function hashSeed(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   }
-  return Math.abs(hash);
+  return h;
 }
 
 // ── Cache ──
 
-let cache: { data: any; ts: number } | null = null;
-let staleData: any = null;
+let cache: { data: unknown; ts: number } | null = null;
+let staleData: unknown = null;
 const TTL = 5 * 60 * 1000;
 
 // ── Types ──
 
 interface Trade {
-  time: string;
-  ticker: string;
+  tradeId: string;
+  timestamp: string;
+  instrument: string;
+  assetClass: 'Equity' | 'ETF' | 'Fixed Income' | 'FX' | 'Commodity';
   side: 'BUY' | 'SELL';
   quantity: number;
   price: number;
   notional: number;
-  exchange: string;
-  orderType: string;
-  status: string;
-  limitPrice: number | null;
-  fillPrice: number;
-}
-
-interface SymbolVWAP {
-  ticker: string;
-  vwap: number;
-  totalVolume: number;
-  tradeCount: number;
-}
-
-interface SummaryStats {
-  totalTrades: number;
-  totalVolume: number;
-  totalNotional: number;
-  buySellRatio: number;
-  averageFillRate: number;
-  topSymbolVWAP: SymbolVWAP[];
+  venue: string;
+  venueType: 'Exchange' | 'Dark Pool' | 'OTC';
+  status: 'FILLED' | 'PARTIAL' | 'WORKING' | 'CANCELLED';
+  broker: string;
 }
 
 interface ExecutionQuality {
+  vwapSlippageBps: number;
+  arrivalPriceImpactBps: number;
+  fillRatePct: number;
+  avgTimeToFillSec: number;
   filledAtOrBetterPct: number;
-  averageSlippageBps: number;
-  bestExecution: string;
-  worstExecution: string;
+  bestExecutionSymbol: string;
+  worstExecutionSymbol: string;
 }
 
-interface TradeBlotterResponse {
-  date: string;
-  generatedAt: string;
-  trades: Trade[];
-  summary: SummaryStats;
-  executionQuality: ExecutionQuality;
+interface OrderFlowSummary {
+  totalBuyVolume: number;
+  totalSellVolume: number;
+  netFlow: number;
+  buyTradeCount: number;
+  sellTradeCount: number;
+  netFlowByAssetClass: { assetClass: string; netFlow: number }[];
 }
 
-// ── Ticker definitions with realistic base prices ──
+interface VenueBreakdown {
+  exchange: { pct: number; volume: number; tradeCount: number };
+  darkPool: { pct: number; volume: number; tradeCount: number };
+  otc: { pct: number; volume: number; tradeCount: number };
+}
 
-const TICKERS: { symbol: string; basePrice: number }[] = [
-  { symbol: 'AAPL', basePrice: 213.45 },
-  { symbol: 'MSFT', basePrice: 428.70 },
-  { symbol: 'GOOGL', basePrice: 176.30 },
-  { symbol: 'AMZN', basePrice: 187.50 },
-  { symbol: 'NVDA', basePrice: 878.40 },
-  { symbol: 'META', basePrice: 507.60 },
-  { symbol: 'TSLA', basePrice: 248.15 },
-  { symbol: 'JPM', basePrice: 199.80 },
-  { symbol: 'BAC', basePrice: 38.25 },
-  { symbol: 'GS', basePrice: 416.90 },
-  { symbol: 'SPY', basePrice: 521.40 },
-  { symbol: 'QQQ', basePrice: 449.80 },
-  { symbol: 'IWM', basePrice: 203.65 },
-  { symbol: 'XLF', basePrice: 41.30 },
-  { symbol: 'COIN', basePrice: 225.70 },
+interface LargestTrade {
+  tradeId: string;
+  timestamp: string;
+  instrument: string;
+  side: 'BUY' | 'SELL';
+  quantity: number;
+  price: number;
+  notional: number;
+  venue: string;
+  broker: string;
+}
+
+interface PnLSummary {
+  realizedPnL: number;
+  unrealizedPnL: number;
+  totalPnL: number;
+  winningTrades: number;
+  losingTrades: number;
+  winRate: number;
+  avgWin: number;
+  avgLoss: number;
+  largestWin: number;
+  largestLoss: number;
+  pnlByAssetClass: { assetClass: string; pnl: number }[];
+}
+
+// ── Instrument definitions with realistic base prices ──
+
+const INSTRUMENTS: { symbol: string; basePrice: number; assetClass: Trade['assetClass'] }[] = [
+  { symbol: 'AAPL', basePrice: 213.45, assetClass: 'Equity' },
+  { symbol: 'MSFT', basePrice: 428.70, assetClass: 'Equity' },
+  { symbol: 'GOOGL', basePrice: 176.30, assetClass: 'Equity' },
+  { symbol: 'AMZN', basePrice: 187.50, assetClass: 'Equity' },
+  { symbol: 'NVDA', basePrice: 878.40, assetClass: 'Equity' },
+  { symbol: 'META', basePrice: 507.60, assetClass: 'Equity' },
+  { symbol: 'TSLA', basePrice: 248.15, assetClass: 'Equity' },
+  { symbol: 'JPM', basePrice: 199.80, assetClass: 'Equity' },
+  { symbol: 'GS', basePrice: 416.90, assetClass: 'Equity' },
+  { symbol: 'BAC', basePrice: 38.25, assetClass: 'Equity' },
+  { symbol: 'SPY', basePrice: 521.40, assetClass: 'ETF' },
+  { symbol: 'QQQ', basePrice: 449.80, assetClass: 'ETF' },
+  { symbol: 'IWM', basePrice: 203.65, assetClass: 'ETF' },
+  { symbol: 'HYG', basePrice: 77.50, assetClass: 'ETF' },
+  { symbol: 'TLT', basePrice: 92.30, assetClass: 'ETF' },
+  { symbol: 'UST 10Y', basePrice: 98.4375, assetClass: 'Fixed Income' },
+  { symbol: 'UST 2Y', basePrice: 99.8125, assetClass: 'Fixed Income' },
+  { symbol: 'EUR/USD', basePrice: 1.0845, assetClass: 'FX' },
+  { symbol: 'GBP/USD', basePrice: 1.2710, assetClass: 'FX' },
+  { symbol: 'CL WTI', basePrice: 78.45, assetClass: 'Commodity' },
+  { symbol: 'GC Gold', basePrice: 2345.60, assetClass: 'Commodity' },
 ];
 
-const EXCHANGES = ['NYSE', 'NASDAQ', 'ARCA', 'BATS', 'IEX'];
-const ORDER_TYPES = ['MKT', 'LMT', 'STOP'];
-const STATUSES = ['FILLED', 'PARTIAL', 'WORKING'];
+const VENUES: { name: string; type: Trade['venueType'] }[] = [
+  { name: 'NYSE', type: 'Exchange' },
+  { name: 'NASDAQ', type: 'Exchange' },
+  { name: 'ARCA', type: 'Exchange' },
+  { name: 'BATS', type: 'Exchange' },
+  { name: 'IEX', type: 'Exchange' },
+  { name: 'CME', type: 'Exchange' },
+  { name: 'Sigma X', type: 'Dark Pool' },
+  { name: 'Crossfinder', type: 'Dark Pool' },
+  { name: 'UBS ATS', type: 'Dark Pool' },
+  { name: 'MS Pool', type: 'Dark Pool' },
+  { name: 'Citadel OTC', type: 'OTC' },
+  { name: 'Virtu OTC', type: 'OTC' },
+  { name: 'Jane Street OTC', type: 'OTC' },
+];
+
+const BROKERS = [
+  'Goldman Sachs', 'Morgan Stanley', 'JP Morgan', 'Bank of America',
+  'Citadel Securities', 'Virtu Financial', 'UBS', 'Barclays',
+  'Credit Suisse', 'Deutsche Bank',
+];
 
 // ── Helpers ──
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+function round4(n: number): number {
+  return Math.round(n * 10000) / 10000;
 }
 
 function pick<T>(arr: T[], rng: () => number): T {
@@ -116,199 +164,320 @@ function jitter(base: number, pct: number, rng: () => number): number {
 
 // ── Generation logic ──
 
-function generateTrades(rng: () => number): Trade[] {
-  const tradeCount = 30 + Math.floor(rng() * 11); // 30-40 trades
+function generateTrades(rng: () => number, day: string): Trade[] {
   const trades: Trade[] = [];
 
-  // Generate timestamps across market hours 09:30 - 15:59
+  // Generate 50 timestamps across market hours 09:30 - 15:59
   const timestamps: string[] = [];
-  for (let i = 0; i < tradeCount; i++) {
+  for (let i = 0; i < 50; i++) {
     const minuteOffset = Math.floor(rng() * 390); // 6.5 hours = 390 min
     const totalMinutes = 9 * 60 + 30 + minuteOffset;
     const hour = Math.floor(totalMinutes / 60);
     const minute = totalMinutes % 60;
     const second = Math.floor(rng() * 60);
+    const ms = Math.floor(rng() * 1000);
     timestamps.push(
-      `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`
+      `${day}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}.${String(ms).padStart(3, '0')}Z`
     );
   }
   timestamps.sort();
 
-  for (let i = 0; i < tradeCount; i++) {
-    const tickerDef = pick(TICKERS, rng);
+  for (let i = 0; i < 50; i++) {
+    const inst = pick(INSTRUMENTS, rng);
+
+    // Venue selection weighted by asset class
+    let venuePool = VENUES;
+    if (inst.assetClass === 'Fixed Income' || inst.assetClass === 'FX') {
+      venuePool = VENUES.filter(v => v.type === 'OTC' || v.name === 'CME');
+    } else if (inst.assetClass === 'Commodity') {
+      venuePool = VENUES.filter(v => v.name === 'CME' || v.type === 'OTC');
+    }
+    const venue = pick(venuePool, rng);
+
     const side: 'BUY' | 'SELL' = rng() > 0.47 ? 'BUY' : 'SELL';
 
-    // Quantity: 100-50,000 shares in round lots, weighted toward smaller sizes
-    const rawQty = 100 + Math.floor(rng() * rng() * 49900);
-    const quantity = Math.round(rawQty / 100) * 100 || 100;
+    // Quantity: varies by asset class
+    let quantity: number;
+    if (inst.assetClass === 'FX') {
+      quantity = Math.round((100000 + rng() * rng() * 9900000) / 10000) * 10000;
+    } else if (inst.assetClass === 'Fixed Income') {
+      quantity = Math.round((100000 + rng() * rng() * 4900000) / 100000) * 100000;
+    } else if (inst.assetClass === 'Commodity') {
+      quantity = Math.round(1 + rng() * rng() * 49) * 10;
+    } else {
+      // Equity / ETF: 100-50,000 shares in round lots, weighted toward smaller
+      const rawQty = 100 + Math.floor(rng() * rng() * 49900);
+      quantity = Math.round(rawQty / 100) * 100 || 100;
+    }
 
     // Price with realistic daily variation (+/- 1.5%)
-    const price = round2(jitter(tickerDef.basePrice, 0.015, rng));
-
+    const price = round4(jitter(inst.basePrice, 0.015, rng));
     const notional = round2(quantity * price);
-    const exchange = pick(EXCHANGES, rng);
-    const orderType = pick(ORDER_TYPES, rng);
 
-    // Status: mostly FILLED, some PARTIAL/WORKING
+    const broker = pick(BROKERS, rng);
+
+    // Status distribution: ~72% FILLED, ~14% PARTIAL, ~10% WORKING, ~4% CANCELLED
     const statusRoll = rng();
-    const status = statusRoll < 0.72 ? 'FILLED' : statusRoll < 0.88 ? 'PARTIAL' : 'WORKING';
+    let status: Trade['status'];
+    if (statusRoll < 0.72) status = 'FILLED';
+    else if (statusRoll < 0.86) status = 'PARTIAL';
+    else if (statusRoll < 0.96) status = 'WORKING';
+    else status = 'CANCELLED';
 
-    // Limit price for LMT/STOP orders
-    let limitPrice: number | null = null;
-    if (orderType === 'LMT') {
-      // Limit price slightly away from market price
-      const offset = side === 'BUY' ? -(rng() * 0.005) : (rng() * 0.005);
-      limitPrice = round2(price * (1 + offset));
-    } else if (orderType === 'STOP') {
-      const offset = side === 'BUY' ? (rng() * 0.008) : -(rng() * 0.008);
-      limitPrice = round2(price * (1 + offset));
-    }
-
-    // Fill price: for FILLED orders, close to limit; for MKT, same as price
-    let fillPrice = price;
-    if (orderType === 'LMT' && limitPrice !== null && status === 'FILLED') {
-      // Filled at or slightly better than limit
-      const improvement = rng() * 0.002;
-      fillPrice = side === 'BUY'
-        ? round2(limitPrice * (1 - improvement))
-        : round2(limitPrice * (1 + improvement));
-    }
+    const tradeId = `TB-${day.replace(/-/g, '')}-${String(i + 1).padStart(4, '0')}`;
 
     trades.push({
-      time: timestamps[i],
-      ticker: tickerDef.symbol,
+      tradeId,
+      timestamp: timestamps[i],
+      instrument: inst.symbol,
+      assetClass: inst.assetClass,
       side,
       quantity,
       price,
       notional,
-      exchange,
-      orderType,
+      venue: venue.name,
+      venueType: venue.type,
       status,
-      limitPrice,
-      fillPrice,
+      broker,
     });
   }
 
-  // Sort descending by time (most recent first)
-  trades.sort((a, b) => b.time.localeCompare(a.time));
+  // Sort descending by timestamp (most recent first)
+  trades.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return trades;
 }
 
-function computeSummary(trades: Trade[]): SummaryStats {
+function computeExecutionQuality(trades: Trade[], rng: () => number): ExecutionQuality {
+  const filledTrades = trades.filter(t => t.status === 'FILLED' || t.status === 'PARTIAL');
   const totalTrades = trades.length;
-  const totalVolume = trades.reduce((sum, t) => sum + t.quantity, 0);
-  const totalNotional = round2(trades.reduce((sum, t) => sum + t.notional, 0));
 
-  const buyCount = trades.filter(t => t.side === 'BUY').length;
-  const sellCount = trades.filter(t => t.side === 'SELL').length;
-  const buySellRatio = round2(sellCount > 0 ? buyCount / sellCount : buyCount);
-
-  // Average fill rate: FILLED=100%, PARTIAL=random 40-85%, WORKING=0%
-  const fillRates = trades.map(t => {
-    if (t.status === 'FILLED') return 100;
-    if (t.status === 'PARTIAL') return 40 + (t.quantity % 45); // deterministic partial
-    return 0;
-  });
-  const averageFillRate = round2(fillRates.reduce((a, b) => a + b, 0) / fillRates.length);
-
-  // VWAP for top 5 symbols by trade count
-  const tickerMap = new Map<string, { totalPriceQty: number; totalQty: number; count: number }>();
-  for (const t of trades) {
-    const entry = tickerMap.get(t.ticker) || { totalPriceQty: 0, totalQty: 0, count: 0 };
-    entry.totalPriceQty += t.price * t.quantity;
-    entry.totalQty += t.quantity;
-    entry.count++;
-    tickerMap.set(t.ticker, entry);
-  }
-
-  const topSymbolVWAP: SymbolVWAP[] = [...tickerMap.entries()]
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, 5)
-    .map(([ticker, data]) => ({
-      ticker,
-      vwap: round2(data.totalPriceQty / data.totalQty),
-      totalVolume: data.totalQty,
-      tradeCount: data.count,
-    }));
-
-  return {
-    totalTrades,
-    totalVolume,
-    totalNotional,
-    buySellRatio,
-    averageFillRate,
-    topSymbolVWAP,
-  };
-}
-
-function computeExecutionQuality(trades: Trade[]): ExecutionQuality {
-  // Orders filled at or better than limit price
-  const limitOrders = trades.filter(t => t.orderType === 'LMT' && t.limitPrice !== null && t.status === 'FILLED');
-  let atOrBetterCount = 0;
+  // VWAP slippage: sum of price-weighted deviations
+  // Simulate arrival prices slightly different from fill prices
   let totalSlippageBps = 0;
   let bestSlippage = Infinity;
   let worstSlippage = -Infinity;
-  let bestTicker = '';
-  let worstTicker = '';
+  let bestSymbol = '';
+  let worstSymbol = '';
+  let totalTimeToFill = 0;
+  let atOrBetterCount = 0;
 
-  for (const t of limitOrders) {
-    const limitPx = t.limitPrice!;
-    if (t.side === 'BUY') {
-      // Better = fillPrice <= limitPrice
-      if (t.fillPrice <= limitPx) atOrBetterCount++;
-      const slippage = ((t.fillPrice - limitPx) / limitPx) * 10000;
-      totalSlippageBps += slippage;
-      if (slippage < bestSlippage) { bestSlippage = slippage; bestTicker = t.ticker; }
-      if (slippage > worstSlippage) { worstSlippage = slippage; worstTicker = t.ticker; }
-    } else {
-      // Better = fillPrice >= limitPrice
-      if (t.fillPrice >= limitPx) atOrBetterCount++;
-      const slippage = ((limitPx - t.fillPrice) / limitPx) * 10000;
-      totalSlippageBps += slippage;
-      if (slippage < bestSlippage) { bestSlippage = slippage; bestTicker = t.ticker; }
-      if (slippage > worstSlippage) { worstSlippage = slippage; worstTicker = t.ticker; }
+  for (const t of filledTrades) {
+    // Simulate arrival price as the pre-trade price (slight offset from fill)
+    const arrivalOffset = (rng() - 0.45) * 0.003; // slight adverse bias
+    const arrivalPrice = t.price * (1 - arrivalOffset);
+
+    // Slippage: how much worse the fill is vs arrival
+    const slipBps = ((t.price - arrivalPrice) / arrivalPrice) * 10000;
+    const adjustedSlip = t.side === 'BUY' ? slipBps : -slipBps;
+    totalSlippageBps += adjustedSlip;
+
+    if (adjustedSlip < bestSlippage) {
+      bestSlippage = adjustedSlip;
+      bestSymbol = t.instrument;
     }
+    if (adjustedSlip > worstSlippage) {
+      worstSlippage = adjustedSlip;
+      worstSymbol = t.instrument;
+    }
+
+    if (adjustedSlip <= 0) atOrBetterCount++;
+
+    // Time to fill: 0.5s to 120s, skewed toward fast fills
+    totalTimeToFill += 0.5 + rng() * rng() * 119.5;
   }
 
-  // Include MKT orders in slippage calculation (assume 0.5-2 bps market impact)
-  const mktOrders = trades.filter(t => t.orderType === 'MKT' && t.status === 'FILLED');
-  for (const t of mktOrders) {
-    const impliedSlippage = ((t.price * 0.0001) + (t.price * 0.00005)) / t.price * 10000;
-    totalSlippageBps += impliedSlippage;
-  }
+  const filledCount = filledTrades.length;
+  const vwapSlippageBps = filledCount > 0 ? round2(totalSlippageBps / filledCount) : 0;
+  const arrivalPriceImpactBps = round2(vwapSlippageBps * (0.6 + rng() * 0.3));
 
-  const allFilledOrders = limitOrders.length + mktOrders.length;
-  const filledAtOrBetterPct = limitOrders.length > 0
-    ? round2((atOrBetterCount / limitOrders.length) * 100)
-    : 100;
-  const averageSlippageBps = allFilledOrders > 0
-    ? round2(totalSlippageBps / allFilledOrders)
-    : 0;
+  const filledQty = filledTrades.reduce((sum, t) => sum + t.quantity, 0);
+  const totalQty = trades.reduce((sum, t) => sum + t.quantity, 0);
+  const fillRatePct = totalQty > 0 ? round2((filledQty / totalQty) * 100) : 0;
+
+  const avgTimeToFillSec = filledCount > 0 ? round2(totalTimeToFill / filledCount) : 0;
+  const filledAtOrBetterPct = filledCount > 0 ? round2((atOrBetterCount / filledCount) * 100) : 0;
 
   return {
+    vwapSlippageBps,
+    arrivalPriceImpactBps,
+    fillRatePct,
+    avgTimeToFillSec,
     filledAtOrBetterPct,
-    averageSlippageBps,
-    bestExecution: bestTicker || 'N/A',
-    worstExecution: worstTicker || 'N/A',
+    bestExecutionSymbol: bestSymbol || 'N/A',
+    worstExecutionSymbol: worstSymbol || 'N/A',
   };
 }
 
-function buildTradeBlotterData(): TradeBlotterResponse {
+function computeOrderFlowSummary(trades: Trade[]): OrderFlowSummary {
+  const activeTrades = trades.filter(t => t.status !== 'CANCELLED');
+
+  let totalBuyVolume = 0;
+  let totalSellVolume = 0;
+  let buyTradeCount = 0;
+  let sellTradeCount = 0;
+
+  const flowByClass = new Map<string, number>();
+
+  for (const t of activeTrades) {
+    const notional = t.notional;
+    if (t.side === 'BUY') {
+      totalBuyVolume += notional;
+      buyTradeCount++;
+      flowByClass.set(t.assetClass, (flowByClass.get(t.assetClass) ?? 0) + notional);
+    } else {
+      totalSellVolume += notional;
+      sellTradeCount++;
+      flowByClass.set(t.assetClass, (flowByClass.get(t.assetClass) ?? 0) - notional);
+    }
+  }
+
+  const netFlowByAssetClass = [...flowByClass.entries()]
+    .map(([assetClass, netFlow]) => ({ assetClass, netFlow: round2(netFlow) }))
+    .sort((a, b) => Math.abs(b.netFlow) - Math.abs(a.netFlow));
+
+  return {
+    totalBuyVolume: round2(totalBuyVolume),
+    totalSellVolume: round2(totalSellVolume),
+    netFlow: round2(totalBuyVolume - totalSellVolume),
+    buyTradeCount,
+    sellTradeCount,
+    netFlowByAssetClass,
+  };
+}
+
+function computeVenueBreakdown(trades: Trade[]): VenueBreakdown {
+  const activeTrades = trades.filter(t => t.status !== 'CANCELLED');
+  const totalNotional = activeTrades.reduce((s, t) => s + t.notional, 0);
+
+  const groups: Record<Trade['venueType'], { volume: number; count: number }> = {
+    'Exchange': { volume: 0, count: 0 },
+    'Dark Pool': { volume: 0, count: 0 },
+    'OTC': { volume: 0, count: 0 },
+  };
+
+  for (const t of activeTrades) {
+    groups[t.venueType].volume += t.notional;
+    groups[t.venueType].count++;
+  }
+
+  const makeStat = (g: { volume: number; count: number }) => ({
+    pct: totalNotional > 0 ? round2((g.volume / totalNotional) * 100) : 0,
+    volume: round2(g.volume),
+    tradeCount: g.count,
+  });
+
+  return {
+    exchange: makeStat(groups['Exchange']),
+    darkPool: makeStat(groups['Dark Pool']),
+    otc: makeStat(groups['OTC']),
+  };
+}
+
+function computeLargestTrades(trades: Trade[]): LargestTrade[] {
+  return [...trades]
+    .filter(t => t.status === 'FILLED')
+    .sort((a, b) => b.notional - a.notional)
+    .slice(0, 10)
+    .map(t => ({
+      tradeId: t.tradeId,
+      timestamp: t.timestamp,
+      instrument: t.instrument,
+      side: t.side,
+      quantity: t.quantity,
+      price: t.price,
+      notional: t.notional,
+      venue: t.venue,
+      broker: t.broker,
+    }));
+}
+
+function computePnL(trades: Trade[], rng: () => number): PnLSummary {
+  const filledTrades = trades.filter(t => t.status === 'FILLED');
+  const pnlByClassMap = new Map<string, number>();
+
+  let realizedPnL = 0;
+  let unrealizedPnL = 0;
+  let winningTrades = 0;
+  let losingTrades = 0;
+  let totalWin = 0;
+  let totalLoss = 0;
+  let largestWin = 0;
+  let largestLoss = 0;
+
+  for (const t of filledTrades) {
+    // Simulate mark-to-market P&L: price moved after fill
+    const moveDir = rng() - 0.48; // slight positive bias
+    const moveMag = rng() * 0.008; // up to 0.8% move
+    const priceDelta = t.price * moveDir * moveMag;
+    const tradePnL = t.side === 'BUY'
+      ? round2(priceDelta * t.quantity)
+      : round2(-priceDelta * t.quantity);
+
+    // 70% realized, 30% unrealized
+    if (rng() < 0.7) {
+      realizedPnL += tradePnL;
+    } else {
+      unrealizedPnL += tradePnL;
+    }
+
+    if (tradePnL > 0) {
+      winningTrades++;
+      totalWin += tradePnL;
+      if (tradePnL > largestWin) largestWin = tradePnL;
+    } else if (tradePnL < 0) {
+      losingTrades++;
+      totalLoss += tradePnL;
+      if (tradePnL < largestLoss) largestLoss = tradePnL;
+    }
+
+    pnlByClassMap.set(t.assetClass, (pnlByClassMap.get(t.assetClass) ?? 0) + tradePnL);
+  }
+
+  const pnlByAssetClass = [...pnlByClassMap.entries()]
+    .map(([assetClass, pnl]) => ({ assetClass, pnl: round2(pnl) }))
+    .sort((a, b) => b.pnl - a.pnl);
+
+  const totalTradesWithResult = winningTrades + losingTrades;
+
+  return {
+    realizedPnL: round2(realizedPnL),
+    unrealizedPnL: round2(unrealizedPnL),
+    totalPnL: round2(realizedPnL + unrealizedPnL),
+    winningTrades,
+    losingTrades,
+    winRate: totalTradesWithResult > 0 ? round2((winningTrades / totalTradesWithResult) * 100) : 0,
+    avgWin: winningTrades > 0 ? round2(totalWin / winningTrades) : 0,
+    avgLoss: losingTrades > 0 ? round2(totalLoss / losingTrades) : 0,
+    largestWin: round2(largestWin),
+    largestLoss: round2(largestLoss),
+    pnlByAssetClass,
+  };
+}
+
+// ── Main builder ──
+
+function generate() {
   const day = new Date().toISOString().slice(0, 10);
   const seed = hashSeed('trade-blotter-' + day);
   const rng = mulberry32(seed);
 
-  const trades = generateTrades(rng);
-  const summary = computeSummary(trades);
-  const executionQuality = computeExecutionQuality(trades);
+  const trades = generateTrades(rng, day);
+  const executionQuality = computeExecutionQuality(trades, rng);
+  const orderFlowSummary = computeOrderFlowSummary(trades);
+  const venueBreakdown = computeVenueBreakdown(trades);
+  const largestTrades = computeLargestTrades(trades);
+  const pnl = computePnL(trades, rng);
 
   return {
     date: day,
     generatedAt: new Date().toISOString(),
     trades,
-    summary,
     executionQuality,
+    orderFlowSummary,
+    venueBreakdown,
+    largestTrades,
+    pnl,
   };
 }
 
@@ -323,7 +492,7 @@ router.get('/', (_req, res) => {
       return;
     }
 
-    const data = buildTradeBlotterData();
+    const data = generate();
 
     staleData = cache?.data ?? staleData;
     cache = { data, ts: now };
@@ -341,7 +510,7 @@ router.get('/', (_req, res) => {
       return;
     }
 
-    res.status(500).json({ error: 'Failed to generate trade blotter data' });
+    res.status(502).json({ error: 'Failed to generate trade blotter data' });
   }
 });
 
