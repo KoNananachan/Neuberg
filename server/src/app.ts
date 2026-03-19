@@ -426,6 +426,9 @@ import pharmaPipelineRouter from './routes/pharma-pipeline.js';
 import etfFlowRouter from './routes/etf-flow.js';
 import volatilitySurfaceRouter from './routes/volatility-surface.js';
 import creditSpreadRouter from './routes/credit-spread.js';
+import earningsRevisionRouter from './routes/earnings-revision.js';
+import swapSpreadRouter from './routes/swap-spread.js';
+import breakevenInflationRouter from './routes/breakeven-inflation.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -953,6 +956,9 @@ export function createApp() {
   app.use('/api/etf-flow', etfFlowRouter);
   app.use('/api/volatility-surface', volatilitySurfaceRouter);
   app.use('/api/credit-spread', creditSpreadRouter);
+  app.use('/api/earnings-revision', earningsRevisionRouter);
+  app.use('/api/swap-spread', swapSpreadRouter);
+  app.use('/api/breakeven-inflation', breakevenInflationRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

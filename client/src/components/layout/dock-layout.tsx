@@ -433,6 +433,9 @@ const PharmaPipelinePanel = lazy(() => import('../panels/pharma-pipeline-panel')
 const EtfFlowPanel = lazy(() => import('../panels/etf-flow-panel').then(m => ({ default: m.EtfFlowPanel })));
 const VolatilitySurfacePanel = lazy(() => import('../panels/volatility-surface-panel').then(m => ({ default: m.VolatilitySurfacePanel })));
 const CreditSpreadPanel = lazy(() => import('../panels/credit-spread-panel').then(m => ({ default: m.CreditSpreadPanel })));
+const EarningsRevisionPanel = lazy(() => import('../panels/earnings-revision-panel').then(m => ({ default: m.EarningsRevisionPanel })));
+const SwapSpreadPanel = lazy(() => import('../panels/swap-spread-panel').then(m => ({ default: m.SwapSpreadPanel })));
+const BreakevenInflationPanel = lazy(() => import('../panels/breakeven-inflation-panel').then(m => ({ default: m.BreakevenInflationPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -876,6 +879,9 @@ export const PANEL_IDS = {
   ETF_FLOW: 'etf-flow',
   VOLATILITY_SURFACE: 'volatility-surface',
   CREDIT_SPREAD: 'credit-spread',
+  EARNINGS_REVISION: 'earnings-revision',
+  SWAP_SPREAD: 'swap-spread',
+  BREAKEVEN_INFLATION: 'breakeven-inflation',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1303,6 +1309,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.ETF_FLOW]: 'ETF FLOW',
   [PANEL_IDS.VOLATILITY_SURFACE]: 'VOLATILITY SURFACE',
   [PANEL_IDS.CREDIT_SPREAD]: 'CREDIT SPREAD',
+  [PANEL_IDS.EARNINGS_REVISION]: 'EARNINGS REVISION',
+  [PANEL_IDS.SWAP_SPREAD]: 'SWAP SPREAD',
+  [PANEL_IDS.BREAKEVEN_INFLATION]: 'BREAKEVEN INFLATION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1731,6 +1740,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.ETF_FLOW]: 'panelEtfFlow',
   [PANEL_IDS.VOLATILITY_SURFACE]: 'panelVolatilitySurface',
   [PANEL_IDS.CREDIT_SPREAD]: 'panelCreditSpread',
+  [PANEL_IDS.EARNINGS_REVISION]: 'panelEarningsRevision',
+  [PANEL_IDS.SWAP_SPREAD]: 'panelSwapSpread',
+  [PANEL_IDS.BREAKEVEN_INFLATION]: 'panelBreakevenInflation',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2455,6 +2467,9 @@ export function DockLayout() {
       case PANEL_IDS.ETF_FLOW: content = <LazyWrap><EtfFlowPanel /></LazyWrap>; break;
       case PANEL_IDS.VOLATILITY_SURFACE: content = <LazyWrap><VolatilitySurfacePanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_SPREAD: content = <LazyWrap><CreditSpreadPanel /></LazyWrap>; break;
+      case PANEL_IDS.EARNINGS_REVISION: content = <LazyWrap><EarningsRevisionPanel /></LazyWrap>; break;
+      case PANEL_IDS.SWAP_SPREAD: content = <LazyWrap><SwapSpreadPanel /></LazyWrap>; break;
+      case PANEL_IDS.BREAKEVEN_INFLATION: content = <LazyWrap><BreakevenInflationPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
