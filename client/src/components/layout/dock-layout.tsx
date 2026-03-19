@@ -401,6 +401,9 @@ const DemographicTrendsPanel = lazy(() => import('../panels/demographic-trends-p
 const EconomicForecastPanel = lazy(() => import('../panels/economic-forecast-panel').then(m => ({ default: m.EconomicForecastPanel })));
 const GlobalIndexMonitorPanel = lazy(() => import('../panels/global-index-monitor-panel').then(m => ({ default: m.GlobalIndexMonitorPanel })));
 const LeagueTablesPanel = lazy(() => import('../panels/league-tables-panel').then(m => ({ default: m.LeagueTablesPanel })));
+const GDPNowcastPanel = lazy(() => import('../panels/gdp-nowcast-panel').then(m => ({ default: m.GDPNowcastPanel })));
+const RecessionProbabilityPanel = lazy(() => import('../panels/recession-probability-panel').then(m => ({ default: m.RecessionProbabilityPanel })));
+const FinancialConditionsPanel = lazy(() => import('../panels/financial-conditions-panel').then(m => ({ default: m.FinancialConditionsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -812,6 +815,9 @@ export const PANEL_IDS = {
   ECONOMIC_FORECAST: 'economic-forecast',
   GLOBAL_INDEX_MONITOR: 'global-index-monitor',
   LEAGUE_TABLES: 'league-tables',
+  GDP_NOWCAST: 'gdp-nowcast',
+  RECESSION_PROBABILITY: 'recession-probability',
+  FINANCIAL_CONDITIONS: 'financial-conditions',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1207,6 +1213,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.ECONOMIC_FORECAST]: 'ECONOMIC FORECAST CONSENSUS',
   [PANEL_IDS.GLOBAL_INDEX_MONITOR]: 'WORLD EQUITY INDICES',
   [PANEL_IDS.LEAGUE_TABLES]: 'LEAGUE TABLES',
+  [PANEL_IDS.GDP_NOWCAST]: 'GDP NOWCAST',
+  [PANEL_IDS.RECESSION_PROBABILITY]: 'RECESSION PROBABILITY',
+  [PANEL_IDS.FINANCIAL_CONDITIONS]: 'FINANCIAL CONDITIONS INDEX',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1603,6 +1612,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.ECONOMIC_FORECAST]: 'panelEconomicForecast',
   [PANEL_IDS.GLOBAL_INDEX_MONITOR]: 'panelGlobalIndexMonitor',
   [PANEL_IDS.LEAGUE_TABLES]: 'panelLeagueTables',
+  [PANEL_IDS.GDP_NOWCAST]: 'panelGDPNowcast',
+  [PANEL_IDS.RECESSION_PROBABILITY]: 'panelRecessionProbability',
+  [PANEL_IDS.FINANCIAL_CONDITIONS]: 'panelFinancialConditions',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2295,6 +2307,9 @@ export function DockLayout() {
       case PANEL_IDS.ECONOMIC_FORECAST: content = <LazyWrap><EconomicForecastPanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_INDEX_MONITOR: content = <LazyWrap><GlobalIndexMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.LEAGUE_TABLES: content = <LazyWrap><LeagueTablesPanel /></LazyWrap>; break;
+      case PANEL_IDS.GDP_NOWCAST: content = <LazyWrap><GDPNowcastPanel /></LazyWrap>; break;
+      case PANEL_IDS.RECESSION_PROBABILITY: content = <LazyWrap><RecessionProbabilityPanel /></LazyWrap>; break;
+      case PANEL_IDS.FINANCIAL_CONDITIONS: content = <LazyWrap><FinancialConditionsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
