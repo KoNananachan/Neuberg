@@ -507,6 +507,9 @@ import equityShortInterestRouter from './routes/equity-short-interest.js';
 import warrantPricingRouter from './routes/warrant-pricing.js';
 import tradeExecutionQualityRouter from './routes/trade-execution-quality.js';
 import freightRateMonitorRouter from './routes/freight-rate-monitor.js';
+import powerMarketRouter from './routes/power-market.js';
+import specialSituationsRouter from './routes/special-situations.js';
+import industrialMetalsRouter from './routes/industrial-metals.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1115,6 +1118,9 @@ export function createApp() {
   app.use('/api/warrant-pricing', warrantPricingRouter);
   app.use('/api/trade-execution-quality', tradeExecutionQualityRouter);
   app.use('/api/freight-rate-monitor', freightRateMonitorRouter);
+  app.use('/api/power-market', powerMarketRouter);
+  app.use('/api/special-situations', specialSituationsRouter);
+  app.use('/api/industrial-metals', industrialMetalsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

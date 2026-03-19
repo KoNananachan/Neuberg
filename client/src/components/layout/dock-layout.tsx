@@ -513,6 +513,9 @@ const EquityShortInterestPanel = lazy(() => import('../panels/equity-short-inter
 const WarrantPricingPanel = lazy(() => import('../panels/warrant-pricing-panel').then(m => ({ default: m.WarrantPricingPanel })));
 const TradeExecutionQualityPanel = lazy(() => import('../panels/trade-execution-quality-panel').then(m => ({ default: m.TradeExecutionQualityPanel })));
 const FreightRateMonitorPanel = lazy(() => import('../panels/freight-rate-monitor-panel').then(m => ({ default: m.FreightRateMonitorPanel })));
+const PowerMarketPanel = lazy(() => import('../panels/power-market-panel').then(m => ({ default: m.PowerMarketPanel })));
+const SpecialSituationsPanel = lazy(() => import('../panels/special-situations-panel').then(m => ({ default: m.SpecialSituationsPanel })));
+const IndustrialMetalsPanel = lazy(() => import('../panels/industrial-metals-panel').then(m => ({ default: m.IndustrialMetalsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1036,6 +1039,9 @@ export const PANEL_IDS = {
   WARRANT_PRICING: 'warrant-pricing',
   TRADE_EXECUTION_QUALITY: 'trade-execution-quality',
   FREIGHT_RATE_MONITOR: 'freight-rate-monitor',
+  POWER_MARKET: 'power-market',
+  SPECIAL_SITUATIONS: 'special-situations',
+  INDUSTRIAL_METALS: 'industrial-metals',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1543,6 +1549,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.WARRANT_PRICING]: 'WARRANT PRICING',
   [PANEL_IDS.TRADE_EXECUTION_QUALITY]: 'TRADE EXECUTION QUALITY',
   [PANEL_IDS.FREIGHT_RATE_MONITOR]: 'FREIGHT RATE MONITOR',
+  [PANEL_IDS.POWER_MARKET]: 'POWER MARKET',
+  [PANEL_IDS.SPECIAL_SITUATIONS]: 'SPECIAL SITUATIONS',
+  [PANEL_IDS.INDUSTRIAL_METALS]: 'INDUSTRIAL METALS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -2051,6 +2060,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.WARRANT_PRICING]: 'panelWarrantPricing',
   [PANEL_IDS.TRADE_EXECUTION_QUALITY]: 'panelTradeExecutionQuality',
   [PANEL_IDS.FREIGHT_RATE_MONITOR]: 'panelFreightRateMonitor',
+  [PANEL_IDS.POWER_MARKET]: 'panelPowerMarket',
+  [PANEL_IDS.SPECIAL_SITUATIONS]: 'panelSpecialSituations',
+  [PANEL_IDS.INDUSTRIAL_METALS]: 'panelIndustrialMetals',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2855,6 +2867,9 @@ export function DockLayout() {
       case PANEL_IDS.WARRANT_PRICING: content = <LazyWrap><WarrantPricingPanel /></LazyWrap>; break;
       case PANEL_IDS.TRADE_EXECUTION_QUALITY: content = <LazyWrap><TradeExecutionQualityPanel /></LazyWrap>; break;
       case PANEL_IDS.FREIGHT_RATE_MONITOR: content = <LazyWrap><FreightRateMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.POWER_MARKET: content = <LazyWrap><PowerMarketPanel /></LazyWrap>; break;
+      case PANEL_IDS.SPECIAL_SITUATIONS: content = <LazyWrap><SpecialSituationsPanel /></LazyWrap>; break;
+      case PANEL_IDS.INDUSTRIAL_METALS: content = <LazyWrap><IndustrialMetalsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
