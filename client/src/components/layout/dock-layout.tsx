@@ -462,6 +462,9 @@ const SupplyChainFinancePanel = lazy(() => import('../panels/supply-chain-financ
 const CDSPanel = lazy(() => import('../panels/cds-panel').then(m => ({ default: m.CDSPanel })));
 const CLOPanel = lazy(() => import('../panels/clo-panel').then(m => ({ default: m.CLOPanel })));
 const InterestRateSwapPanel = lazy(() => import('../panels/interest-rate-swap-panel').then(m => ({ default: m.InterestRateSwapPanel })));
+const ShippingFreightPanel = lazy(() => import('../panels/shipping-freight-panel').then(m => ({ default: m.ShippingFreightPanel })));
+const ABSPanel = lazy(() => import('../panels/abs-panel').then(m => ({ default: m.ABSPanel })));
+const TotalReturnSwapPanel = lazy(() => import('../panels/total-return-swap-panel').then(m => ({ default: m.TotalReturnSwapPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -934,6 +937,9 @@ export const PANEL_IDS = {
   CDS: 'cds',
   CLO: 'clo',
   INTEREST_RATE_SWAP: 'interest-rate-swap',
+  SHIPPING_FREIGHT: 'shipping-freight',
+  ABS: 'abs',
+  TOTAL_RETURN_SWAP: 'total-return-swap',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1390,6 +1396,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CDS]: 'CDS',
   [PANEL_IDS.CLO]: 'CLO',
   [PANEL_IDS.INTEREST_RATE_SWAP]: 'INTEREST RATE SWAP',
+  [PANEL_IDS.SHIPPING_FREIGHT]: 'SHIPPING & FREIGHT',
+  [PANEL_IDS.ABS]: 'ABS',
+  [PANEL_IDS.TOTAL_RETURN_SWAP]: 'TOTAL RETURN SWAP',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1847,6 +1856,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CDS]: 'panelCDS',
   [PANEL_IDS.CLO]: 'panelCLO',
   [PANEL_IDS.INTEREST_RATE_SWAP]: 'panelInterestRateSwap',
+  [PANEL_IDS.SHIPPING_FREIGHT]: 'panelShippingFreight',
+  [PANEL_IDS.ABS]: 'panelABS',
+  [PANEL_IDS.TOTAL_RETURN_SWAP]: 'panelTotalReturnSwap',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2600,6 +2612,9 @@ export function DockLayout() {
       case PANEL_IDS.CDS: content = <LazyWrap><CDSPanel /></LazyWrap>; break;
       case PANEL_IDS.CLO: content = <LazyWrap><CLOPanel /></LazyWrap>; break;
       case PANEL_IDS.INTEREST_RATE_SWAP: content = <LazyWrap><InterestRateSwapPanel /></LazyWrap>; break;
+      case PANEL_IDS.SHIPPING_FREIGHT: content = <LazyWrap><ShippingFreightPanel /></LazyWrap>; break;
+      case PANEL_IDS.ABS: content = <LazyWrap><ABSPanel /></LazyWrap>; break;
+      case PANEL_IDS.TOTAL_RETURN_SWAP: content = <LazyWrap><TotalReturnSwapPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
