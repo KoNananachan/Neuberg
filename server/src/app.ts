@@ -480,6 +480,9 @@ import crossCurrencyBasisSwapRouter from './routes/cross-currency-basis-swap.js'
 import securitiesBorrowingLendingRouter from './routes/securities-borrowing-lending.js';
 import equityTotalReturnIndexRouter from './routes/equity-total-return-index.js';
 import globalCreditMonitorRouter from './routes/global-credit-monitor.js';
+import bondIndexMonitorRouter from './routes/bond-index-monitor.js';
+import fxOptionVolMatrixRouter from './routes/fx-option-vol-matrix.js';
+import equitySwapPricingRouter from './routes/equity-swap-pricing.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1061,6 +1064,9 @@ export function createApp() {
   app.use('/api/securities-borrowing-lending', securitiesBorrowingLendingRouter);
   app.use('/api/equity-total-return-index', equityTotalReturnIndexRouter);
   app.use('/api/global-credit-monitor', globalCreditMonitorRouter);
+  app.use('/api/bond-index-monitor', bondIndexMonitorRouter);
+  app.use('/api/fx-option-vol-matrix', fxOptionVolMatrixRouter);
+  app.use('/api/equity-swap-pricing', equitySwapPricingRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
