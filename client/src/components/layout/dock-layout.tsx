@@ -421,6 +421,9 @@ const MoneyMarketRatesPanel = lazy(() => import('../panels/money-market-rates-pa
 const GlobalMAPanel = lazy(() => import('../panels/global-ma-panel').then(m => ({ default: m.GlobalMAPanel })));
 const CreditDefaultSwapsPanel = lazy(() => import('../panels/credit-default-swaps-panel').then(m => ({ default: m.CreditDefaultSwapsPanel })));
 const RealEstateInvestmentPanel = lazy(() => import('../panels/real-estate-investment-panel').then(m => ({ default: m.RealEstateInvestmentPanel })));
+const GlobalDebtClockPanel = lazy(() => import('../panels/global-debt-clock-panel').then(m => ({ default: m.GlobalDebtClockPanel })));
+const AITechCapexPanel = lazy(() => import('../panels/ai-tech-capex-panel').then(m => ({ default: m.AITechCapexPanel })));
+const CriticalMineralsPanel = lazy(() => import('../panels/critical-minerals-panel').then(m => ({ default: m.CriticalMineralsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -852,6 +855,9 @@ export const PANEL_IDS = {
   GLOBAL_MA: 'global-ma',
   CREDIT_DEFAULT_SWAPS: 'credit-default-swaps',
   REAL_ESTATE_INVESTMENT: 'real-estate-investment',
+  GLOBAL_DEBT_CLOCK: 'global-debt-clock',
+  AI_TECH_CAPEX: 'ai-tech-capex',
+  CRITICAL_MINERALS: 'critical-minerals',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1267,6 +1273,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.GLOBAL_MA]: 'GLOBAL M&A',
   [PANEL_IDS.CREDIT_DEFAULT_SWAPS]: 'CREDIT DEFAULT SWAPS',
   [PANEL_IDS.REAL_ESTATE_INVESTMENT]: 'REAL ESTATE INVESTMENT',
+  [PANEL_IDS.GLOBAL_DEBT_CLOCK]: 'GLOBAL DEBT CLOCK',
+  [PANEL_IDS.AI_TECH_CAPEX]: 'AI & TECH CAPEX',
+  [PANEL_IDS.CRITICAL_MINERALS]: 'CRITICAL MINERALS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1683,6 +1692,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.GLOBAL_MA]: 'panelGlobalMA',
   [PANEL_IDS.CREDIT_DEFAULT_SWAPS]: 'panelCreditDefaultSwaps',
   [PANEL_IDS.REAL_ESTATE_INVESTMENT]: 'panelRealEstateInvestment',
+  [PANEL_IDS.GLOBAL_DEBT_CLOCK]: 'panelGlobalDebtClock',
+  [PANEL_IDS.AI_TECH_CAPEX]: 'panelAITechCapex',
+  [PANEL_IDS.CRITICAL_MINERALS]: 'panelCriticalMinerals',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2395,6 +2407,9 @@ export function DockLayout() {
       case PANEL_IDS.GLOBAL_MA: content = <LazyWrap><GlobalMAPanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_DEFAULT_SWAPS: content = <LazyWrap><CreditDefaultSwapsPanel /></LazyWrap>; break;
       case PANEL_IDS.REAL_ESTATE_INVESTMENT: content = <LazyWrap><RealEstateInvestmentPanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_DEBT_CLOCK: content = <LazyWrap><GlobalDebtClockPanel /></LazyWrap>; break;
+      case PANEL_IDS.AI_TECH_CAPEX: content = <LazyWrap><AITechCapexPanel /></LazyWrap>; break;
+      case PANEL_IDS.CRITICAL_MINERALS: content = <LazyWrap><CriticalMineralsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

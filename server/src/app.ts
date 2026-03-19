@@ -414,6 +414,9 @@ import moneyMarketRatesRouter from './routes/money-market-rates.js';
 import globalMARouter from './routes/global-ma.js';
 import creditDefaultSwapsRouter from './routes/credit-default-swaps.js';
 import realEstateInvestmentRouter from './routes/real-estate-investment.js';
+import globalDebtClockRouter from './routes/global-debt-clock.js';
+import aiTechCapexRouter from './routes/ai-tech-capex.js';
+import criticalMineralsRouter from './routes/critical-minerals.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -929,6 +932,9 @@ export function createApp() {
   app.use('/api/global-ma', globalMARouter);
   app.use('/api/credit-default-swaps', creditDefaultSwapsRouter);
   app.use('/api/real-estate-investment', realEstateInvestmentRouter);
+  app.use('/api/global-debt-clock', globalDebtClockRouter);
+  app.use('/api/ai-tech-capex', aiTechCapexRouter);
+  app.use('/api/critical-minerals', criticalMineralsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
