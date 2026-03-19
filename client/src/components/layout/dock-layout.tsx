@@ -519,6 +519,9 @@ const IndustrialMetalsPanel = lazy(() => import('../panels/industrial-metals-pan
 const SecuritizationPipelinePanel = lazy(() => import('../panels/securitization-pipeline-panel').then(m => ({ default: m.SecuritizationPipelinePanel })));
 const EquityAnalystRevisionsPanel = lazy(() => import('../panels/equity-analyst-revisions-panel').then(m => ({ default: m.EquityAnalystRevisionsPanel })));
 const NaturalGasStoragePanel = lazy(() => import('../panels/natural-gas-storage-panel').then(m => ({ default: m.NaturalGasStoragePanel })));
+const PreciousMetalsLeasePanel = lazy(() => import('../panels/precious-metals-lease-panel').then(m => ({ default: m.PreciousMetalsLeasePanel })));
+const CorporateActionCalendarPanel = lazy(() => import('../panels/corporate-action-calendar-panel').then(m => ({ default: m.CorporateActionCalendarPanel })));
+const SovereignDebtMaturityPanel = lazy(() => import('../panels/sovereign-debt-maturity-panel').then(m => ({ default: m.SovereignDebtMaturityPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1048,6 +1051,9 @@ export const PANEL_IDS = {
   SECURITIZATION_PIPELINE: 'securitization-pipeline',
   EQUITY_ANALYST_REVISIONS: 'equity-analyst-revisions',
   NATURAL_GAS_STORAGE: 'natural-gas-storage',
+  PRECIOUS_METALS_LEASE: 'precious-metals-lease',
+  CORPORATE_ACTION_CALENDAR: 'corporate-action-calendar',
+  SOVEREIGN_DEBT_MATURITY: 'sovereign-debt-maturity',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1561,6 +1567,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SECURITIZATION_PIPELINE]: 'SECURITIZATION PIPELINE',
   [PANEL_IDS.EQUITY_ANALYST_REVISIONS]: 'EQUITY ANALYST REVISIONS',
   [PANEL_IDS.NATURAL_GAS_STORAGE]: 'NATURAL GAS STORAGE',
+  [PANEL_IDS.PRECIOUS_METALS_LEASE]: 'PRECIOUS METALS LEASE',
+  [PANEL_IDS.CORPORATE_ACTION_CALENDAR]: 'CORPORATE ACTION CALENDAR',
+  [PANEL_IDS.SOVEREIGN_DEBT_MATURITY]: 'SOVEREIGN DEBT MATURITY',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -2075,6 +2084,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SECURITIZATION_PIPELINE]: 'panelSecuritizationPipeline',
   [PANEL_IDS.EQUITY_ANALYST_REVISIONS]: 'panelEquityAnalystRevisions',
   [PANEL_IDS.NATURAL_GAS_STORAGE]: 'panelNaturalGasStorage',
+  [PANEL_IDS.PRECIOUS_METALS_LEASE]: 'panelPreciousMetalsLease',
+  [PANEL_IDS.CORPORATE_ACTION_CALENDAR]: 'panelCorporateActionCalendar',
+  [PANEL_IDS.SOVEREIGN_DEBT_MATURITY]: 'panelSovereignDebtMaturity',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2885,6 +2897,9 @@ export function DockLayout() {
       case PANEL_IDS.SECURITIZATION_PIPELINE: content = <LazyWrap><SecuritizationPipelinePanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_ANALYST_REVISIONS: content = <LazyWrap><EquityAnalystRevisionsPanel /></LazyWrap>; break;
       case PANEL_IDS.NATURAL_GAS_STORAGE: content = <LazyWrap><NaturalGasStoragePanel /></LazyWrap>; break;
+      case PANEL_IDS.PRECIOUS_METALS_LEASE: content = <LazyWrap><PreciousMetalsLeasePanel /></LazyWrap>; break;
+      case PANEL_IDS.CORPORATE_ACTION_CALENDAR: content = <LazyWrap><CorporateActionCalendarPanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_DEBT_MATURITY: content = <LazyWrap><SovereignDebtMaturityPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
