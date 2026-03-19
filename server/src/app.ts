@@ -391,6 +391,9 @@ import ventureCapitalRouter from './routes/venture-capital.js';
 import municipalBondRouter from './routes/municipal-bond.js';
 import commodityCurveRouter from './routes/commodity-curve.js';
 import demographicTrendsRouter from './routes/demographic-trends.js';
+import economicForecastRouter from './routes/economic-forecast.js';
+import globalIndexMonitorRouter from './routes/global-index-monitor.js';
+import leagueTablesRouter from './routes/league-tables.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -883,6 +886,9 @@ export function createApp() {
   app.use('/api/municipal-bond', municipalBondRouter);
   app.use('/api/commodity-curve', commodityCurveRouter);
   app.use('/api/demographic-trends', demographicTrendsRouter);
+  app.use('/api/economic-forecast', economicForecastRouter);
+  app.use('/api/global-index-monitor', globalIndexMonitorRouter);
+  app.use('/api/league-tables', leagueTablesRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
