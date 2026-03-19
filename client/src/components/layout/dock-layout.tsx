@@ -489,6 +489,9 @@ const GlobalCreditMonitorPanel = lazy(() => import('../panels/global-credit-moni
 const BondIndexMonitorPanel = lazy(() => import('../panels/bond-index-monitor-panel').then(m => ({ default: m.BondIndexMonitorPanel })));
 const FxOptionVolMatrixPanel = lazy(() => import('../panels/fx-option-vol-matrix-panel').then(m => ({ default: m.FxOptionVolMatrixPanel })));
 const EquitySwapPricingPanel = lazy(() => import('../panels/equity-swap-pricing-panel').then(m => ({ default: m.EquitySwapPricingPanel })));
+const CreditValuationAdjustmentPanel = lazy(() => import('../panels/credit-valuation-adjustment-panel').then(m => ({ default: m.CreditValuationAdjustmentPanel })));
+const InterestRateVolSurfacePanel = lazy(() => import('../panels/interest-rate-vol-surface-panel').then(m => ({ default: m.InterestRateVolSurfacePanel })));
+const MunicipalCreditAnalysisPanel = lazy(() => import('../panels/municipal-credit-analysis-panel').then(m => ({ default: m.MunicipalCreditAnalysisPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -988,6 +991,9 @@ export const PANEL_IDS = {
   BOND_INDEX_MONITOR: 'bond-index-monitor',
   FX_OPTION_VOL_MATRIX: 'fx-option-vol-matrix',
   EQUITY_SWAP_PRICING: 'equity-swap-pricing',
+  CREDIT_VALUATION_ADJUSTMENT: 'credit-valuation-adjustment',
+  INTEREST_RATE_VOL_SURFACE: 'interest-rate-vol-surface',
+  MUNICIPAL_CREDIT_ANALYSIS: 'municipal-credit-analysis',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1471,6 +1477,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.BOND_INDEX_MONITOR]: 'BOND INDEX MONITOR',
   [PANEL_IDS.FX_OPTION_VOL_MATRIX]: 'FX OPTION VOL MATRIX',
   [PANEL_IDS.EQUITY_SWAP_PRICING]: 'EQUITY SWAP PRICING',
+  [PANEL_IDS.CREDIT_VALUATION_ADJUSTMENT]: 'CREDIT VALUATION ADJUSTMENT',
+  [PANEL_IDS.INTEREST_RATE_VOL_SURFACE]: 'INTEREST RATE VOL SURFACE',
+  [PANEL_IDS.MUNICIPAL_CREDIT_ANALYSIS]: 'MUNICIPAL CREDIT ANALYSIS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1955,6 +1964,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.BOND_INDEX_MONITOR]: 'panelBondIndexMonitor',
   [PANEL_IDS.FX_OPTION_VOL_MATRIX]: 'panelFxOptionVolMatrix',
   [PANEL_IDS.EQUITY_SWAP_PRICING]: 'panelEquitySwapPricing',
+  [PANEL_IDS.CREDIT_VALUATION_ADJUSTMENT]: 'panelCreditValuationAdjustment',
+  [PANEL_IDS.INTEREST_RATE_VOL_SURFACE]: 'panelInterestRateVolSurface',
+  [PANEL_IDS.MUNICIPAL_CREDIT_ANALYSIS]: 'panelMunicipalCreditAnalysis',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2735,6 +2747,9 @@ export function DockLayout() {
       case PANEL_IDS.BOND_INDEX_MONITOR: content = <LazyWrap><BondIndexMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.FX_OPTION_VOL_MATRIX: content = <LazyWrap><FxOptionVolMatrixPanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_SWAP_PRICING: content = <LazyWrap><EquitySwapPricingPanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_VALUATION_ADJUSTMENT: content = <LazyWrap><CreditValuationAdjustmentPanel /></LazyWrap>; break;
+      case PANEL_IDS.INTEREST_RATE_VOL_SURFACE: content = <LazyWrap><InterestRateVolSurfacePanel /></LazyWrap>; break;
+      case PANEL_IDS.MUNICIPAL_CREDIT_ANALYSIS: content = <LazyWrap><MunicipalCreditAnalysisPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
