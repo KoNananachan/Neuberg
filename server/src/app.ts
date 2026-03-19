@@ -271,6 +271,7 @@ import inflationMonitorRouter from './routes/inflation-monitor.js';
 import mergerArbitrageRouter from './routes/merger-arbitrage.js';
 import sovereignDebtRouter from './routes/sovereign-debt.js';
 import etfPremiumRouter from './routes/etf-premium.js';
+import etfCreationRedemptionRouter from './routes/etf-creation-redemption.js';
 import commodityDemandRouter from './routes/commodity-demand.js';
 import globalDividendRouter from './routes/global-dividend.js';
 import cdsIndexMonitorRouter from './routes/cds-index-monitor.js';
@@ -411,6 +412,7 @@ import sovereignDefaultRouter from './routes/sovereign-default.js';
 import bankStressTestRouter from './routes/bank-stress-test.js';
 import equityDerivativesRouter from './routes/equity-derivatives.js';
 import moneyMarketRatesRouter from './routes/money-market-rates.js';
+import moneyMarketFundRouter from './routes/money-market-fund.js';
 import globalMARouter from './routes/global-ma.js';
 import creditDefaultSwapsRouter from './routes/credit-default-swaps.js';
 import realEstateInvestmentRouter from './routes/real-estate-investment.js';
@@ -471,6 +473,7 @@ import equityIndexFuturesRouter from './routes/equity-index-futures.js';
 import preferredStockRouter from './routes/preferred-stock.js';
 import treasuryStripsRouter from './routes/treasury-strips.js';
 import commodityWarehouseRouter from './routes/commodity-warehouse.js';
+import agencyDebtRouter from './routes/agency-debt.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -843,6 +846,7 @@ export function createApp() {
   app.use('/api/merger-arbitrage', mergerArbitrageRouter);
   app.use('/api/sovereign-debt', sovereignDebtRouter);
   app.use('/api/etf-premium', etfPremiumRouter);
+  app.use('/api/etf-creation-redemption', etfCreationRedemptionRouter);
   app.use('/api/commodity-demand', commodityDemandRouter);
   app.use('/api/global-dividend', globalDividendRouter);
   app.use('/api/cds-index-monitor', cdsIndexMonitorRouter);
@@ -983,6 +987,7 @@ export function createApp() {
   app.use('/api/bank-stress-test', bankStressTestRouter);
   app.use('/api/equity-derivatives', equityDerivativesRouter);
   app.use('/api/money-market-rates', moneyMarketRatesRouter);
+  app.use('/api/money-market-fund', moneyMarketFundRouter);
   app.use('/api/global-ma', globalMARouter);
   app.use('/api/credit-default-swaps', creditDefaultSwapsRouter);
   app.use('/api/real-estate-investment', realEstateInvestmentRouter);
@@ -1043,6 +1048,7 @@ export function createApp() {
   app.use('/api/preferred-stock', preferredStockRouter);
   app.use('/api/treasury-strips', treasuryStripsRouter);
   app.use('/api/commodity-warehouse', commodityWarehouseRouter);
+  app.use('/api/agency-debt', agencyDebtRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

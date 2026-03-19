@@ -477,6 +477,9 @@ const EquityIndexFuturesPanel = lazy(() => import('../panels/equity-index-future
 const PreferredStockPanel = lazy(() => import('../panels/preferred-stock-panel').then(m => ({ default: m.PreferredStockPanel })));
 const TreasuryStripsPanel = lazy(() => import('../panels/treasury-strips-panel').then(m => ({ default: m.TreasuryStripsPanel })));
 const CommodityWarehousePanel = lazy(() => import('../panels/commodity-warehouse-panel').then(m => ({ default: m.CommodityWarehousePanel })));
+const EtfCreationRedemptionPanel = lazy(() => import('../panels/etf-creation-redemption-panel').then(m => ({ default: m.EtfCreationRedemptionPanel })));
+const AgencyDebtPanel = lazy(() => import('../panels/agency-debt-panel').then(m => ({ default: m.AgencyDebtPanel })));
+const MoneyMarketFundPanel = lazy(() => import('../panels/money-market-fund-panel').then(m => ({ default: m.MoneyMarketFundPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -964,6 +967,9 @@ export const PANEL_IDS = {
   PREFERRED_STOCK: 'preferred-stock',
   TREASURY_STRIPS: 'treasury-strips',
   COMMODITY_WAREHOUSE: 'commodity-warehouse',
+  ETF_CREATION_REDEMPTION: 'etf-creation-redemption',
+  AGENCY_DEBT: 'agency-debt',
+  MONEY_MARKET_FUND: 'money-market-fund',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1435,6 +1441,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.PREFERRED_STOCK]: 'PREFERRED STOCK',
   [PANEL_IDS.TREASURY_STRIPS]: 'TREASURY STRIPS',
   [PANEL_IDS.COMMODITY_WAREHOUSE]: 'COMMODITY WAREHOUSE',
+  [PANEL_IDS.ETF_CREATION_REDEMPTION]: 'ETF CREATION/REDEMPTION',
+  [PANEL_IDS.AGENCY_DEBT]: 'AGENCY DEBT',
+  [PANEL_IDS.MONEY_MARKET_FUND]: 'MONEY MARKET FUND',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1907,6 +1916,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.PREFERRED_STOCK]: 'panelPreferredStock',
   [PANEL_IDS.TREASURY_STRIPS]: 'panelTreasuryStrips',
   [PANEL_IDS.COMMODITY_WAREHOUSE]: 'panelCommodityWarehouse',
+  [PANEL_IDS.ETF_CREATION_REDEMPTION]: 'panelEtfCreationRedemption',
+  [PANEL_IDS.AGENCY_DEBT]: 'panelAgencyDebt',
+  [PANEL_IDS.MONEY_MARKET_FUND]: 'panelMoneyMarketFund',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2675,6 +2687,9 @@ export function DockLayout() {
       case PANEL_IDS.PREFERRED_STOCK: content = <LazyWrap><PreferredStockPanel /></LazyWrap>; break;
       case PANEL_IDS.TREASURY_STRIPS: content = <LazyWrap><TreasuryStripsPanel /></LazyWrap>; break;
       case PANEL_IDS.COMMODITY_WAREHOUSE: content = <LazyWrap><CommodityWarehousePanel /></LazyWrap>; break;
+      case PANEL_IDS.ETF_CREATION_REDEMPTION: content = <LazyWrap><EtfCreationRedemptionPanel /></LazyWrap>; break;
+      case PANEL_IDS.AGENCY_DEBT: content = <LazyWrap><AgencyDebtPanel /></LazyWrap>; break;
+      case PANEL_IDS.MONEY_MARKET_FUND: content = <LazyWrap><MoneyMarketFundPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
