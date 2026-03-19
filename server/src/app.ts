@@ -504,6 +504,9 @@ import creditIndexTranchesRouter from './routes/credit-index-tranches.js';
 import mortgagePrepaymentRouter from './routes/mortgage-prepayment.js';
 import optionSkewSurfaceRouter from './routes/option-skew-surface.js';
 import equityShortInterestRouter from './routes/equity-short-interest.js';
+import warrantPricingRouter from './routes/warrant-pricing.js';
+import tradeExecutionQualityRouter from './routes/trade-execution-quality.js';
+import freightRateMonitorRouter from './routes/freight-rate-monitor.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1109,6 +1112,9 @@ export function createApp() {
   app.use('/api/mortgage-prepayment', mortgagePrepaymentRouter);
   app.use('/api/option-skew-surface', optionSkewSurfaceRouter);
   app.use('/api/equity-short-interest', equityShortInterestRouter);
+  app.use('/api/warrant-pricing', warrantPricingRouter);
+  app.use('/api/trade-execution-quality', tradeExecutionQualityRouter);
+  app.use('/api/freight-rate-monitor', freightRateMonitorRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

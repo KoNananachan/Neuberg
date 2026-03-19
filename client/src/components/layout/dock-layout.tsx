@@ -510,6 +510,9 @@ const CreditIndexTranchesPanel = lazy(() => import('../panels/credit-index-tranc
 const MortgagePrepaymentPanel = lazy(() => import('../panels/mortgage-prepayment-panel').then(m => ({ default: m.MortgagePrepaymentPanel })));
 const OptionSkewSurfacePanel = lazy(() => import('../panels/option-skew-surface-panel').then(m => ({ default: m.OptionSkewSurfacePanel })));
 const EquityShortInterestPanel = lazy(() => import('../panels/equity-short-interest-panel').then(m => ({ default: m.EquityShortInterestPanel })));
+const WarrantPricingPanel = lazy(() => import('../panels/warrant-pricing-panel').then(m => ({ default: m.WarrantPricingPanel })));
+const TradeExecutionQualityPanel = lazy(() => import('../panels/trade-execution-quality-panel').then(m => ({ default: m.TradeExecutionQualityPanel })));
+const FreightRateMonitorPanel = lazy(() => import('../panels/freight-rate-monitor-panel').then(m => ({ default: m.FreightRateMonitorPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1030,6 +1033,9 @@ export const PANEL_IDS = {
   MORTGAGE_PREPAYMENT: 'mortgage-prepayment',
   OPTION_SKEW_SURFACE: 'option-skew-surface',
   EQUITY_SHORT_INTEREST: 'equity-short-interest',
+  WARRANT_PRICING: 'warrant-pricing',
+  TRADE_EXECUTION_QUALITY: 'trade-execution-quality',
+  FREIGHT_RATE_MONITOR: 'freight-rate-monitor',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1534,6 +1540,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.MORTGAGE_PREPAYMENT]: 'MORTGAGE PREPAYMENT',
   [PANEL_IDS.OPTION_SKEW_SURFACE]: 'OPTION SKEW SURFACE',
   [PANEL_IDS.EQUITY_SHORT_INTEREST]: 'EQUITY SHORT INTEREST',
+  [PANEL_IDS.WARRANT_PRICING]: 'WARRANT PRICING',
+  [PANEL_IDS.TRADE_EXECUTION_QUALITY]: 'TRADE EXECUTION QUALITY',
+  [PANEL_IDS.FREIGHT_RATE_MONITOR]: 'FREIGHT RATE MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -2039,6 +2048,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.MORTGAGE_PREPAYMENT]: 'panelMortgagePrepayment',
   [PANEL_IDS.OPTION_SKEW_SURFACE]: 'panelOptionSkewSurface',
   [PANEL_IDS.EQUITY_SHORT_INTEREST]: 'panelEquityShortInterest',
+  [PANEL_IDS.WARRANT_PRICING]: 'panelWarrantPricing',
+  [PANEL_IDS.TRADE_EXECUTION_QUALITY]: 'panelTradeExecutionQuality',
+  [PANEL_IDS.FREIGHT_RATE_MONITOR]: 'panelFreightRateMonitor',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2840,6 +2852,9 @@ export function DockLayout() {
       case PANEL_IDS.MORTGAGE_PREPAYMENT: content = <LazyWrap><MortgagePrepaymentPanel /></LazyWrap>; break;
       case PANEL_IDS.OPTION_SKEW_SURFACE: content = <LazyWrap><OptionSkewSurfacePanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_SHORT_INTEREST: content = <LazyWrap><EquityShortInterestPanel /></LazyWrap>; break;
+      case PANEL_IDS.WARRANT_PRICING: content = <LazyWrap><WarrantPricingPanel /></LazyWrap>; break;
+      case PANEL_IDS.TRADE_EXECUTION_QUALITY: content = <LazyWrap><TradeExecutionQualityPanel /></LazyWrap>; break;
+      case PANEL_IDS.FREIGHT_RATE_MONITOR: content = <LazyWrap><FreightRateMonitorPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
