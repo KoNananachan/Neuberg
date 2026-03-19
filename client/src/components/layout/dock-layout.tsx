@@ -496,6 +496,8 @@ const StructuredProductsAnalyzerPanel = lazy(() => import('../panels/structured-
 const RiskScenarioAnalysisPanel = lazy(() => import('../panels/risk-scenario-analysis-panel').then(m => ({ default: m.RiskScenarioAnalysisPanel })));
 const ConvertibleBondAnalyzerPanel = lazy(() => import('../panels/convertible-bond-analyzer-panel').then(m => ({ default: m.ConvertibleBondAnalyzerPanel })));
 const CommoditiesForwardCurvePanel = lazy(() => import('../panels/commodities-forward-curve-panel').then(m => ({ default: m.CommoditiesForwardCurvePanel })));
+const VarianceSwapMonitorPanel = lazy(() => import('../panels/variance-swap-monitor-panel').then(m => ({ default: m.VarianceSwapMonitorPanel })));
+const SecuritiesLendingRevenuePanel = lazy(() => import('../panels/securities-lending-revenue-panel').then(m => ({ default: m.SecuritiesLendingRevenuePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1002,6 +1004,8 @@ export const PANEL_IDS = {
   RISK_SCENARIO_ANALYSIS: 'risk-scenario-analysis',
   CONVERTIBLE_BOND_ANALYZER: 'convertible-bond-analyzer',
   COMMODITIES_FORWARD_CURVE: 'commodities-forward-curve',
+  VARIANCE_SWAP_MONITOR: 'variance-swap-monitor',
+  SECURITIES_LENDING_REVENUE: 'securities-lending-revenue',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1492,6 +1496,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.RISK_SCENARIO_ANALYSIS]: 'RISK SCENARIO ANALYSIS',
   [PANEL_IDS.CONVERTIBLE_BOND_ANALYZER]: 'CONVERTIBLE BOND ANALYZER',
   [PANEL_IDS.COMMODITIES_FORWARD_CURVE]: 'COMMODITIES FORWARD CURVE',
+  [PANEL_IDS.VARIANCE_SWAP_MONITOR]: 'VARIANCE SWAP MONITOR',
+  [PANEL_IDS.SECURITIES_LENDING_REVENUE]: 'SECURITIES LENDING REVENUE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1983,6 +1989,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.RISK_SCENARIO_ANALYSIS]: 'panelRiskScenarioAnalysis',
   [PANEL_IDS.CONVERTIBLE_BOND_ANALYZER]: 'panelConvertibleBondAnalyzer',
   [PANEL_IDS.COMMODITIES_FORWARD_CURVE]: 'panelCommoditiesForwardCurve',
+  [PANEL_IDS.VARIANCE_SWAP_MONITOR]: 'panelVarianceSwapMonitor',
+  [PANEL_IDS.SECURITIES_LENDING_REVENUE]: 'panelSecuritiesLendingRevenue',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2770,6 +2778,8 @@ export function DockLayout() {
       case PANEL_IDS.RISK_SCENARIO_ANALYSIS: content = <LazyWrap><RiskScenarioAnalysisPanel /></LazyWrap>; break;
       case PANEL_IDS.CONVERTIBLE_BOND_ANALYZER: content = <LazyWrap><ConvertibleBondAnalyzerPanel /></LazyWrap>; break;
       case PANEL_IDS.COMMODITIES_FORWARD_CURVE: content = <LazyWrap><CommoditiesForwardCurvePanel /></LazyWrap>; break;
+      case PANEL_IDS.VARIANCE_SWAP_MONITOR: content = <LazyWrap><VarianceSwapMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECURITIES_LENDING_REVENUE: content = <LazyWrap><SecuritiesLendingRevenuePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
