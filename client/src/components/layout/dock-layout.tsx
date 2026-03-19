@@ -468,6 +468,9 @@ const TotalReturnSwapPanel = lazy(() => import('../panels/total-return-swap-pane
 const VarianceSwapPanel = lazy(() => import('../panels/variance-swap-panel').then(m => ({ default: m.VarianceSwapPanel })));
 const ConvertibleBondPanel = lazy(() => import('../panels/convertible-bond-panel').then(m => ({ default: m.ConvertibleBondPanel })));
 const CreditIndexPanel = lazy(() => import('../panels/credit-index-panel').then(m => ({ default: m.CreditIndexPanel })));
+const DividendSwapPanel = lazy(() => import('../panels/dividend-swap-panel').then(m => ({ default: m.DividendSwapPanel })));
+const TreasuryAuctionPanel = lazy(() => import('../panels/treasury-auction-panel').then(m => ({ default: m.TreasuryAuctionPanel })));
+const CentralBankPanel = lazy(() => import('../panels/central-bank-panel').then(m => ({ default: m.CentralBankPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -946,6 +949,9 @@ export const PANEL_IDS = {
   VARIANCE_SWAP: 'variance-swap',
   CONVERTIBLE_BOND: 'convertible-bond',
   CREDIT_INDEX: 'credit-index',
+  DIVIDEND_SWAP: 'dividend-swap',
+  TREASURY_AUCTION: 'treasury-auction',
+  CENTRAL_BANK: 'central-bank',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1408,6 +1414,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.VARIANCE_SWAP]: 'VARIANCE SWAP',
   [PANEL_IDS.CONVERTIBLE_BOND]: 'CONVERTIBLE BOND',
   [PANEL_IDS.CREDIT_INDEX]: 'CREDIT INDEX',
+  [PANEL_IDS.DIVIDEND_SWAP]: 'DIVIDEND SWAP',
+  [PANEL_IDS.TREASURY_AUCTION]: 'TREASURY AUCTION',
+  [PANEL_IDS.CENTRAL_BANK]: 'CENTRAL BANK',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1871,6 +1880,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.VARIANCE_SWAP]: 'panelVarianceSwap',
   [PANEL_IDS.CONVERTIBLE_BOND]: 'panelConvertibleBond',
   [PANEL_IDS.CREDIT_INDEX]: 'panelCreditIndex',
+  [PANEL_IDS.DIVIDEND_SWAP]: 'panelDividendSwap',
+  [PANEL_IDS.TREASURY_AUCTION]: 'panelTreasuryAuction',
+  [PANEL_IDS.CENTRAL_BANK]: 'panelCentralBank',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2630,6 +2642,9 @@ export function DockLayout() {
       case PANEL_IDS.VARIANCE_SWAP: content = <LazyWrap><VarianceSwapPanel /></LazyWrap>; break;
       case PANEL_IDS.CONVERTIBLE_BOND: content = <LazyWrap><ConvertibleBondPanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_INDEX: content = <LazyWrap><CreditIndexPanel /></LazyWrap>; break;
+      case PANEL_IDS.DIVIDEND_SWAP: content = <LazyWrap><DividendSwapPanel /></LazyWrap>; break;
+      case PANEL_IDS.TREASURY_AUCTION: content = <LazyWrap><TreasuryAuctionPanel /></LazyWrap>; break;
+      case PANEL_IDS.CENTRAL_BANK: content = <LazyWrap><CentralBankPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

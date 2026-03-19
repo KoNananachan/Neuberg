@@ -462,6 +462,9 @@ import totalReturnSwapRouter from './routes/total-return-swap.js';
 import varianceSwapRouter from './routes/variance-swap.js';
 import convertibleBondRouter from './routes/convertible-bond.js';
 import creditIndexRouter from './routes/credit-index.js';
+import dividendSwapRouter from './routes/dividend-swap.js';
+import treasuryAuctionRouter from './routes/treasury-auction.js';
+import centralBankRouter from './routes/central-bank.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1025,6 +1028,9 @@ export function createApp() {
   app.use('/api/variance-swap', varianceSwapRouter);
   app.use('/api/convertible-bond', convertibleBondRouter);
   app.use('/api/credit-index', creditIndexRouter);
+  app.use('/api/dividend-swap', dividendSwapRouter);
+  app.use('/api/treasury-auction', treasuryAuctionRouter);
+  app.use('/api/central-bank', centralBankRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
