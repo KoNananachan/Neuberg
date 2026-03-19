@@ -474,6 +474,9 @@ import preferredStockRouter from './routes/preferred-stock.js';
 import treasuryStripsRouter from './routes/treasury-strips.js';
 import commodityWarehouseRouter from './routes/commodity-warehouse.js';
 import agencyDebtRouter from './routes/agency-debt.js';
+import loanSyndicationPipelineRouter from './routes/loan-syndication-pipeline.js';
+import sovereignBondAuctionRouter from './routes/sovereign-bond-auction.js';
+import crossCurrencyBasisSwapRouter from './routes/cross-currency-basis-swap.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1049,6 +1052,9 @@ export function createApp() {
   app.use('/api/treasury-strips', treasuryStripsRouter);
   app.use('/api/commodity-warehouse', commodityWarehouseRouter);
   app.use('/api/agency-debt', agencyDebtRouter);
+  app.use('/api/loan-syndication-pipeline', loanSyndicationPipelineRouter);
+  app.use('/api/sovereign-bond-auction', sovereignBondAuctionRouter);
+  app.use('/api/cross-currency-basis-swap', crossCurrencyBasisSwapRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

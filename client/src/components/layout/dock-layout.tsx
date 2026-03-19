@@ -480,6 +480,9 @@ const CommodityWarehousePanel = lazy(() => import('../panels/commodity-warehouse
 const EtfCreationRedemptionPanel = lazy(() => import('../panels/etf-creation-redemption-panel').then(m => ({ default: m.EtfCreationRedemptionPanel })));
 const AgencyDebtPanel = lazy(() => import('../panels/agency-debt-panel').then(m => ({ default: m.AgencyDebtPanel })));
 const MoneyMarketFundPanel = lazy(() => import('../panels/money-market-fund-panel').then(m => ({ default: m.MoneyMarketFundPanel })));
+const LoanSyndicationPipelinePanel = lazy(() => import('../panels/loan-syndication-pipeline-panel').then(m => ({ default: m.LoanSyndicationPipelinePanel })));
+const SovereignBondAuctionPanel = lazy(() => import('../panels/sovereign-bond-auction-panel').then(m => ({ default: m.SovereignBondAuctionPanel })));
+const CrossCurrencyBasisSwapPanel = lazy(() => import('../panels/cross-currency-basis-swap-panel').then(m => ({ default: m.CrossCurrencyBasisSwapPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -970,6 +973,9 @@ export const PANEL_IDS = {
   ETF_CREATION_REDEMPTION: 'etf-creation-redemption',
   AGENCY_DEBT: 'agency-debt',
   MONEY_MARKET_FUND: 'money-market-fund',
+  LOAN_SYNDICATION_PIPELINE: 'loan-syndication-pipeline',
+  SOVEREIGN_BOND_AUCTION: 'sovereign-bond-auction',
+  CROSS_CURRENCY_BASIS_SWAP: 'cross-currency-basis-swap',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1444,6 +1450,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.ETF_CREATION_REDEMPTION]: 'ETF CREATION/REDEMPTION',
   [PANEL_IDS.AGENCY_DEBT]: 'AGENCY DEBT',
   [PANEL_IDS.MONEY_MARKET_FUND]: 'MONEY MARKET FUND',
+  [PANEL_IDS.LOAN_SYNDICATION_PIPELINE]: 'LOAN SYNDICATION PIPELINE',
+  [PANEL_IDS.SOVEREIGN_BOND_AUCTION]: 'SOVEREIGN BOND AUCTION',
+  [PANEL_IDS.CROSS_CURRENCY_BASIS_SWAP]: 'XCCY BASIS SWAP',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1919,6 +1928,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.ETF_CREATION_REDEMPTION]: 'panelEtfCreationRedemption',
   [PANEL_IDS.AGENCY_DEBT]: 'panelAgencyDebt',
   [PANEL_IDS.MONEY_MARKET_FUND]: 'panelMoneyMarketFund',
+  [PANEL_IDS.LOAN_SYNDICATION_PIPELINE]: 'panelLoanSyndicationPipeline',
+  [PANEL_IDS.SOVEREIGN_BOND_AUCTION]: 'panelSovereignBondAuction',
+  [PANEL_IDS.CROSS_CURRENCY_BASIS_SWAP]: 'panelCrossCurrencyBasisSwap',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2690,6 +2702,9 @@ export function DockLayout() {
       case PANEL_IDS.ETF_CREATION_REDEMPTION: content = <LazyWrap><EtfCreationRedemptionPanel /></LazyWrap>; break;
       case PANEL_IDS.AGENCY_DEBT: content = <LazyWrap><AgencyDebtPanel /></LazyWrap>; break;
       case PANEL_IDS.MONEY_MARKET_FUND: content = <LazyWrap><MoneyMarketFundPanel /></LazyWrap>; break;
+      case PANEL_IDS.LOAN_SYNDICATION_PIPELINE: content = <LazyWrap><LoanSyndicationPipelinePanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_BOND_AUCTION: content = <LazyWrap><SovereignBondAuctionPanel /></LazyWrap>; break;
+      case PANEL_IDS.CROSS_CURRENCY_BASIS_SWAP: content = <LazyWrap><CrossCurrencyBasisSwapPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
