@@ -409,6 +409,9 @@ import sanctionsMonitorRouter from './routes/sanctions-monitor.js';
 import climateRiskRouter from './routes/climate-risk.js';
 import sovereignDefaultRouter from './routes/sovereign-default.js';
 import bankStressTestRouter from './routes/bank-stress-test.js';
+import equityDerivativesRouter from './routes/equity-derivatives.js';
+import moneyMarketRatesRouter from './routes/money-market-rates.js';
+import globalMARouter from './routes/global-ma.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -919,6 +922,9 @@ export function createApp() {
   app.use('/api/climate-risk', climateRiskRouter);
   app.use('/api/sovereign-default', sovereignDefaultRouter);
   app.use('/api/bank-stress-test', bankStressTestRouter);
+  app.use('/api/equity-derivatives', equityDerivativesRouter);
+  app.use('/api/money-market-rates', moneyMarketRatesRouter);
+  app.use('/api/global-ma', globalMARouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

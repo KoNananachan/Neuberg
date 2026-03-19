@@ -416,6 +416,9 @@ const SanctionsMonitorPanel = lazy(() => import('../panels/sanctions-monitor-pan
 const ClimateRiskPanel = lazy(() => import('../panels/climate-risk-panel').then(m => ({ default: m.ClimateRiskPanel })));
 const SovereignDefaultPanel = lazy(() => import('../panels/sovereign-default-panel').then(m => ({ default: m.SovereignDefaultPanel })));
 const BankStressTestPanel = lazy(() => import('../panels/bank-stress-test-panel').then(m => ({ default: m.BankStressTestPanel })));
+const EquityDerivativesPanel = lazy(() => import('../panels/equity-derivatives-panel').then(m => ({ default: m.EquityDerivativesPanel })));
+const MoneyMarketRatesPanel = lazy(() => import('../panels/money-market-rates-panel').then(m => ({ default: m.MoneyMarketRatesPanel })));
+const GlobalMAPanel = lazy(() => import('../panels/global-ma-panel').then(m => ({ default: m.GlobalMAPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -842,6 +845,9 @@ export const PANEL_IDS = {
   CLIMATE_RISK: 'climate-risk',
   SOVEREIGN_DEFAULT: 'sovereign-default',
   BANK_STRESS_TEST: 'bank-stress-test',
+  EQUITY_DERIVATIVES: 'equity-derivatives',
+  MONEY_MARKET_RATES: 'money-market-rates',
+  GLOBAL_MA: 'global-ma',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1252,6 +1258,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CLIMATE_RISK]: 'CLIMATE RISK',
   [PANEL_IDS.SOVEREIGN_DEFAULT]: 'SOVEREIGN DEFAULT',
   [PANEL_IDS.BANK_STRESS_TEST]: 'BANK STRESS TEST',
+  [PANEL_IDS.EQUITY_DERIVATIVES]: 'EQUITY DERIVATIVES',
+  [PANEL_IDS.MONEY_MARKET_RATES]: 'MONEY MARKET RATES',
+  [PANEL_IDS.GLOBAL_MA]: 'GLOBAL M&A',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1663,6 +1672,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CLIMATE_RISK]: 'panelClimateRisk',
   [PANEL_IDS.SOVEREIGN_DEFAULT]: 'panelSovereignDefault',
   [PANEL_IDS.BANK_STRESS_TEST]: 'panelBankStressTest',
+  [PANEL_IDS.EQUITY_DERIVATIVES]: 'panelEquityDerivatives',
+  [PANEL_IDS.MONEY_MARKET_RATES]: 'panelMoneyMarketRates',
+  [PANEL_IDS.GLOBAL_MA]: 'panelGlobalMA',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2370,6 +2382,9 @@ export function DockLayout() {
       case PANEL_IDS.CLIMATE_RISK: content = <LazyWrap><ClimateRiskPanel /></LazyWrap>; break;
       case PANEL_IDS.SOVEREIGN_DEFAULT: content = <LazyWrap><SovereignDefaultPanel /></LazyWrap>; break;
       case PANEL_IDS.BANK_STRESS_TEST: content = <LazyWrap><BankStressTestPanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_DERIVATIVES: content = <LazyWrap><EquityDerivativesPanel /></LazyWrap>; break;
+      case PANEL_IDS.MONEY_MARKET_RATES: content = <LazyWrap><MoneyMarketRatesPanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_MA: content = <LazyWrap><GlobalMAPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
