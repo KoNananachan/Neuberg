@@ -1,0 +1,12 @@
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../client';
+
+export function useSovereignCdsMonitor() {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['sovereign-cds-monitor'],
+    queryFn: () => api.get<any>('/sovereign-cds-monitor'),
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 3 * 60 * 1000,
+  });
+  return { data, isLoading, refetch };
+}
