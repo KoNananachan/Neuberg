@@ -531,6 +531,9 @@ const AircraftFinancePanel = lazy(() => import('../panels/aircraft-finance-panel
 const RareEarthBatteryMetalsPanel = lazy(() => import('../panels/rare-earth-battery-metals-panel').then(m => ({ default: m.RareEarthBatteryMetalsPanel })));
 const DataCenterInfrastructurePanel = lazy(() => import('../panels/data-center-infrastructure-panel').then(m => ({ default: m.DataCenterInfrastructurePanel })));
 const SportsMediaRightsPanel = lazy(() => import('../panels/sports-media-rights-panel').then(m => ({ default: m.SportsMediaRightsPanel })));
+const LuxuryCollectiblesIndexPanel = lazy(() => import('../panels/luxury-collectibles-index-panel').then(m => ({ default: m.LuxuryCollectiblesIndexPanel })));
+const FintechDigitalPaymentsPanel = lazy(() => import('../panels/fintech-digital-payments-panel').then(m => ({ default: m.FintechDigitalPaymentsPanel })));
+const CyberRiskInsurancePanel = lazy(() => import('../panels/cyber-risk-insurance-panel').then(m => ({ default: m.CyberRiskInsurancePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1072,6 +1075,9 @@ export const PANEL_IDS = {
   RARE_EARTH_BATTERY_METALS: 'rare-earth-battery-metals',
   DATA_CENTER_INFRASTRUCTURE: 'data-center-infrastructure',
   SPORTS_MEDIA_RIGHTS: 'sports-media-rights',
+  LUXURY_COLLECTIBLES_INDEX: 'luxury-collectibles-index',
+  FINTECH_DIGITAL_PAYMENTS: 'fintech-digital-payments',
+  CYBER_RISK_INSURANCE: 'cyber-risk-insurance',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1597,6 +1603,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.RARE_EARTH_BATTERY_METALS]: 'RARE EARTH & BATTERY METALS',
   [PANEL_IDS.DATA_CENTER_INFRASTRUCTURE]: 'DATA CENTER INFRASTRUCTURE',
   [PANEL_IDS.SPORTS_MEDIA_RIGHTS]: 'SPORTS & MEDIA RIGHTS',
+  [PANEL_IDS.LUXURY_COLLECTIBLES_INDEX]: 'LUXURY & COLLECTIBLES',
+  [PANEL_IDS.FINTECH_DIGITAL_PAYMENTS]: 'FINTECH & PAYMENTS',
+  [PANEL_IDS.CYBER_RISK_INSURANCE]: 'CYBER RISK & INSURANCE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -2123,6 +2132,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.RARE_EARTH_BATTERY_METALS]: 'panelRareEarthBatteryMetals',
   [PANEL_IDS.DATA_CENTER_INFRASTRUCTURE]: 'panelDataCenterInfrastructure',
   [PANEL_IDS.SPORTS_MEDIA_RIGHTS]: 'panelSportsMediaRights',
+  [PANEL_IDS.LUXURY_COLLECTIBLES_INDEX]: 'panelLuxuryCollectiblesIndex',
+  [PANEL_IDS.FINTECH_DIGITAL_PAYMENTS]: 'panelFintechDigitalPayments',
+  [PANEL_IDS.CYBER_RISK_INSURANCE]: 'panelCyberRiskInsurance',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2945,6 +2957,9 @@ export function DockLayout() {
       case PANEL_IDS.RARE_EARTH_BATTERY_METALS: content = <LazyWrap><RareEarthBatteryMetalsPanel /></LazyWrap>; break;
       case PANEL_IDS.DATA_CENTER_INFRASTRUCTURE: content = <LazyWrap><DataCenterInfrastructurePanel /></LazyWrap>; break;
       case PANEL_IDS.SPORTS_MEDIA_RIGHTS: content = <LazyWrap><SportsMediaRightsPanel /></LazyWrap>; break;
+      case PANEL_IDS.LUXURY_COLLECTIBLES_INDEX: content = <LazyWrap><LuxuryCollectiblesIndexPanel /></LazyWrap>; break;
+      case PANEL_IDS.FINTECH_DIGITAL_PAYMENTS: content = <LazyWrap><FintechDigitalPaymentsPanel /></LazyWrap>; break;
+      case PANEL_IDS.CYBER_RISK_INSURANCE: content = <LazyWrap><CyberRiskInsurancePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

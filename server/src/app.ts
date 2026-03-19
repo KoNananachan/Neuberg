@@ -525,6 +525,9 @@ import aircraftFinanceRouter from './routes/aircraft-finance.js';
 import rareEarthBatteryMetalsRouter from './routes/rare-earth-battery-metals.js';
 import dataCenterInfrastructureRouter from './routes/data-center-infrastructure.js';
 import sportsMediaRightsRouter from './routes/sports-media-rights.js';
+import luxuryCollectiblesIndexRouter from './routes/luxury-collectibles-index.js';
+import fintechDigitalPaymentsRouter from './routes/fintech-digital-payments.js';
+import cyberRiskInsuranceRouter from './routes/cyber-risk-insurance.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1151,6 +1154,9 @@ export function createApp() {
   app.use('/api/rare-earth-battery-metals', rareEarthBatteryMetalsRouter);
   app.use('/api/data-center-infrastructure', dataCenterInfrastructureRouter);
   app.use('/api/sports-media-rights', sportsMediaRightsRouter);
+  app.use('/api/luxury-collectibles-index', luxuryCollectiblesIndexRouter);
+  app.use('/api/fintech-digital-payments', fintechDigitalPaymentsRouter);
+  app.use('/api/cyber-risk-insurance', cyberRiskInsuranceRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
