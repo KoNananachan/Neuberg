@@ -453,6 +453,9 @@ import hedgeFundReplicationRouter from './routes/hedge-fund-replication.js';
 import infrastructureDebtRouter from './routes/infrastructure-debt.js';
 import carbonCreditRouter from './routes/carbon-credit.js';
 import supplyChainFinanceRouter from './routes/supply-chain-finance.js';
+import cdsRouter from './routes/cds.js';
+import cloRouter from './routes/clo.js';
+import interestRateSwapRouter from './routes/interest-rate-swap.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1007,6 +1010,9 @@ export function createApp() {
   app.use('/api/infrastructure-debt', infrastructureDebtRouter);
   app.use('/api/carbon-credit', carbonCreditRouter);
   app.use('/api/supply-chain-finance', supplyChainFinanceRouter);
+  app.use('/api/cds', cdsRouter);
+  app.use('/api/clo', cloRouter);
+  app.use('/api/interest-rate-swap', interestRateSwapRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
