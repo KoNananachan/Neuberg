@@ -100,7 +100,7 @@ function GaugeDisplay({ data }: { data: FearGreedData }) {
     const x2 = CX + R * Math.cos(a2);
     const y2 = CY - R * Math.sin(a2);
     const largeArc = (toPct - fromPct) > 50 ? 1 : 0;
-    return `M ${x1},${y1} A ${R},${R} 0 ${largeArc} 0 ${x2},${y2}`;
+    return `M ${x1},${y1} A ${R},${R} 0 ${largeArc} 1 ${x2},${y2}`;
   }
 
   // Previous day delta

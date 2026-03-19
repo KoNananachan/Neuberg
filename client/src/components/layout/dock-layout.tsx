@@ -483,6 +483,9 @@ const MoneyMarketFundPanel = lazy(() => import('../panels/money-market-fund-pane
 const LoanSyndicationPipelinePanel = lazy(() => import('../panels/loan-syndication-pipeline-panel').then(m => ({ default: m.LoanSyndicationPipelinePanel })));
 const SovereignBondAuctionPanel = lazy(() => import('../panels/sovereign-bond-auction-panel').then(m => ({ default: m.SovereignBondAuctionPanel })));
 const CrossCurrencyBasisSwapPanel = lazy(() => import('../panels/cross-currency-basis-swap-panel').then(m => ({ default: m.CrossCurrencyBasisSwapPanel })));
+const SecuritiesBorrowingLendingPanel = lazy(() => import('../panels/securities-borrowing-lending-panel').then(m => ({ default: m.SecuritiesBorrowingLendingPanel })));
+const EquityTotalReturnIndexPanel = lazy(() => import('../panels/equity-total-return-index-panel').then(m => ({ default: m.EquityTotalReturnIndexPanel })));
+const GlobalCreditMonitorPanel = lazy(() => import('../panels/global-credit-monitor-panel').then(m => ({ default: m.GlobalCreditMonitorPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -976,6 +979,9 @@ export const PANEL_IDS = {
   LOAN_SYNDICATION_PIPELINE: 'loan-syndication-pipeline',
   SOVEREIGN_BOND_AUCTION: 'sovereign-bond-auction',
   CROSS_CURRENCY_BASIS_SWAP: 'cross-currency-basis-swap',
+  SECURITIES_BORROWING_LENDING: 'securities-borrowing-lending',
+  EQUITY_TOTAL_RETURN_INDEX: 'equity-total-return-index',
+  GLOBAL_CREDIT_MONITOR: 'global-credit-monitor',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1453,6 +1459,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.LOAN_SYNDICATION_PIPELINE]: 'LOAN SYNDICATION PIPELINE',
   [PANEL_IDS.SOVEREIGN_BOND_AUCTION]: 'SOVEREIGN BOND AUCTION',
   [PANEL_IDS.CROSS_CURRENCY_BASIS_SWAP]: 'XCCY BASIS SWAP',
+  [PANEL_IDS.SECURITIES_BORROWING_LENDING]: 'SECURITIES BORROWING & LENDING',
+  [PANEL_IDS.EQUITY_TOTAL_RETURN_INDEX]: 'EQUITY TOTAL RETURN INDEX',
+  [PANEL_IDS.GLOBAL_CREDIT_MONITOR]: 'GLOBAL CREDIT MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1931,6 +1940,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.LOAN_SYNDICATION_PIPELINE]: 'panelLoanSyndicationPipeline',
   [PANEL_IDS.SOVEREIGN_BOND_AUCTION]: 'panelSovereignBondAuction',
   [PANEL_IDS.CROSS_CURRENCY_BASIS_SWAP]: 'panelCrossCurrencyBasisSwap',
+  [PANEL_IDS.SECURITIES_BORROWING_LENDING]: 'panelSecuritiesBorrowingLending',
+  [PANEL_IDS.EQUITY_TOTAL_RETURN_INDEX]: 'panelEquityTotalReturnIndex',
+  [PANEL_IDS.GLOBAL_CREDIT_MONITOR]: 'panelGlobalCreditMonitor',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2705,6 +2717,9 @@ export function DockLayout() {
       case PANEL_IDS.LOAN_SYNDICATION_PIPELINE: content = <LazyWrap><LoanSyndicationPipelinePanel /></LazyWrap>; break;
       case PANEL_IDS.SOVEREIGN_BOND_AUCTION: content = <LazyWrap><SovereignBondAuctionPanel /></LazyWrap>; break;
       case PANEL_IDS.CROSS_CURRENCY_BASIS_SWAP: content = <LazyWrap><CrossCurrencyBasisSwapPanel /></LazyWrap>; break;
+      case PANEL_IDS.SECURITIES_BORROWING_LENDING: content = <LazyWrap><SecuritiesBorrowingLendingPanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_TOTAL_RETURN_INDEX: content = <LazyWrap><EquityTotalReturnIndexPanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_CREDIT_MONITOR: content = <LazyWrap><GlobalCreditMonitorPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

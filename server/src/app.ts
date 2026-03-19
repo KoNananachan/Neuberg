@@ -477,6 +477,9 @@ import agencyDebtRouter from './routes/agency-debt.js';
 import loanSyndicationPipelineRouter from './routes/loan-syndication-pipeline.js';
 import sovereignBondAuctionRouter from './routes/sovereign-bond-auction.js';
 import crossCurrencyBasisSwapRouter from './routes/cross-currency-basis-swap.js';
+import securitiesBorrowingLendingRouter from './routes/securities-borrowing-lending.js';
+import equityTotalReturnIndexRouter from './routes/equity-total-return-index.js';
+import globalCreditMonitorRouter from './routes/global-credit-monitor.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1055,6 +1058,9 @@ export function createApp() {
   app.use('/api/loan-syndication-pipeline', loanSyndicationPipelineRouter);
   app.use('/api/sovereign-bond-auction', sovereignBondAuctionRouter);
   app.use('/api/cross-currency-basis-swap', crossCurrencyBasisSwapRouter);
+  app.use('/api/securities-borrowing-lending', securitiesBorrowingLendingRouter);
+  app.use('/api/equity-total-return-index', equityTotalReturnIndexRouter);
+  app.use('/api/global-credit-monitor', globalCreditMonitorRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
