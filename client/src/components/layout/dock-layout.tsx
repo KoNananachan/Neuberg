@@ -419,6 +419,8 @@ const BankStressTestPanel = lazy(() => import('../panels/bank-stress-test-panel'
 const EquityDerivativesPanel = lazy(() => import('../panels/equity-derivatives-panel').then(m => ({ default: m.EquityDerivativesPanel })));
 const MoneyMarketRatesPanel = lazy(() => import('../panels/money-market-rates-panel').then(m => ({ default: m.MoneyMarketRatesPanel })));
 const GlobalMAPanel = lazy(() => import('../panels/global-ma-panel').then(m => ({ default: m.GlobalMAPanel })));
+const CreditDefaultSwapsPanel = lazy(() => import('../panels/credit-default-swaps-panel').then(m => ({ default: m.CreditDefaultSwapsPanel })));
+const RealEstateInvestmentPanel = lazy(() => import('../panels/real-estate-investment-panel').then(m => ({ default: m.RealEstateInvestmentPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -848,6 +850,8 @@ export const PANEL_IDS = {
   EQUITY_DERIVATIVES: 'equity-derivatives',
   MONEY_MARKET_RATES: 'money-market-rates',
   GLOBAL_MA: 'global-ma',
+  CREDIT_DEFAULT_SWAPS: 'credit-default-swaps',
+  REAL_ESTATE_INVESTMENT: 'real-estate-investment',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1261,6 +1265,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.EQUITY_DERIVATIVES]: 'EQUITY DERIVATIVES',
   [PANEL_IDS.MONEY_MARKET_RATES]: 'MONEY MARKET RATES',
   [PANEL_IDS.GLOBAL_MA]: 'GLOBAL M&A',
+  [PANEL_IDS.CREDIT_DEFAULT_SWAPS]: 'CREDIT DEFAULT SWAPS',
+  [PANEL_IDS.REAL_ESTATE_INVESTMENT]: 'REAL ESTATE INVESTMENT',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1675,6 +1681,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.EQUITY_DERIVATIVES]: 'panelEquityDerivatives',
   [PANEL_IDS.MONEY_MARKET_RATES]: 'panelMoneyMarketRates',
   [PANEL_IDS.GLOBAL_MA]: 'panelGlobalMA',
+  [PANEL_IDS.CREDIT_DEFAULT_SWAPS]: 'panelCreditDefaultSwaps',
+  [PANEL_IDS.REAL_ESTATE_INVESTMENT]: 'panelRealEstateInvestment',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2385,6 +2393,8 @@ export function DockLayout() {
       case PANEL_IDS.EQUITY_DERIVATIVES: content = <LazyWrap><EquityDerivativesPanel /></LazyWrap>; break;
       case PANEL_IDS.MONEY_MARKET_RATES: content = <LazyWrap><MoneyMarketRatesPanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_MA: content = <LazyWrap><GlobalMAPanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_DEFAULT_SWAPS: content = <LazyWrap><CreditDefaultSwapsPanel /></LazyWrap>; break;
+      case PANEL_IDS.REAL_ESTATE_INVESTMENT: content = <LazyWrap><RealEstateInvestmentPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

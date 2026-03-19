@@ -1,124 +1,118 @@
 import { useInsuranceMarket } from '../../api/hooks/use-insurance-market';
-import { useT } from '../../i18n';
-
-const ACCENT = '#fb7185'; // rose-400
-const ACCENT_DIM = 'rgba(251,113,133,0.08)';
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
+import { Shield } from 'lucide-react';
 
 // ── Fallback Mock Data ──
 
 const FALLBACK_DATA = {
-  marketMetrics: {
-    globalPremiumVolume: 7.12,
-    protectionGap: 1.82,
-    averageSolvency: 218,
+  overview: {
+    globalPremiums: 7.12,
+    premiumGrowth: 4.8,
+    combinedRatio: 95.2,
+    catLossesYTD: 68.4,
+    reinsuranceCapital: 725,
   },
-  insurerStocks: [
-    { ticker: 'AIG', price: 78.42, change: 1.24, marketCap: 56.8, pe: 11.2, combinedRatio: 97.3, roe: 12.4 },
-    { ticker: 'ALL', price: 185.60, change: -0.38, marketCap: 48.2, pe: 10.8, combinedRatio: 93.1, roe: 18.6 },
-    { ticker: 'CB', price: 274.15, change: 0.87, marketCap: 112.4, pe: 12.5, combinedRatio: 88.5, roe: 16.2 },
-    { ticker: 'HIG', price: 108.92, change: -1.15, marketCap: 32.6, pe: 9.4, combinedRatio: 94.8, roe: 14.8 },
-    { ticker: 'MET', price: 82.30, change: 0.56, marketCap: 58.1, pe: 10.1, combinedRatio: 96.2, roe: 11.9 },
-    { ticker: 'PGR', price: 242.88, change: 2.14, marketCap: 142.3, pe: 18.2, combinedRatio: 89.4, roe: 32.5 },
-    { ticker: 'TRV', price: 236.44, change: -0.72, marketCap: 54.7, pe: 13.6, combinedRatio: 95.1, roe: 13.2 },
-    { ticker: 'MKL', price: 1685.20, change: 1.58, marketCap: 22.8, pe: 15.4, combinedRatio: 92.6, roe: 15.1 },
-    { ticker: 'RE', price: 312.75, change: 0.42, marketCap: 18.6, pe: 8.9, combinedRatio: 91.2, roe: 19.8 },
-    { ticker: 'RNR', price: 228.60, change: -0.28, marketCap: 12.4, pe: 7.8, combinedRatio: 86.4, roe: 22.1 },
+  pcLines: [
+    { line: 'Property', rateChange: 8.2, lossRatio: 62.5, combinedRatio: 92.3, marketCycle: 'HARD' },
+    { line: 'Casualty', rateChange: 5.4, lossRatio: 68.2, combinedRatio: 98.3, marketCycle: 'STABLE' },
+    { line: 'Auto', rateChange: 12.6, lossRatio: 71.4, combinedRatio: 97.9, marketCycle: 'HARD' },
+    { line: 'Workers Comp', rateChange: -2.1, lossRatio: 58.4, combinedRatio: 86.6, marketCycle: 'SOFT' },
+    { line: 'Marine', rateChange: 3.8, lossRatio: 55.2, combinedRatio: 87.8, marketCycle: 'STABLE' },
+    { line: 'Cyber', rateChange: 18.4, lossRatio: 42.6, combinedRatio: 81.0, marketCycle: 'HARD' },
+    { line: 'D&O', rateChange: -6.8, lossRatio: 48.5, combinedRatio: 82.7, marketCycle: 'SOFT' },
+    { line: 'Professional Liability', rateChange: 2.4, lossRatio: 64.8, combinedRatio: 96.3, marketCycle: 'STABLE' },
   ],
-  premiumData: [
-    { line: 'Property', grossWritten: 285.4, netWritten: 198.6, rateChange: 8.2, lossRatio: 62.5, expenseRatio: 29.8, combinedRatio: 92.3 },
-    { line: 'Casualty', grossWritten: 312.8, netWritten: 248.1, rateChange: 5.4, lossRatio: 68.2, expenseRatio: 30.1, combinedRatio: 98.3 },
-    { line: 'Auto', grossWritten: 298.6, netWritten: 272.4, rateChange: 12.6, lossRatio: 71.4, expenseRatio: 26.5, combinedRatio: 97.9 },
-    { line: 'Workers Comp', grossWritten: 56.2, netWritten: 42.8, rateChange: -2.1, lossRatio: 58.4, expenseRatio: 28.2, combinedRatio: 86.6 },
-    { line: 'Marine', grossWritten: 38.4, netWritten: 24.6, rateChange: 3.8, lossRatio: 55.2, expenseRatio: 32.6, combinedRatio: 87.8 },
-    { line: 'Cyber', grossWritten: 14.8, netWritten: 8.2, rateChange: 18.4, lossRatio: 42.6, expenseRatio: 38.4, combinedRatio: 81.0 },
-    { line: 'D&O', grossWritten: 22.6, netWritten: 16.4, rateChange: -6.8, lossRatio: 48.5, expenseRatio: 34.2, combinedRatio: 82.7 },
-    { line: 'Professional', grossWritten: 45.2, netWritten: 32.8, rateChange: 2.4, lossRatio: 64.8, expenseRatio: 31.5, combinedRatio: 96.3 },
+  reinsuranceRates: [
+    { program: 'US Property Cat', rateOnLine: 12.4, yoyChange: 15.2, capacity: 'constrained' },
+    { program: 'Europe Windstorm', rateOnLine: 8.8, yoyChange: 8.6, capacity: 'adequate' },
+    { program: 'Japan Typhoon', rateOnLine: 9.2, yoyChange: 6.4, capacity: 'adequate' },
+    { program: 'Global Marine', rateOnLine: 5.6, yoyChange: 3.1, capacity: 'adequate' },
+    { program: 'US Casualty XL', rateOnLine: 7.8, yoyChange: -1.8, capacity: 'adequate' },
+    { program: 'Caribbean Hurricane', rateOnLine: 18.6, yoyChange: 22.4, capacity: 'scarce' },
+    { program: 'Australia Flood', rateOnLine: 14.2, yoyChange: 18.8, capacity: 'constrained' },
+    { program: 'Global Retro', rateOnLine: 22.4, yoyChange: 12.6, capacity: 'scarce' },
   ],
-  catBonds: [
-    { name: 'Everglades Re 2026-1', peril: 'Hurricane', triggerType: 'Indemnity', couponSpread: 825, expectedLoss: 2.14, amount: 350, maturity: '2029-01', status: 'Active' },
-    { name: 'Sierra Re 2025-2', peril: 'Earthquake', triggerType: 'PCS Index', couponSpread: 675, expectedLoss: 1.82, amount: 500, maturity: '2028-06', status: 'Active' },
-    { name: 'Golden State Re III', peril: 'Wildfire', triggerType: 'Parametric', couponSpread: 1150, expectedLoss: 3.45, amount: 200, maturity: '2027-12', status: 'Active' },
-    { name: 'Windmill Re 2026-A', peril: 'Windstorm', triggerType: 'Modeled Loss', couponSpread: 540, expectedLoss: 1.28, amount: 425, maturity: '2029-06', status: 'Active' },
-    { name: 'Pacific Re 2025-1', peril: 'Typhoon', triggerType: 'Parametric', couponSpread: 780, expectedLoss: 2.56, amount: 300, maturity: '2028-03', status: 'Active' },
-    { name: 'Rhine Re IV', peril: 'Flood', triggerType: 'Indemnity', couponSpread: 480, expectedLoss: 0.98, amount: 275, maturity: '2028-09', status: 'Active' },
-    { name: 'Atlas Re 2026-B', peril: 'Multi-Peril', triggerType: 'Industry Index', couponSpread: 920, expectedLoss: 2.88, amount: 600, maturity: '2030-01', status: 'Pending' },
-  ],
-  reinsurancePricing: {
-    rolIndex: 8.42,
-    rolChange: 2.8,
-    regions: [
-      { region: 'US - Property Cat', rateChange: 12.5 },
-      { region: 'Europe - Windstorm', rateChange: 8.2 },
-      { region: 'Japan - Typhoon', rateChange: 6.4 },
-      { region: 'Global - Marine', rateChange: 3.1 },
-      { region: 'US - Casualty', rateChange: -1.8 },
-      { region: 'UK - Motor', rateChange: 5.6 },
-      { region: 'Australia - Flood', rateChange: 15.2 },
-      { region: 'Caribbean - Hurricane', rateChange: 18.4 },
+  catBonds: {
+    outstanding: 47.2,
+    newIssuance: 16.8,
+    recentDeals: [
+      { name: 'Everglades Re 2026-1', peril: 'Hurricane', size: 350, spread: 825, expectedLoss: 2.14 },
+      { name: 'Sierra Re 2025-2', peril: 'Earthquake', size: 500, spread: 675, expectedLoss: 1.82 },
+      { name: 'Golden State Re III', peril: 'Wildfire', size: 200, spread: 1150, expectedLoss: 3.45 },
+      { name: 'Windmill Re 2026-A', peril: 'Windstorm', size: 425, spread: 540, expectedLoss: 1.28 },
+      { name: 'Pacific Re 2025-1', peril: 'Typhoon', size: 300, spread: 780, expectedLoss: 2.56 },
+      { name: 'Rhine Re IV', peril: 'Flood', size: 275, spread: 480, expectedLoss: 0.98 },
+      { name: 'Atlas Re 2026-B', peril: 'Multi-Peril', size: 600, spread: 920, expectedLoss: 2.88 },
     ],
   },
-  recentLossEvents: [
-    { event: 'Hurricane Milton', type: 'Hurricane', totalLoss: 48.5, insuredLoss: 32.4, date: '2025-10-08', region: 'US Southeast' },
-    { event: 'Tohoku Earthquake', type: 'Earthquake', totalLoss: 22.8, insuredLoss: 8.6, date: '2025-08-14', region: 'Japan' },
-    { event: 'Rhine Valley Flooding', type: 'Flood', totalLoss: 14.2, insuredLoss: 9.8, date: '2025-07-22', region: 'Europe' },
-    { event: 'California Wildfire Complex', type: 'Wildfire', totalLoss: 18.6, insuredLoss: 14.2, date: '2025-09-15', region: 'US West' },
-    { event: 'Cyclone Nivar', type: 'Typhoon', totalLoss: 8.4, insuredLoss: 2.1, date: '2025-11-02', region: 'Indian Ocean' },
-    { event: 'Texas Hailstorm', type: 'Severe Weather', totalLoss: 6.8, insuredLoss: 5.2, date: '2025-06-18', region: 'US Central' },
+  lossEvents: [
+    { event: 'Hurricane Milton', date: '2025-10-08', region: 'US Southeast', insuredLoss: 32.4, line: 'Property' },
+    { event: 'California Wildfire Complex', date: '2025-09-15', region: 'US West', insuredLoss: 14.2, line: 'Property' },
+    { event: 'Rhine Valley Flooding', date: '2025-07-22', region: 'Europe', insuredLoss: 9.8, line: 'Property' },
+    { event: 'Tohoku Earthquake', date: '2025-08-14', region: 'Japan', insuredLoss: 8.6, line: 'Property' },
+    { event: 'Texas Hailstorm', date: '2025-06-18', region: 'US Central', insuredLoss: 5.2, line: 'Auto' },
+    { event: 'Cyclone Nivar', date: '2025-11-02', region: 'Indian Ocean', insuredLoss: 2.1, line: 'Marine' },
+  ],
+  insurerPerformance: [
+    { company: 'Chubb (CB)', premiums: 52.8, combinedRatio: 88.5, investmentReturn: 4.2, stockYTD: 12.4 },
+    { company: 'Progressive (PGR)', premiums: 62.4, combinedRatio: 89.4, investmentReturn: 3.8, stockYTD: 18.6 },
+    { company: 'AIG', premiums: 46.2, combinedRatio: 97.3, investmentReturn: 3.6, stockYTD: 4.2 },
+    { company: 'Allstate (ALL)', premiums: 54.8, combinedRatio: 93.1, investmentReturn: 4.1, stockYTD: 8.8 },
+    { company: 'Travelers (TRV)', premiums: 42.6, combinedRatio: 95.1, investmentReturn: 3.9, stockYTD: 6.2 },
+    { company: 'Hartford (HIG)', premiums: 24.8, combinedRatio: 94.8, investmentReturn: 4.4, stockYTD: -2.8 },
+    { company: 'Markel (MKL)', premiums: 12.4, combinedRatio: 92.6, investmentReturn: 5.2, stockYTD: 9.4 },
+    { company: 'RenaissanceRe (RNR)', premiums: 8.6, combinedRatio: 86.4, investmentReturn: 4.8, stockYTD: 14.2 },
+    { company: 'Everest Re (RE)', premiums: 14.2, combinedRatio: 91.2, investmentReturn: 4.6, stockYTD: 10.8 },
+    { company: 'MetLife (MET)', premiums: 68.4, combinedRatio: 96.2, investmentReturn: 3.4, stockYTD: 2.6 },
   ],
   generatedAt: new Date().toISOString(),
 };
 
-// ── Color helpers ──
+// ── Color / badge helpers ──
 
-function perilColor(peril: string): string {
-  if (peril.includes('Hurricane')) return '#ef4444';
-  if (peril.includes('Earthquake')) return '#f97316';
-  if (peril.includes('Wildfire')) return '#fbbf24';
-  if (peril.includes('Windstorm')) return '#60a5fa';
-  if (peril.includes('Typhoon')) return '#a78bfa';
-  if (peril.includes('Flood')) return '#2dd4bf';
-  if (peril.includes('Multi')) return '#e879f9';
-  return '#94a3b8';
-}
-
-function combinedRatioColor(ratio: number): string {
-  if (ratio < 95) return 'text-green-400';
-  if (ratio <= 100) return 'text-yellow-400';
-  return 'text-red-400';
-}
-
-function statusBadgeClass(status: string): string {
-  if (status === 'Active') return 'text-green-400 bg-green-500/10 border border-green-500/30';
-  if (status === 'Pending') return 'text-amber-400 bg-amber-500/10 border border-amber-500/30';
+function marketCycleBadge(cycle: string): string {
+  if (cycle === 'HARD') return 'text-red-400 bg-red-500/10 border border-red-500/30';
+  if (cycle === 'STABLE') return 'text-yellow-400 bg-yellow-500/10 border border-yellow-500/30';
+  if (cycle === 'SOFT') return 'text-green-400 bg-green-500/10 border border-green-500/30';
   return 'text-neutral-500 bg-neutral-500/10 border border-neutral-500/30';
 }
 
-function lossTypeColor(type: string): string {
-  if (type.includes('Hurricane')) return '#ef4444';
-  if (type.includes('Earthquake')) return '#f97316';
-  if (type.includes('Wildfire')) return '#fbbf24';
-  if (type.includes('Flood')) return '#2dd4bf';
-  if (type.includes('Typhoon')) return '#a78bfa';
-  if (type.includes('Severe')) return '#60a5fa';
-  return '#94a3b8';
+function capacityBadge(cap: string): string {
+  if (cap === 'adequate') return 'text-green-400 bg-green-500/10 border border-green-500/30';
+  if (cap === 'constrained') return 'text-yellow-400 bg-yellow-500/10 border border-yellow-500/30';
+  if (cap === 'scarce') return 'text-red-400 bg-red-500/10 border border-red-500/30';
+  return 'text-neutral-500 bg-neutral-500/10 border border-neutral-500/30';
+}
+
+function combinedColor(ratio: number): string {
+  return ratio < 100 ? 'text-green-400' : 'text-red-400';
+}
+
+function lineBadgeColor(line: string): string {
+  if (line === 'Property') return 'text-orange-400 bg-orange-500/10 border border-orange-500/30';
+  if (line === 'Auto') return 'text-blue-400 bg-blue-500/10 border border-blue-500/30';
+  if (line === 'Marine') return 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30';
+  if (line === 'Casualty') return 'text-purple-400 bg-purple-500/10 border border-purple-500/30';
+  return 'text-neutral-400 bg-neutral-500/10 border border-neutral-500/30';
+}
+
+// ── Section Header Component ──
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-1.5 px-3 py-1 border-b border-teal-400/30">
+      <div className="w-1 h-1 bg-teal-400" />
+      <span className="text-[7px] font-black font-mono uppercase tracking-widest text-teal-400">
+        {title}
+      </span>
+    </div>
+  );
 }
 
 // ── Main Panel ──
 
 export function InsuranceMarketPanel() {
-  const t = useT();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawData, isLoading, error } = useInsuranceMarket();
+  const { data: rawData, isLoading, error } = useInsuranceMarket() as any;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = (rawData as any) || FALLBACK_DATA;
@@ -126,7 +120,7 @@ export function InsuranceMarketPanel() {
   if (isLoading && !rawData) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <div className="text-[9px] font-mono text-neutral/40 uppercase tracking-widest animate-pulse">
+        <div className="text-[9px] font-mono text-neutral-500 uppercase tracking-widest animate-pulse">
           Loading insurance data...
         </div>
       </div>
@@ -136,380 +130,208 @@ export function InsuranceMarketPanel() {
   if (error && !data) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <div className="text-[9px] font-mono text-bearish/60 uppercase tracking-widest">
+        <div className="text-[9px] font-mono text-red-400/60 uppercase tracking-widest">
           Failed to load insurance data
         </div>
       </div>
     );
   }
 
+  const overview = data.overview || FALLBACK_DATA.overview;
+
   return (
-    <div className="h-full flex flex-col bg-black overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/30 shrink-0">
+    <div className="h-full flex flex-col bg-black overflow-hidden text-[9px] font-mono">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-teal-400/30 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 bg-rose-400" />
-          <span className="text-[9px] font-black font-mono uppercase tracking-tighter" style={{ color: ACCENT }}>
-            {tr(t, 'panelInsuranceMarket', 'Insurance Market')}
+          <Shield className="w-3 h-3 text-teal-400" />
+          <span className="text-[9px] font-black uppercase tracking-tighter text-teal-400">
+            Insurance Market
           </span>
         </div>
-        {data?.generatedAt && (
-          <span className="text-[7px] font-mono text-neutral-600">
-            {new Date(data.generatedAt).toLocaleTimeString()}
+        <div className="flex items-center gap-3">
+          <span className="text-[7px] text-neutral-600 uppercase">Premiums</span>
+          <span className="text-[9px] font-bold text-white tabular-nums">${overview.globalPremiums}T</span>
+          <span className="text-[7px] text-neutral-600 uppercase">Combined</span>
+          <span className={`text-[9px] font-bold tabular-nums ${combinedColor(overview.combinedRatio)}`}>
+            {overview.combinedRatio}%
           </span>
-        )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto no-scrollbar">
-        {data && (
-          <>
-            <MarketMetricsSection data={data.marketMetrics} t={t} />
-            <InsurerStocksSection stocks={data.insurerStocks} t={t} />
-            <PremiumDataSection premiums={data.premiumData} t={t} />
-            <CatBondsSection bonds={data.catBonds} t={t} />
-            <ReinsurancePricingSection pricing={data.reinsurancePricing} t={t} />
-            <RecentLossEventsSection events={data.recentLossEvents} t={t} />
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Market Metrics Banner ──
-
-function MarketMetricsSection({
-  data,
-  t,
-}: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any;
-  t: ReturnType<typeof useT>;
-}) {
-  if (!data) return null;
-
-  const metrics = [
-    { label: tr(t, 'imGlobalPremium', 'Global Premium Volume'), value: `$${data.globalPremiumVolume}T`, color: 'text-white' },
-    { label: tr(t, 'imProtectionGap', 'Protection Gap'), value: `$${data.protectionGap}T`, color: 'text-red-400' },
-    { label: tr(t, 'imAvgSolvency', 'Avg Solvency Ratio'), value: `${data.averageSolvency}%`, color: 'text-green-400' },
-  ];
-
-  return (
-    <div className="border-b border-border/20">
-      <div className="grid grid-cols-3 gap-px bg-border/10">
-        {metrics.map((m) => (
-          <div key={m.label} className="px-2 py-1.5 bg-black hover:bg-rose-400/[0.02]">
-            <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-              {m.label}
-            </div>
-            <div className={`text-[10px] font-mono font-bold ${m.color}`}>
-              {m.value}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Insurer Stocks Table ──
-
-function InsurerStocksSection({
-  stocks,
-  t,
-}: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stocks: any[];
-  t: ReturnType<typeof useT>;
-}) {
-  if (!stocks?.length) return null;
-
-  return (
-    <div className="border-b border-border/20">
-      <div className="px-3 py-1 border-b border-border/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'imInsurerStocks', 'Insurer Stocks')}
-        </span>
-      </div>
-
-      {/* Column headers */}
-      <div className="grid grid-cols-[52px_56px_56px_52px_44px_56px_44px] px-2 py-1 border-b border-border/10 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">Ticker</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">Price</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">Chg%</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">MCap</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">P/E</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">Comb.R</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">ROE</span>
-      </div>
-
-      {/* Rows */}
-      {stocks.map((s: {
-        ticker: string; price: number; change: number; marketCap: number;
-        pe: number; combinedRatio: number; roe: number;
-      }) => (
-        <div
-          key={s.ticker}
-          className="grid grid-cols-[52px_56px_56px_52px_44px_56px_44px] px-2 py-1 border-b border-border/5 hover:bg-rose-400/[0.02]"
-        >
-          <span className="text-[8px] font-mono font-bold" style={{ color: ACCENT }}>{s.ticker}</span>
-          <span className="text-[8px] font-mono font-bold text-white text-right">{s.price.toFixed(2)}</span>
-          <span className={`text-[8px] font-mono font-bold text-right ${s.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {s.change >= 0 ? '+' : ''}{s.change.toFixed(2)}%
-          </span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right">${s.marketCap}B</span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right">{s.pe}x</span>
-          <span className={`text-[8px] font-mono font-bold text-right ${combinedRatioColor(s.combinedRatio)}`}>
-            {s.combinedRatio}%
-          </span>
-          <span className="text-[8px] font-mono text-white/70 text-right">{s.roe}%</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Premium Data by Line ──
-
-function PremiumDataSection({
-  premiums,
-  t,
-}: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  premiums: any[];
-  t: ReturnType<typeof useT>;
-}) {
-  if (!premiums?.length) return null;
-
-  const maxGross = Math.max(...premiums.map((p: { grossWritten: number }) => p.grossWritten));
-
-  return (
-    <div className="border-b border-border/20">
-      <div className="px-3 py-1 border-b border-border/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'imPremiumData', 'Premium Data by Line')}
-        </span>
-      </div>
-
-      {/* Column headers */}
-      <div className="grid grid-cols-[1fr_56px_56px_52px_48px_48px_52px] px-2 py-1 border-b border-border/10 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">Line</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">GWP</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">NWP</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">Rate</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">Loss</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">Exp</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">Comb</span>
-      </div>
-
-      {/* Rows */}
-      {premiums.map((p: {
-        line: string; grossWritten: number; netWritten: number;
-        rateChange: number; lossRatio: number; expenseRatio: number; combinedRatio: number;
-      }) => (
-        <div key={p.line}>
-          <div className="grid grid-cols-[1fr_56px_56px_52px_48px_48px_52px] px-2 py-1 border-b border-border/5 hover:bg-rose-400/[0.02]">
-            <span className="text-[8px] font-mono font-bold text-white truncate">{p.line}</span>
-            <span className="text-[8px] font-mono text-neutral-400 text-right">${p.grossWritten}B</span>
-            <span className="text-[8px] font-mono text-neutral-400 text-right">${p.netWritten}B</span>
-            <span className={`text-[8px] font-mono font-bold text-right ${p.rateChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {p.rateChange >= 0 ? '\u2191' : '\u2193'}{Math.abs(p.rateChange)}%
-            </span>
-            <span className="text-[8px] font-mono text-neutral-400 text-right">{p.lossRatio}%</span>
-            <span className="text-[8px] font-mono text-neutral-500 text-right">{p.expenseRatio}%</span>
-            <span className={`text-[8px] font-mono font-bold text-right ${combinedRatioColor(p.combinedRatio)}`}>
-              {p.combinedRatio}%
-            </span>
-          </div>
-          {/* Mini bar */}
-          <div className="px-2 pb-1">
-            <div className="h-[2px] bg-border/10 w-full">
-              <div
-                className="h-full"
-                style={{
-                  width: `${(p.grossWritten / maxGross) * 100}%`,
-                  background: ACCENT,
-                  opacity: 0.35,
-                }}
-              />
-            </div>
+        {/* ── 1. Overview Stats ── */}
+        <div className="border-b border-teal-400/30">
+          <div className="grid grid-cols-5 gap-px bg-border/10">
+            {[
+              { label: 'Global Premiums', value: `$${overview.globalPremiums}T`, color: 'text-white' },
+              { label: 'Premium Growth', value: `${overview.premiumGrowth}%`, color: 'text-teal-400' },
+              { label: 'Combined Ratio', value: `${overview.combinedRatio}%`, color: combinedColor(overview.combinedRatio) },
+              { label: 'Cat Losses YTD', value: `$${overview.catLossesYTD}B`, color: 'text-red-400' },
+              { label: 'Reinsurance Capital', value: `$${overview.reinsuranceCapital}B`, color: 'text-white' },
+            ].map((m: any) => (
+              <div key={m.label} className="px-2 py-1.5 bg-black hover:bg-teal-400/[0.02]">
+                <div className="text-[7px] text-neutral-600 uppercase tracking-wider">{m.label}</div>
+                <div className={`text-[10px] font-bold tabular-nums ${m.color}`}>{m.value}</div>
+              </div>
+            ))}
           </div>
         </div>
-      ))}
-    </div>
-  );
-}
 
-// ── Catastrophe Bonds Section ──
-
-function CatBondsSection({
-  bonds,
-  t,
-}: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  bonds: any[];
-  t: ReturnType<typeof useT>;
-}) {
-  if (!bonds?.length) return null;
-
-  return (
-    <div className="border-b border-border/20">
-      <div className="px-3 py-1 border-b border-border/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'imCatBonds', 'Catastrophe Bonds')}
-        </span>
-      </div>
-
-      {bonds.map((b: {
-        name: string; peril: string; triggerType: string;
-        couponSpread: number; expectedLoss: number; amount: number;
-        maturity: string; status: string;
-      }, i: number) => (
-        <div key={i} className="px-2 py-1.5 border-b border-border/5 hover:bg-rose-400/[0.02]">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[8px] font-mono font-bold" style={{ color: ACCENT }}>{b.name}</span>
-            <div className="flex items-center gap-1.5">
-              <span
-                className="text-[7px] font-bold font-mono px-1 py-0"
-                style={{ color: perilColor(b.peril), background: `${perilColor(b.peril)}15` }}
-              >
-                {b.peril.toUpperCase()}
+        {/* ── 2. P&C Lines ── */}
+        <div className="border-b border-teal-400/30">
+          <SectionHeader title="P&C Lines" />
+          <div className="grid grid-cols-[1fr_56px_52px_52px_56px] px-2 py-1 border-b border-border/20 bg-[#030303]">
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Line</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Rate Chg</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Loss R</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Comb R</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Cycle</span>
+          </div>
+          {(data.pcLines || FALLBACK_DATA.pcLines).map((p: any) => (
+            <div
+              key={p.line}
+              className="grid grid-cols-[1fr_56px_52px_52px_56px] px-2 py-1 border-b border-border/20 hover:bg-teal-400/[0.02]"
+            >
+              <span className="text-[8px] font-bold text-white truncate">{p.line}</span>
+              <span className={`text-[8px] font-bold text-right tabular-nums ${p.rateChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {p.rateChange >= 0 ? '+' : ''}{p.rateChange}%
               </span>
-              <span className={`text-[7px] font-bold font-mono px-1 py-0.5 ${statusBadgeClass(b.status)}`}>
-                {b.status.toUpperCase()}
+              <span className="text-[8px] text-neutral-400 text-right tabular-nums">{p.lossRatio}%</span>
+              <span className={`text-[8px] font-bold text-right tabular-nums ${combinedColor(p.combinedRatio)}`}>
+                {p.combinedRatio}%
+              </span>
+              <span className="text-right">
+                <span className={`text-[6px] font-bold px-1 py-0.5 ${marketCycleBadge(p.marketCycle)}`}>
+                  {p.marketCycle}
+                </span>
               </span>
             </div>
+          ))}
+        </div>
+
+        {/* ── 3. Reinsurance Rates ── */}
+        <div className="border-b border-teal-400/30">
+          <SectionHeader title="Reinsurance Rates" />
+          <div className="grid grid-cols-[1fr_52px_52px_64px] px-2 py-1 border-b border-border/20 bg-[#030303]">
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Program</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">ROL</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">YoY</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Capacity</span>
           </div>
-          <div className="grid grid-cols-5 gap-2 text-[8px] font-mono">
-            <div>
-              <div className="text-neutral-600 text-[7px] uppercase">Trigger</div>
-              <div className="text-white/60">{b.triggerType}</div>
-            </div>
-            <div>
-              <div className="text-neutral-600 text-[7px] uppercase">Spread</div>
-              <div style={{ color: ACCENT }}>{b.couponSpread}bp</div>
-            </div>
-            <div>
-              <div className="text-neutral-600 text-[7px] uppercase">Exp. Loss</div>
-              <div className="text-red-400">{b.expectedLoss}%</div>
-            </div>
-            <div>
-              <div className="text-neutral-600 text-[7px] uppercase">Amount</div>
-              <div className="text-white/80 font-bold">${b.amount}M</div>
-            </div>
-            <div>
-              <div className="text-neutral-600 text-[7px] uppercase">Maturity</div>
-              <div className="text-neutral-400">{b.maturity}</div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Reinsurance Pricing Section ──
-
-function ReinsurancePricingSection({
-  pricing,
-  t,
-}: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  pricing: any;
-  t: ReturnType<typeof useT>;
-}) {
-  if (!pricing) return null;
-
-  return (
-    <div className="border-b border-border/20">
-      <div className="px-3 py-1 border-b border-border/10 flex items-center justify-between">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'imReinsurancePricing', 'Reinsurance Pricing')}
-        </span>
-        <div className="flex items-center gap-3">
-          <span className="text-[7px] font-mono text-neutral-600 uppercase">ROL Index</span>
-          <span className="text-[9px] font-mono font-bold" style={{ color: ACCENT }}>{pricing.rolIndex}%</span>
-          <span className={`text-[8px] font-mono font-bold ${pricing.rolChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {pricing.rolChange >= 0 ? '\u2191' : '\u2193'}{Math.abs(pricing.rolChange)}%
-          </span>
-        </div>
-      </div>
-
-      {/* Column headers */}
-      <div className="grid grid-cols-[1fr_64px] px-2 py-1 border-b border-border/10 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">Region</span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">Rate Chg</span>
-      </div>
-
-      {/* Rows */}
-      {pricing.regions?.map((r: { region: string; rateChange: number }) => (
-        <div
-          key={r.region}
-          className="grid grid-cols-[1fr_64px] px-2 py-1 border-b border-border/5 hover:bg-rose-400/[0.02]"
-        >
-          <span className="text-[8px] font-mono text-white/80 truncate">{r.region}</span>
-          <span className={`text-[8px] font-mono font-bold text-right ${r.rateChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {r.rateChange >= 0 ? '\u2191' : '\u2193'}{Math.abs(r.rateChange)}%
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Recent Loss Events Section ──
-
-function RecentLossEventsSection({
-  events,
-  t,
-}: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  events: any[];
-  t: ReturnType<typeof useT>;
-}) {
-  if (!events?.length) return null;
-
-  return (
-    <div className="border-b border-border/20">
-      <div className="px-3 py-1 border-b border-border/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'imRecentLossEvents', 'Recent Loss Events')}
-        </span>
-      </div>
-
-      {events.map((e: {
-        event: string; type: string; totalLoss: number;
-        insuredLoss: number; date: string; region: string;
-      }, i: number) => (
-        <div key={i} className="px-2 py-1.5 border-b border-border/5 hover:bg-rose-400/[0.02]">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[8px] font-mono font-bold text-white">{e.event}</span>
-              <span
-                className="text-[7px] font-bold font-mono px-1 py-0"
-                style={{ color: lossTypeColor(e.type), background: `${lossTypeColor(e.type)}15` }}
-              >
-                {e.type.toUpperCase()}
+          {(data.reinsuranceRates || FALLBACK_DATA.reinsuranceRates).map((r: any) => (
+            <div
+              key={r.program}
+              className="grid grid-cols-[1fr_52px_52px_64px] px-2 py-1 border-b border-border/20 hover:bg-teal-400/[0.02]"
+            >
+              <span className="text-[8px] text-white/80 truncate">{r.program}</span>
+              <span className="text-[8px] font-bold text-teal-400 text-right tabular-nums">{r.rateOnLine}%</span>
+              <span className={`text-[8px] font-bold text-right tabular-nums ${r.yoyChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {r.yoyChange >= 0 ? '+' : ''}{r.yoyChange}%
+              </span>
+              <span className="text-right">
+                <span className={`text-[6px] font-bold px-1 py-0.5 uppercase ${capacityBadge(r.capacity)}`}>
+                  {r.capacity}
+                </span>
               </span>
             </div>
-            <span className="text-[7px] font-mono text-neutral-600">{e.date}</span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-[8px] font-mono">
-            <div>
-              <span className="text-neutral-600 text-[7px] uppercase">Total Loss </span>
-              <span className="text-red-400 font-bold">${e.totalLoss}B</span>
-            </div>
-            <div>
-              <span className="text-neutral-600 text-[7px] uppercase">Insured </span>
-              <span style={{ color: ACCENT }} className="font-bold">${e.insuredLoss}B</span>
-            </div>
-            <div>
-              <span className="text-neutral-600 text-[7px] uppercase">Region </span>
-              <span className="text-white/60">{e.region}</span>
-            </div>
-          </div>
+          ))}
         </div>
-      ))}
+
+        {/* ── 4. Cat Bonds ── */}
+        <div className="border-b border-teal-400/30">
+          <SectionHeader title="Catastrophe Bonds" />
+          <div className="flex items-center gap-4 px-3 py-1.5 border-b border-border/20">
+            <div>
+              <div className="text-[7px] text-neutral-600 uppercase">Outstanding</div>
+              <div className="text-[10px] font-bold text-white tabular-nums">
+                ${(data.catBonds || FALLBACK_DATA.catBonds).outstanding}B
+              </div>
+            </div>
+            <div>
+              <div className="text-[7px] text-neutral-600 uppercase">New Issuance YTD</div>
+              <div className="text-[10px] font-bold text-teal-400 tabular-nums">
+                ${(data.catBonds || FALLBACK_DATA.catBonds).newIssuance}B
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-[1fr_60px_48px_48px_48px] px-2 py-1 border-b border-border/20 bg-[#030303]">
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Deal</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Peril</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Size</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Spread</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">EL</span>
+          </div>
+          {(data.catBonds || FALLBACK_DATA.catBonds).recentDeals.map((d: any) => (
+            <div
+              key={d.name}
+              className="grid grid-cols-[1fr_60px_48px_48px_48px] px-2 py-1 border-b border-border/20 hover:bg-teal-400/[0.02]"
+            >
+              <span className="text-[8px] font-bold text-teal-400 truncate">{d.name}</span>
+              <span className="text-[8px] text-neutral-400 text-right">{d.peril}</span>
+              <span className="text-[8px] font-bold text-white text-right tabular-nums">${d.size}M</span>
+              <span className="text-[8px] text-neutral-400 text-right tabular-nums">{d.spread}bp</span>
+              <span className="text-[8px] text-red-400 text-right tabular-nums">{d.expectedLoss}%</span>
+            </div>
+          ))}
+        </div>
+
+        {/* ── 5. Loss Events YTD ── */}
+        <div className="border-b border-teal-400/30">
+          <SectionHeader title="Loss Events YTD" />
+          <div className="grid grid-cols-[1fr_64px_64px_56px_52px] px-2 py-1 border-b border-border/20 bg-[#030303]">
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Event</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Date</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Region</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Ins Loss</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Line</span>
+          </div>
+          {(data.lossEvents || FALLBACK_DATA.lossEvents).map((e: any, i: any) => (
+            <div
+              key={i}
+              className="grid grid-cols-[1fr_64px_64px_56px_52px] px-2 py-1 border-b border-border/20 hover:bg-teal-400/[0.02]"
+            >
+              <span className="text-[8px] font-bold text-white truncate">{e.event}</span>
+              <span className="text-[8px] text-neutral-500 tabular-nums">{e.date}</span>
+              <span className="text-[8px] text-neutral-400 truncate">{e.region}</span>
+              <span className="text-[8px] font-bold text-red-400 text-right tabular-nums">${e.insuredLoss}B</span>
+              <span className="text-right">
+                <span className={`text-[6px] font-bold px-1 py-0.5 ${lineBadgeColor(e.line)}`}>
+                  {e.line}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* ── 6. Insurer Performance ── */}
+        <div className="border-b border-teal-400/30">
+          <SectionHeader title="Insurer Performance" />
+          <div className="grid grid-cols-[1fr_52px_52px_48px_48px] px-2 py-1 border-b border-border/20 bg-[#030303]">
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider">Company</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Prem</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Comb R</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Inv Ret</span>
+            <span className="text-[7px] text-neutral-600 uppercase tracking-wider text-right">Stk YTD</span>
+          </div>
+          {(data.insurerPerformance || FALLBACK_DATA.insurerPerformance).map((c: any) => (
+            <div
+              key={c.company}
+              className="grid grid-cols-[1fr_52px_52px_48px_48px] px-2 py-1 border-b border-border/20 hover:bg-teal-400/[0.02]"
+            >
+              <span className="text-[8px] font-bold text-white truncate">{c.company}</span>
+              <span className="text-[8px] text-neutral-400 text-right tabular-nums">${c.premiums}B</span>
+              <span className={`text-[8px] font-bold text-right tabular-nums ${combinedColor(c.combinedRatio)}`}>
+                {c.combinedRatio}%
+              </span>
+              <span className="text-[8px] text-teal-400 text-right tabular-nums">{c.investmentReturn}%</span>
+              <span className={`text-[8px] font-bold text-right tabular-nums ${c.stockYTD >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {c.stockYTD >= 0 ? '+' : ''}{c.stockYTD}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

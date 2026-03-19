@@ -412,6 +412,8 @@ import bankStressTestRouter from './routes/bank-stress-test.js';
 import equityDerivativesRouter from './routes/equity-derivatives.js';
 import moneyMarketRatesRouter from './routes/money-market-rates.js';
 import globalMARouter from './routes/global-ma.js';
+import creditDefaultSwapsRouter from './routes/credit-default-swaps.js';
+import realEstateInvestmentRouter from './routes/real-estate-investment.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -925,6 +927,8 @@ export function createApp() {
   app.use('/api/equity-derivatives', equityDerivativesRouter);
   app.use('/api/money-market-rates', moneyMarketRatesRouter);
   app.use('/api/global-ma', globalMARouter);
+  app.use('/api/credit-default-swaps', creditDefaultSwapsRouter);
+  app.use('/api/real-estate-investment', realEstateInvestmentRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
