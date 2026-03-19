@@ -15,26 +15,55 @@ function mulberry32(seed: number) {
 // -- Static Data --
 
 const CITIES = [
-  { city: 'New York', lat: 40.71, avgWinterTemp: 33, avgSummerTemp: 76 },
-  { city: 'Chicago', lat: 41.88, avgWinterTemp: 26, avgSummerTemp: 73 },
-  { city: 'London', lat: 51.51, avgWinterTemp: 40, avgSummerTemp: 64 },
-  { city: 'Tokyo', lat: 35.68, avgWinterTemp: 41, avgSummerTemp: 79 },
-  { city: 'Frankfurt', lat: 50.11, avgWinterTemp: 34, avgSummerTemp: 66 },
-  { city: 'Sydney', lat: -33.87, avgWinterTemp: 53, avgSummerTemp: 72 },
-  { city: 'Toronto', lat: 43.65, avgWinterTemp: 23, avgSummerTemp: 71 },
-  { city: 'Houston', lat: 29.76, avgWinterTemp: 52, avgSummerTemp: 84 },
+  { city: 'Chicago', lat: 41.88, unit: 'F' as const, avgWinterTemp: 26, avgSummerTemp: 73 },
+  { city: 'New York', lat: 40.71, unit: 'F' as const, avgWinterTemp: 33, avgSummerTemp: 76 },
+  { city: 'London', lat: 51.51, unit: 'C' as const, avgWinterTemp: 5, avgSummerTemp: 18 },
+  { city: 'Tokyo', lat: 35.68, unit: 'C' as const, avgWinterTemp: 5, avgSummerTemp: 26 },
+  { city: 'Houston', lat: 29.76, unit: 'F' as const, avgWinterTemp: 52, avgSummerTemp: 84 },
 ];
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const STRATEGY_DEFS = [
-  { strategy: 'HDD Collar', notionalBase: 5_000_000, premiumPct: 0.025, payoutMult: 3.5 },
-  { strategy: 'CDD Swap', notionalBase: 8_000_000, premiumPct: 0.018, payoutMult: 2.8 },
-  { strategy: 'Seasonal Strip', notionalBase: 12_000_000, premiumPct: 0.032, payoutMult: 4.0 },
-  { strategy: 'Basis Swap', notionalBase: 3_500_000, premiumPct: 0.015, payoutMult: 2.2 },
-  { strategy: 'Temperature Put', notionalBase: 6_000_000, premiumPct: 0.028, payoutMult: 3.0 },
-  { strategy: 'Dual-Trigger', notionalBase: 10_000_000, premiumPct: 0.042, payoutMult: 5.5 },
+const PRECIP_REGIONS = [
+  { region: 'US Midwest', type: 'rainfall' as const, baseLevel: 3.8, strikeBase: 4.2 },
+  { region: 'US Gulf Coast', type: 'rainfall' as const, baseLevel: 5.1, strikeBase: 5.5 },
+  { region: 'UK South', type: 'rainfall' as const, baseLevel: 2.4, strikeBase: 2.8 },
+  { region: 'Japan Kanto', type: 'rainfall' as const, baseLevel: 5.6, strikeBase: 6.0 },
+  { region: 'US Northeast', type: 'snowfall' as const, baseLevel: 12.5, strikeBase: 14.0 },
+  { region: 'US Great Lakes', type: 'snowfall' as const, baseLevel: 18.2, strikeBase: 20.0 },
+  { region: 'Northern Europe', type: 'rainfall' as const, baseLevel: 2.1, strikeBase: 2.5 },
 ];
+
+const WEATHER_INDICES = [
+  { indexName: 'CME US Composite HDD Index', baseValue: 1850, trend: 'cooling' as const },
+  { indexName: 'CME US Composite CDD Index', baseValue: 620, trend: 'warming' as const },
+  { indexName: 'Bloomberg Wind Chill Index', baseValue: 42.5, trend: 'stable' as const },
+  { indexName: 'Wx Global Temperature Anomaly', baseValue: 1.28, trend: 'warming' as const },
+  { indexName: 'NOAA Drought Severity Index', baseValue: -1.45, trend: 'stable' as const },
+  { indexName: 'CME European HDD Index', baseValue: 1420, trend: 'cooling' as const },
+];
+
+const CAT_BOND_DEFS = [
+  { name: 'Windstorm Re 2026-1', trigger: 'Cat 3+ hurricane US landfall', couponBase: 8.25, priceBase: 101.5, spreadBase: 625 },
+  { name: 'Polar Vortex Re 2025-2', trigger: 'HDD > 4500 Chicago Nov-Mar', couponBase: 6.50, priceBase: 103.2, spreadBase: 480 },
+  { name: 'Heatwave Re 2026-1', trigger: 'CDD > 2800 US composite Jun-Sep', couponBase: 5.75, priceBase: 99.8, spreadBase: 410 },
+  { name: 'Monsoon Re 2025-3', trigger: 'Cumulative rainfall > 2000mm Mumbai Jul-Sep', couponBase: 7.80, priceBase: 97.5, spreadBase: 580 },
+  { name: 'Frost Re 2026-1', trigger: 'Freeze days > 45 Florida citrus belt', couponBase: 9.10, priceBase: 104.1, spreadBase: 720 },
+  { name: 'Drought Re 2025-1', trigger: 'Palmer Index < -4.0 US Great Plains', couponBase: 7.25, priceBase: 100.3, spreadBase: 540 },
+];
+
+const SEASONAL_REGIONS = [
+  { region: 'US Northeast', impactedCommodities: ['Natural Gas', 'Heating Oil', 'Electricity'] },
+  { region: 'US Midwest', impactedCommodities: ['Corn', 'Soybeans', 'Wheat'] },
+  { region: 'US Southeast', impactedCommodities: ['Cotton', 'Orange Juice', 'Electricity'] },
+  { region: 'US Southwest', impactedCommodities: ['Cattle', 'Electricity', 'Water'] },
+  { region: 'Northern Europe', impactedCommodities: ['Natural Gas', 'Wind Power', 'Wheat'] },
+  { region: 'East Asia', impactedCommodities: ['Rice', 'LNG', 'Electricity'] },
+];
+
+const STATUSES = ['active', 'triggered', 'expired'] as const;
+const TEMP_OUTLOOKS = ['above', 'below', 'normal'] as const;
+const PRECIP_OUTLOOKS = ['above', 'below', 'normal'] as const;
 
 // -- Cache --
 
@@ -56,19 +85,21 @@ function pick<T>(arr: readonly T[], rng: () => number): T {
   return arr[Math.floor(rng() * arr.length)];
 }
 
+function rangef(min: number, max: number, rng: () => number): number {
+  return min + rng() * (max - min);
+}
+
 // Sinusoidal monthly normal temperature approximation
-// For southern hemisphere (negative lat), phase is shifted by 6 months
 function getMonthlyNormalTemp(city: typeof CITIES[number], month: number): number {
   const amplitude = (city.avgSummerTemp - city.avgWinterTemp) / 2;
   const midpoint = (city.avgSummerTemp + city.avgWinterTemp) / 2;
-  const phaseShift = city.lat < 0 ? 0 : 6; // Southern hemisphere: warmest in Jan
-  return midpoint + amplitude * Math.cos(((month - phaseShift) / 12) * 2 * Math.PI);
+  // Northern hemisphere: warmest around July (month 6)
+  return midpoint + amplitude * Math.cos(((month - 6) / 12) * 2 * Math.PI);
 }
 
-function getSeason(month: number): 'Heating' | 'Cooling' {
-  // Nov-Mar heating, Apr-Oct cooling (simplified)
-  if (month >= 10 || month <= 2) return 'Heating';
-  return 'Cooling';
+// Convert Fahrenheit to Celsius
+function fToC(f: number): number {
+  return round((f - 32) * 5 / 9, 1);
 }
 
 // -- Generator --
@@ -80,163 +111,148 @@ function generate() {
 
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  const season = getSeason(currentMonth);
 
-  // ---- 1. HDD/CDD Contracts ----
-  const hddCddContracts = CITIES.map(c => {
+  // ---- 1. Temperature Contracts (HDD/CDD) ----
+  const temperatureContracts = CITIES.map(c => {
+    // Get normal temp in the city's native unit
     const normalTemp = getMonthlyNormalTemp(c, currentMonth);
+    const currentTemp = round(jitter(normalTemp, 0.08, rng), 1);
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-    // Determine contract type based on temperature relative to 65F baseline
-    const isHeating = normalTemp < 65;
-    const type = isHeating ? 'HDD' : 'CDD';
+    // For HDD/CDD base: 65F for US cities, 18C for non-US
+    const base = c.unit === 'F' ? 65 : 18;
+    const isHeating = currentTemp < base;
+    const contractType = isHeating ? 'HDD' : 'CDD';
 
-    // Calculate base degree days for the month
-    const baseDD = isHeating
-      ? Math.max(0, 65 - normalTemp) * daysInMonth
-      : Math.max(0, normalTemp - 65) * daysInMonth;
+    // Strike temperature: seasonal normal with slight offset
+    const strikeTemp = round(jitter(normalTemp, 0.03, rng), 1);
 
-    const strike = Math.round(jitter(baseDD, 0.05, rng));
-    const last = Math.round(jitter(baseDD, 0.08, rng));
-    const change = round((rng() - 0.48) * baseDD * 0.04, 1);
-    const changePercent = baseDD > 0 ? round((change / Math.max(last, 1)) * 100, 2) : 0;
-    const volume = Math.round(jitter(1200, 0.35, rng));
-    const openInterest = Math.round(jitter(4500, 0.25, rng));
+    // Calculate degree days
+    const degreeDays = isHeating
+      ? Math.max(0, base - normalTemp) * daysInMonth
+      : Math.max(0, normalTemp - base) * daysInMonth;
 
-    // Implied temperature from last traded price
-    const impliedTemp = isHeating
-      ? round(65 - last / daysInMonth, 1)
-      : round(65 + last / daysInMonth, 1);
+    // Premium in basis points (50-350 bps), scales with deviation from normal
+    const deviation = Math.abs(currentTemp - normalTemp);
+    const premiumBase = c.unit === 'F'
+      ? 120 + deviation * 8
+      : 120 + deviation * 15;
+    const premium = Math.round(jitter(premiumBase, 0.2, rng));
 
-    return {
-      city: c.city,
-      type,
-      month: `${MONTH_NAMES[currentMonth]} ${currentYear}`,
-      strike,
-      last,
-      change,
-      changePercent,
-      volume,
-      openInterest,
-      impliedTemp,
-    };
-  });
+    const openInterest = Math.round(jitter(4200, 0.3, rng));
+    const volume = Math.round(jitter(1100, 0.4, rng));
 
-  // ---- 2. Seasonal Patterns (12 months) ----
-  // Use a "composite" city (average of all cities) for seasonal pattern display
-  const seasonalPatterns = MONTH_NAMES.map((name, m) => {
-    // Average normal temp across all northern-hemisphere cities for monthly pattern
-    const northernCities = CITIES.filter(c => c.lat > 0);
-    const avgTemp = northernCities.reduce((sum, c) => sum + getMonthlyNormalTemp(c, m), 0) / northernCities.length;
-
-    const avgHDD = Math.round(Math.max(0, 65 - avgTemp) * 30); // approximate 30-day month
-    const avgCDD = Math.round(Math.max(0, avgTemp - 65) * 30);
-    const maxDeviation = Math.round(jitter(Math.max(avgHDD, avgCDD) * 0.18, 0.2, rng));
-    const currentDeviation = round((rng() - 0.5) * maxDeviation * 1.4, 1);
-    const percentile = Math.round(jitter(50, 0.4, rng));
-
-    return {
-      month: name,
-      avgHDD,
-      avgCDD,
-      maxDeviation,
-      currentDeviation,
-      percentile: Math.max(1, Math.min(99, percentile)),
-    };
-  });
-
-  // ---- 3. City Pricing ----
-  const cityPricing = CITIES.map(c => {
-    const normalTemp = round(getMonthlyNormalTemp(c, currentMonth), 1);
-    const currentTemp = round(jitter(normalTemp, 0.08, rng), 1);
-    const deviation = round(currentTemp - normalTemp, 1);
-
-    // Premium scales with absolute deviation; higher deviation = higher premium
-    const absDeviation = Math.abs(deviation);
-    const hddPremium = round(jitter(0.12 + absDeviation * 0.015, 0.2, rng), 3);
-    const cddPremium = round(jitter(0.10 + absDeviation * 0.012, 0.2, rng), 3);
-
-    // Volatility: percentage of normal temp range; higher latitude = higher vol
-    const volatility = round(jitter(12 + Math.abs(c.lat) * 0.15, 0.15, rng), 1);
-
-    // Correlation to natural gas: heating-heavy cities correlate more in winter
-    const baseCorr = normalTemp < 50 ? 0.72 : normalTemp < 65 ? 0.45 : 0.28;
-    const correlation = round(jitter(baseCorr, 0.12, rng), 2);
-
-    return {
-      city: c.city,
-      currentTemp,
-      normalTemp,
-      deviation,
-      hddPremium,
-      cddPremium,
-      volatility,
-      correlation,
-    };
-  });
-
-  // ---- 4. Hedging Strategies ----
-  const statuses = ['Active', 'Quoted', 'Expired'] as const;
-  const hedgingStrategies = STRATEGY_DEFS.map((s, i) => {
-    const notional = Math.round(jitter(s.notionalBase, 0.2, rng));
-    const premium = Math.round(notional * jitter(s.premiumPct, 0.15, rng));
-    const maxPayout = Math.round(notional * jitter(s.payoutMult, 0.1, rng));
-
-    // Breakeven: degree days where payout covers premium
-    const breakeven = Math.round(jitter(120 + i * 25, 0.15, rng));
-
-    const daysToExpiry = Math.max(0, Math.round(jitter(90, 0.6, rng)));
-
-    // Distribute statuses: mostly Active, some Quoted, occasionally Expired
-    let status: typeof statuses[number];
-    if (daysToExpiry === 0) {
-      status = 'Expired';
-    } else {
-      const r = rng();
-      status = r < 0.55 ? 'Active' : r < 0.85 ? 'Quoted' : 'Expired';
+    // Forward months (current + next 2)
+    const months: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const m = (currentMonth + i) % 12;
+      const y = currentYear + (currentMonth + i >= 12 ? 1 : 0);
+      months.push(`${MONTH_NAMES[m]} ${y}`);
     }
 
     return {
-      strategy: s.strategy,
-      notional,
+      city: c.city,
+      contractType,
+      month: months[0],
+      strikeTemp,
+      currentTemp,
       premium,
-      maxPayout,
-      breakeven,
-      daysToExpiry,
+      openInterest,
+      volume,
+      unit: c.unit === 'F' ? 'F' : 'C',
+      baseTemp: base,
+      degreeDays: Math.round(degreeDays),
+    };
+  });
+
+  // ---- 2. Precipitation Contracts ----
+  const precipitationContracts = PRECIP_REGIONS.map(r => {
+    const currentLevel = round(jitter(r.baseLevel, 0.15, rng), 2);
+    const strikeLevel = round(jitter(r.strikeBase, 0.05, rng), 2);
+    const premium = Math.round(jitter(85, 0.35, rng));
+    const change = round((rng() - 0.48) * 18, 1);
+
+    const period = r.type === 'snowfall'
+      ? `${MONTH_NAMES[(currentMonth + 11) % 12]}-${MONTH_NAMES[(currentMonth + 2) % 12]} ${currentYear}`
+      : `${MONTH_NAMES[currentMonth]} ${currentYear}`;
+
+    return {
+      region: r.region,
+      type: r.type,
+      period,
+      strikeLevel,
+      currentLevel,
+      premium,
+      change,
+      unit: r.type === 'rainfall' ? 'inches' : 'inches',
+    };
+  });
+
+  // ---- 3. Weather Index ----
+  const weatherIndex = WEATHER_INDICES.map(idx => {
+    const value = round(jitter(idx.baseValue, 0.08, rng), 2);
+    const change = round((rng() - 0.48) * Math.abs(idx.baseValue) * 0.03, 2);
+    const percentile = Math.max(1, Math.min(99, Math.round(jitter(50, 0.4, rng))));
+
+    return {
+      indexName: idx.indexName,
+      value,
+      change,
+      percentile,
+      trend: idx.trend,
+    };
+  });
+
+  // ---- 4. Catastrophe Bonds ----
+  const catastropheBonds = CAT_BOND_DEFS.map(bond => {
+    const coupon = round(jitter(bond.couponBase, 0.08, rng), 2);
+    const price = round(jitter(bond.priceBase, 0.03, rng), 2);
+    const spread = Math.round(jitter(bond.spreadBase, 0.1, rng));
+
+    // Maturity: 1-3 years out
+    const maturityYear = currentYear + Math.floor(rangef(1, 3.5, rng));
+    const maturityMonth = Math.floor(rng() * 12) + 1;
+    const maturityDate = `${maturityYear}-${String(maturityMonth).padStart(2, '0')}-15`;
+
+    // Status weighted: mostly active
+    let status: typeof STATUSES[number];
+    const r = rng();
+    if (r < 0.70) status = 'active';
+    else if (r < 0.88) status = 'triggered';
+    else status = 'expired';
+
+    return {
+      name: bond.name,
+      trigger: bond.trigger,
+      coupon,
+      price,
+      spread,
+      maturityDate,
       status,
     };
   });
 
-  // ---- 5. Market Summary ----
-  const totalNotional = round(jitter(2.8, 0.15, rng), 2);
-  const activeContracts = hddCddContracts.reduce((sum, c) => sum + c.openInterest, 0);
-  const avgVolatility = round(cityPricing.reduce((sum, c) => sum + c.volatility, 0) / cityPricing.length, 1);
-  const dominantSeason = season;
+  // ---- 5. Seasonal Outlook ----
+  const seasonalOutlook = SEASONAL_REGIONS.map(sr => {
+    const tempOutlook = pick(TEMP_OUTLOOKS, rng);
+    const precipOutlook = pick(PRECIP_OUTLOOKS, rng);
+    const confidence = Math.round(jitter(62, 0.25, rng));
 
-  // Most active city by volume
-  const mostActiveCity = hddCddContracts.reduce((best, c) =>
-    c.volume > best.volume ? c : best
-  ).city;
-
-  const yoyGrowth = round(jitter(14.5, 0.3, rng), 1);
-
-  const marketSummary = {
-    totalNotional,
-    totalNotionalUnit: 'B USD',
-    activeContracts,
-    avgVolatility,
-    dominantSeason,
-    mostActiveCity,
-    yoyGrowth,
-    yoyGrowthUnit: '%',
-  };
+    return {
+      region: sr.region,
+      tempOutlook,
+      precipOutlook,
+      confidence: Math.max(30, Math.min(95, confidence)),
+      impactedCommodities: sr.impactedCommodities,
+    };
+  });
 
   return {
-    marketSummary,
-    hddCddContracts,
-    seasonalPatterns,
-    cityPricing,
-    hedgingStrategies,
+    temperatureContracts,
+    precipitationContracts,
+    weatherIndex,
+    catastropheBonds,
+    seasonalOutlook,
     generatedAt: new Date().toISOString(),
   };
 }
