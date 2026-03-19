@@ -442,6 +442,9 @@ const QuantFactorPanel = lazy(() => import('../panels/quant-factor-panel').then(
 const CrossCurrencyBasisPanel = lazy(() => import('../panels/cross-currency-basis-panel').then(m => ({ default: m.CrossCurrencyBasisPanel })));
 const FundFlowPanel = lazy(() => import('../panels/fund-flow-panel').then(m => ({ default: m.FundFlowPanel })));
 const LeveragedLoanPanel = lazy(() => import('../panels/leveraged-loan-panel').then(m => ({ default: m.LeveragedLoanPanel })));
+const StructuredProductPanel = lazy(() => import('../panels/structured-product-panel').then(m => ({ default: m.StructuredProductPanel })));
+const CatastropheBondPanel = lazy(() => import('../panels/catastrophe-bond-panel').then(m => ({ default: m.CatastropheBondPanel })));
+const MergerArbPanel = lazy(() => import('../panels/merger-arb-panel').then(m => ({ default: m.MergerArbPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -894,6 +897,9 @@ export const PANEL_IDS = {
   CROSS_CURRENCY_BASIS: 'cross-currency-basis',
   FUND_FLOW: 'fund-flow',
   LEVERAGED_LOAN: 'leveraged-loan',
+  STRUCTURED_PRODUCT: 'structured-product',
+  CATASTROPHE_BOND: 'catastrophe-bond',
+  MERGER_ARB: 'merger-arb',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1330,6 +1336,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CROSS_CURRENCY_BASIS]: 'CROSS-CURRENCY BASIS',
   [PANEL_IDS.FUND_FLOW]: 'FUND FLOW',
   [PANEL_IDS.LEVERAGED_LOAN]: 'LEVERAGED LOAN',
+  [PANEL_IDS.STRUCTURED_PRODUCT]: 'STRUCTURED PRODUCT',
+  [PANEL_IDS.CATASTROPHE_BOND]: 'CATASTROPHE BOND',
+  [PANEL_IDS.MERGER_ARB]: 'MERGER ARB',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1767,6 +1776,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CROSS_CURRENCY_BASIS]: 'panelCrossCurrencyBasis',
   [PANEL_IDS.FUND_FLOW]: 'panelFundFlow',
   [PANEL_IDS.LEVERAGED_LOAN]: 'panelLeveragedLoan',
+  [PANEL_IDS.STRUCTURED_PRODUCT]: 'panelStructuredProduct',
+  [PANEL_IDS.CATASTROPHE_BOND]: 'panelCatastropheBond',
+  [PANEL_IDS.MERGER_ARB]: 'panelMergerArb',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2500,6 +2512,9 @@ export function DockLayout() {
       case PANEL_IDS.CROSS_CURRENCY_BASIS: content = <LazyWrap><CrossCurrencyBasisPanel /></LazyWrap>; break;
       case PANEL_IDS.FUND_FLOW: content = <LazyWrap><FundFlowPanel /></LazyWrap>; break;
       case PANEL_IDS.LEVERAGED_LOAN: content = <LazyWrap><LeveragedLoanPanel /></LazyWrap>; break;
+      case PANEL_IDS.STRUCTURED_PRODUCT: content = <LazyWrap><StructuredProductPanel /></LazyWrap>; break;
+      case PANEL_IDS.CATASTROPHE_BOND: content = <LazyWrap><CatastropheBondPanel /></LazyWrap>; break;
+      case PANEL_IDS.MERGER_ARB: content = <LazyWrap><MergerArbPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
