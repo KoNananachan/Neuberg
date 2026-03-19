@@ -459,6 +459,9 @@ import interestRateSwapRouter from './routes/interest-rate-swap.js';
 import shippingFreightRouter from './routes/shipping-freight.js';
 import absRouter from './routes/abs.js';
 import totalReturnSwapRouter from './routes/total-return-swap.js';
+import varianceSwapRouter from './routes/variance-swap.js';
+import convertibleBondRouter from './routes/convertible-bond.js';
+import creditIndexRouter from './routes/credit-index.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1019,6 +1022,9 @@ export function createApp() {
   app.use('/api/shipping-freight', shippingFreightRouter);
   app.use('/api/abs', absRouter);
   app.use('/api/total-return-swap', totalReturnSwapRouter);
+  app.use('/api/variance-swap', varianceSwapRouter);
+  app.use('/api/convertible-bond', convertibleBondRouter);
+  app.use('/api/credit-index', creditIndexRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
