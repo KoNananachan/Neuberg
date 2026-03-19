@@ -2,503 +2,628 @@ import { Router } from 'express';
 
 const router = Router();
 
-// ── Deterministic seeded RNG ──
+// ── Deterministic seeded PRNG ──
 
-function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; } return h >>> 0; }
-function mulberry32(a: number) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-function seededRandom(tag: string) { const d = new Date().toISOString().slice(0, 10); return mulberry32(hashSeed(tag + d)); }
+function mulberry32(a: number) {
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashSeed(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  return h;
+}
+
+function seededRng(tag: string) {
+  const day = new Date().toISOString().slice(0, 10);
+  return mulberry32(hashSeed(tag + day));
+}
+
+// ── Helpers ──
+
+const round2 = (v: number) => Math.round(v * 100) / 100;
+const round1 = (v: number) => Math.round(v * 10) / 10;
 
 // ── Types ──
 
-interface WeeklyFlowEntry {
-  category: string;
-  flow1W: number;
-  flow1M: number;
-  flow3M: number;
-  flowYTD: number;
-}
-
-interface FundFlowEntry {
-  fundName: string;
-  ticker: string;
-  category: string;
-  flowAmount: number;
+interface AssetClassFlow {
+  assetClass: string;
+  weeklyFlow: number;
+  monthlyFlow: number;
+  quarterlyFlow: number;
+  ytdFlow: number;
   aum: number;
-  pctOfAUM: number;
+  flowPctOfAUM: number;
+  streakWeeks: number;
+  streakDirection: 'inflow' | 'outflow';
 }
 
-interface ETFCreationRedemption {
-  ticker: string;
-  name: string;
-  creationUnits: number;
-  redemptionUnits: number;
-  netFlow: number;
-  aum: number;
-}
-
-interface SectorRotationEntry {
-  sector: string;
-  flow1W: number;
-  flow1M: number;
-  flowTrend: 'INFLOW' | 'OUTFLOW' | 'NEUTRAL';
-  relativeStrength: number;
-}
-
-interface GeographicFlowEntry {
+interface RegionalFlow {
   region: string;
-  flow1W: number;
-  flow1M: number;
-  flowYTD: number;
-  pctOfTotal: number;
+  weeklyFlow: number;
+  monthlyFlow: number;
+  ytdFlow: number;
+  pctOfGlobal: number;
+  trend: 'accelerating' | 'decelerating' | 'stable' | 'reversing';
 }
 
-interface FlowMomentumEntry {
+interface ETFvsMutualFundFlow {
+  vehicleType: 'ETF' | 'Mutual Fund';
+  weeklyFlow: number;
+  monthlyFlow: number;
+  ytdFlow: number;
+  totalAUM: number;
+  marketShare: number;
+  netCreationRedemption: number;
+}
+
+interface TopFundFlow {
+  rank: number;
   fundName: string;
   ticker: string;
-  consecutiveWeeks: number;
-  direction: 'INFLOW' | 'OUTFLOW';
-  totalFlowStreak: number;
-  weeklyAvg: number;
-}
-
-interface LeveragedInverseEntry {
-  ticker: string;
-  name: string;
-  type: 'BULL' | 'BEAR';
-  leverage: string;
-  flow1W: number;
+  category: string;
+  weeklyFlow: number;
   aum: number;
-  pctOfAUM: number;
+  flowPctOfAUM: number;
 }
 
-interface FundFlowSummary {
-  totalNetFlows1W: number;
-  topInflowCategory: string;
-  topOutflowCategory: string;
-  bullBearRatio: number;
-  marketSentiment: 'RISK-ON' | 'RISK-OFF' | 'MIXED';
+interface HistoricalFlowWeek {
+  weekEnding: string;
+  equity: number;
+  fixedIncome: number;
+  moneyMarket: number;
+  commodity: number;
+  alternative: number;
+  totalNet: number;
+}
+
+interface SectorRotationSignal {
+  sector: string;
+  weeklyFlow: number;
+  monthlyFlow: number;
+  threeMonthFlow: number;
+  momentum: 'accelerating' | 'decelerating' | 'reversing';
+  relativeStrength: number;
+  signal: 'OVERWEIGHT' | 'UNDERWEIGHT' | 'NEUTRAL';
+}
+
+interface ContrarianIndicator {
+  indicator: string;
+  description: string;
+  currentReading: number;
+  historicalPercentile: number;
+  signal: 'EXTREME_BULLISH' | 'BULLISH' | 'NEUTRAL' | 'BEARISH' | 'EXTREME_BEARISH';
+  historicalHitRate: number;
+  lookbackPeriod: string;
+}
+
+interface FundFlowTrackerData {
+  assetClassFlows: AssetClassFlow[];
+  regionalFlows: RegionalFlow[];
+  etfVsMutualFund: ETFvsMutualFundFlow[];
+  topInflows: TopFundFlow[];
+  topOutflows: TopFundFlow[];
+  historicalSeries: HistoricalFlowWeek[];
+  sectorRotation: SectorRotationSignal[];
+  contrarianIndicators: ContrarianIndicator[];
+  summary: {
+    totalWeeklyNetFlow: number;
+    dominantDirection: 'RISK-ON' | 'RISK-OFF' | 'MIXED';
+    topInflowAssetClass: string;
+    topOutflowAssetClass: string;
+    etfShareOfFlows: number;
+    extremeSignalsCount: number;
+  };
   timestamp: string;
 }
 
-interface FundFlowTrackerResponse {
-  weeklyFlows: WeeklyFlowEntry[];
-  topInflows: FundFlowEntry[];
-  topOutflows: FundFlowEntry[];
-  etfCreationRedemption: ETFCreationRedemption[];
-  sectorRotation: SectorRotationEntry[];
-  geographicFlows: GeographicFlowEntry[];
-  flowMomentum: FlowMomentumEntry[];
-  leveragedInverse: LeveragedInverseEntry[];
-  summary: FundFlowSummary;
-  timestamp: string;
+// ── Static Definitions ──
+
+interface AssetClassDef {
+  assetClass: string;
+  baseWeekly: number;
+  baseAUM: number;
+  volatility: number;
+  streakDir: 'inflow' | 'outflow';
+  baseStreak: number;
 }
+
+const ASSET_CLASS_DEFS: AssetClassDef[] = [
+  { assetClass: 'Equity', baseWeekly: 9.4, baseAUM: 28.6, volatility: 4.5, streakDir: 'inflow', baseStreak: 7 },
+  { assetClass: 'Fixed Income', baseWeekly: 5.8, baseAUM: 14.2, volatility: 3.2, streakDir: 'inflow', baseStreak: 14 },
+  { assetClass: 'Money Market', baseWeekly: 14.2, baseAUM: 6.9, volatility: 8.0, streakDir: 'inflow', baseStreak: 22 },
+  { assetClass: 'Commodity', baseWeekly: -1.1, baseAUM: 0.45, volatility: 1.8, streakDir: 'outflow', baseStreak: 5 },
+  { assetClass: 'Alternative', baseWeekly: 0.7, baseAUM: 0.98, volatility: 1.2, streakDir: 'inflow', baseStreak: 3 },
+];
+
+interface RegionalDef {
+  region: string;
+  baseWeekly: number;
+  basePctGlobal: number;
+  volatility: number;
+}
+
+const REGIONAL_DEFS: RegionalDef[] = [
+  { region: 'US', baseWeekly: 13.8, basePctGlobal: 48.5, volatility: 5.5 },
+  { region: 'Europe', baseWeekly: 3.4, basePctGlobal: 18.2, volatility: 2.8 },
+  { region: 'Asia', baseWeekly: 2.1, basePctGlobal: 15.6, volatility: 2.5 },
+  { region: 'EM', baseWeekly: -1.8, basePctGlobal: 9.4, volatility: 2.2 },
+  { region: 'Global', baseWeekly: 4.5, basePctGlobal: 8.3, volatility: 2.0 },
+];
+
+interface TopFundDef {
+  fundName: string;
+  ticker: string;
+  category: string;
+  baseFlow: number;
+  baseAUM: number;
+}
+
+const TOP_INFLOW_DEFS: TopFundDef[] = [
+  { fundName: 'Vanguard S&P 500 ETF', ticker: 'VOO', category: 'US Equity', baseFlow: 4.25, baseAUM: 435 },
+  { fundName: 'iShares Core S&P 500 ETF', ticker: 'IVV', category: 'US Equity', baseFlow: 3.18, baseAUM: 412 },
+  { fundName: 'Vanguard Total Bond Market ETF', ticker: 'BND', category: 'US Fixed Income', baseFlow: 2.64, baseAUM: 108 },
+  { fundName: 'SPDR S&P 500 ETF Trust', ticker: 'SPY', category: 'US Equity', baseFlow: 2.31, baseAUM: 523 },
+  { fundName: 'iShares Core US Aggregate Bond ETF', ticker: 'AGG', category: 'US Fixed Income', baseFlow: 1.85, baseAUM: 112 },
+  { fundName: 'Vanguard Total Stock Market ETF', ticker: 'VTI', category: 'US Equity', baseFlow: 1.72, baseAUM: 386 },
+  { fundName: 'Invesco QQQ Trust', ticker: 'QQQ', category: 'US Equity', baseFlow: 1.54, baseAUM: 265 },
+  { fundName: 'Schwab US Large-Cap ETF', ticker: 'SCHX', category: 'US Equity', baseFlow: 1.28, baseAUM: 42 },
+  { fundName: 'iShares MSCI EAFE ETF', ticker: 'EFA', category: 'Intl Equity', baseFlow: 0.98, baseAUM: 78 },
+  { fundName: 'Vanguard FTSE Developed Markets ETF', ticker: 'VEA', category: 'Intl Equity', baseFlow: 0.85, baseAUM: 118 },
+];
+
+const TOP_OUTFLOW_DEFS: TopFundDef[] = [
+  { fundName: 'iShares MSCI Emerging Markets ETF', ticker: 'EEM', category: 'EM Equity', baseFlow: -1.92, baseAUM: 22 },
+  { fundName: 'SPDR Bloomberg High Yield Bond ETF', ticker: 'JNK', category: 'High Yield', baseFlow: -1.54, baseAUM: 8.2 },
+  { fundName: 'ARK Innovation ETF', ticker: 'ARKK', category: 'Thematic', baseFlow: -1.28, baseAUM: 6.8 },
+  { fundName: 'iShares China Large-Cap ETF', ticker: 'FXI', category: 'China Equity', baseFlow: -0.98, baseAUM: 5.4 },
+  { fundName: 'Energy Select Sector SPDR Fund', ticker: 'XLE', category: 'Sector - Energy', baseFlow: -0.87, baseAUM: 38 },
+  { fundName: 'iShares 20+ Year Treasury Bond ETF', ticker: 'TLT', category: 'Long Duration', baseFlow: -0.76, baseAUM: 55 },
+  { fundName: 'iShares Russell 2000 ETF', ticker: 'IWM', category: 'US Small Cap', baseFlow: -0.68, baseAUM: 68 },
+  { fundName: 'VanEck Gold Miners ETF', ticker: 'GDX', category: 'Commodity', baseFlow: -0.52, baseAUM: 12.7 },
+  { fundName: 'iShares MSCI Brazil ETF', ticker: 'EWZ', category: 'EM - Brazil', baseFlow: -0.45, baseAUM: 4.9 },
+  { fundName: 'Vanguard Real Estate ETF', ticker: 'VNQ', category: 'Real Estate', baseFlow: -0.38, baseAUM: 32 },
+];
+
+interface SectorDef {
+  sector: string;
+  baseWeekly: number;
+  volatility: number;
+  baseRS: number;
+}
+
+const SECTOR_DEFS: SectorDef[] = [
+  { sector: 'Technology', baseWeekly: 3.4, volatility: 1.8, baseRS: 1.14 },
+  { sector: 'Healthcare', baseWeekly: 1.5, volatility: 1.1, baseRS: 1.06 },
+  { sector: 'Energy', baseWeekly: -1.2, volatility: 1.4, baseRS: 0.88 },
+  { sector: 'Financials', baseWeekly: 1.3, volatility: 1.2, baseRS: 1.07 },
+  { sector: 'Consumer Discretionary', baseWeekly: 0.4, volatility: 1.0, baseRS: 0.96 },
+  { sector: 'Consumer Staples', baseWeekly: 0.6, volatility: 0.7, baseRS: 0.98 },
+  { sector: 'Industrials', baseWeekly: 0.9, volatility: 0.9, baseRS: 1.03 },
+  { sector: 'Materials', baseWeekly: -0.3, volatility: 0.8, baseRS: 0.91 },
+  { sector: 'Utilities', baseWeekly: 0.5, volatility: 0.6, baseRS: 0.94 },
+  { sector: 'Real Estate', baseWeekly: -0.7, volatility: 0.9, baseRS: 0.85 },
+  { sector: 'Communication Services', baseWeekly: 1.1, volatility: 1.0, baseRS: 1.05 },
+];
+
+interface ContrarianDef {
+  indicator: string;
+  description: string;
+  baseReading: number;
+  basePercentile: number;
+  readingVolatility: number;
+  implication: 'bullish' | 'bearish' | 'neutral';
+  hitRate: number;
+  lookbackPeriod: string;
+}
+
+const CONTRARIAN_DEFS: ContrarianDef[] = [
+  {
+    indicator: 'Equity Fund Flow Z-Score',
+    description: 'Cumulative equity fund flows relative to 52-week mean, normalized by standard deviation. Extreme negative readings historically precede equity rallies.',
+    baseReading: -1.8,
+    basePercentile: 12,
+    readingVolatility: 0.8,
+    implication: 'bullish',
+    hitRate: 76,
+    lookbackPeriod: '52 weeks',
+  },
+  {
+    indicator: 'Money Market Allocation Ratio',
+    description: 'Money market assets as percentage of total equity + money market AUM. Spikes above 90th percentile signal peak fear and contrarian buy opportunity.',
+    baseReading: 18.4,
+    basePercentile: 85,
+    readingVolatility: 3.0,
+    implication: 'bearish',
+    hitRate: 68,
+    lookbackPeriod: '5 years',
+  },
+  {
+    indicator: 'EM Capitulation Index',
+    description: 'EM equity fund outflows as multiple of trailing 12-month average. Readings below -2.5x have historically marked EM bottoms within 2 months.',
+    baseReading: -2.1,
+    basePercentile: 8,
+    readingVolatility: 0.6,
+    implication: 'bullish',
+    hitRate: 72,
+    lookbackPeriod: '10 years',
+  },
+  {
+    indicator: 'Bond-Equity Rotation Velocity',
+    description: 'Rate of change of bond-to-equity flow ratio over 4 weeks. Sharp acceleration into bonds signals late-cycle risk aversion.',
+    baseReading: 1.6,
+    basePercentile: 78,
+    readingVolatility: 0.5,
+    implication: 'bearish',
+    hitRate: 64,
+    lookbackPeriod: '3 years',
+  },
+  {
+    indicator: 'Passive Flow Dominance',
+    description: 'Passive fund share of total weekly equity inflows. Above 90% signals crowded indexing and potential fragility in a correction.',
+    baseReading: 86.5,
+    basePercentile: 88,
+    readingVolatility: 4.0,
+    implication: 'neutral',
+    hitRate: 58,
+    lookbackPeriod: '5 years',
+  },
+  {
+    indicator: 'Sector Dispersion Score',
+    description: 'Cross-sectional standard deviation of sector-level weekly flows. High dispersion signals strong conviction rotation; low dispersion signals indiscriminate buying/selling.',
+    baseReading: 2.4,
+    basePercentile: 65,
+    readingVolatility: 0.8,
+    implication: 'neutral',
+    hitRate: 55,
+    lookbackPeriod: '2 years',
+  },
+  {
+    indicator: 'Leveraged Bull/Bear Ratio',
+    description: 'Ratio of leveraged long ETF inflows to leveraged short ETF inflows. Extreme bullish positioning (>4x) has preceded 5-10% drawdowns 70% of the time.',
+    baseReading: 3.2,
+    basePercentile: 74,
+    readingVolatility: 1.0,
+    implication: 'bearish',
+    hitRate: 70,
+    lookbackPeriod: '3 years',
+  },
+];
 
 // ── Cache ──
 
-let cache: { data: FundFlowTrackerResponse | null; expiresAt: number } = {
-  data: null,
-  expiresAt: 0,
-};
-const CACHE_TTL = 5 * 60_000; // 5 minutes
+let cache: { data: FundFlowTrackerData | null; ts: number } = { data: null, ts: 0 };
+const CACHE_TTL = 5 * 60_000;
 
-// ── Weekly flows configuration ──
+// ── Data Generation ──
 
-interface WeeklyFlowConfig {
-  category: string;
-  baseFlow1W: number;
-  volatility: number;
-  trendBias: number;
-}
-
-const WEEKLY_FLOW_CONFIGS: WeeklyFlowConfig[] = [
-  { category: 'US Equity', baseFlow1W: 8.5, volatility: 4.0, trendBias: 0.3 },
-  { category: 'Intl Equity', baseFlow1W: 2.1, volatility: 2.5, trendBias: -0.1 },
-  { category: 'EM Equity', baseFlow1W: -1.2, volatility: 2.0, trendBias: -0.2 },
-  { category: 'US Bonds', baseFlow1W: 5.3, volatility: 3.0, trendBias: 0.2 },
-  { category: 'HY Bonds', baseFlow1W: 1.8, volatility: 1.5, trendBias: 0.1 },
-  { category: 'IG Bonds', baseFlow1W: 3.2, volatility: 2.0, trendBias: 0.15 },
-  { category: 'Money Market', baseFlow1W: 12.4, volatility: 8.0, trendBias: 0.5 },
-  { category: 'Commodities', baseFlow1W: -0.6, volatility: 1.8, trendBias: -0.05 },
-  { category: 'Sector ETFs', baseFlow1W: 1.4, volatility: 2.2, trendBias: 0.1 },
-];
-
-// ── Fund inflow/outflow configuration ──
-
-interface FundConfig {
-  fundName: string;
-  ticker: string;
-  category: string;
-  baseAUM: number;
-}
-
-const TOP_INFLOW_CONFIGS: FundConfig[] = [
-  { fundName: 'Vanguard S&P 500 ETF', ticker: 'VOO', category: 'US Equity', baseAUM: 420.5 },
-  { fundName: 'iShares Core S&P 500 ETF', ticker: 'IVV', category: 'US Equity', baseAUM: 385.2 },
-  { fundName: 'Vanguard Total Bond Market ETF', ticker: 'BND', category: 'US Bonds', baseAUM: 105.8 },
-  { fundName: 'SPDR S&P 500 ETF Trust', ticker: 'SPY', category: 'US Equity', baseAUM: 510.3 },
-  { fundName: 'iShares Core US Aggregate Bond ETF', ticker: 'AGG', category: 'US Bonds', baseAUM: 98.4 },
-  { fundName: 'Vanguard Total Stock Market ETF', ticker: 'VTI', category: 'US Equity', baseAUM: 345.7 },
-  { fundName: 'Invesco QQQ Trust', ticker: 'QQQ', category: 'US Equity', baseAUM: 265.1 },
-  { fundName: 'Vanguard Total Intl Stock ETF', ticker: 'VXUS', category: 'Intl Equity', baseAUM: 72.3 },
-  { fundName: 'iShares MSCI EAFE ETF', ticker: 'EFA', category: 'Intl Equity', baseAUM: 58.9 },
-  { fundName: 'Schwab US Large-Cap ETF', ticker: 'SCHX', category: 'US Equity', baseAUM: 42.1 },
-];
-
-const TOP_OUTFLOW_CONFIGS: FundConfig[] = [
-  { fundName: 'iShares China Large-Cap ETF', ticker: 'FXI', category: 'EM Equity', baseAUM: 6.8 },
-  { fundName: 'iShares MSCI Emerging Markets ETF', ticker: 'EEM', category: 'EM Equity', baseAUM: 18.4 },
-  { fundName: 'SPDR Bloomberg High Yield Bond ETF', ticker: 'JNK', category: 'HY Bonds', baseAUM: 8.2 },
-  { fundName: 'iShares 20+ Year Treasury Bond ETF', ticker: 'TLT', category: 'US Bonds', baseAUM: 38.6 },
-  { fundName: 'Vanguard Real Estate ETF', ticker: 'VNQ', category: 'Sector ETFs', baseAUM: 32.1 },
-  { fundName: 'iShares Russell 2000 ETF', ticker: 'IWM', category: 'US Equity', baseAUM: 62.4 },
-  { fundName: 'ARK Innovation ETF', ticker: 'ARKK', category: 'US Equity', baseAUM: 6.5 },
-  { fundName: 'Energy Select Sector SPDR Fund', ticker: 'XLE', category: 'Sector ETFs', baseAUM: 36.8 },
-  { fundName: 'iShares MSCI Brazil ETF', ticker: 'EWZ', category: 'EM Equity', baseAUM: 4.9 },
-  { fundName: 'VanEck Gold Miners ETF', ticker: 'GDX', category: 'Commodities', baseAUM: 12.7 },
-];
-
-// ── ETF creation/redemption configuration ──
-
-interface ETFCreationConfig {
-  ticker: string;
-  name: string;
-  baseAUM: number;
-  baseCreation: number;
-  baseRedemption: number;
-}
-
-const ETF_CREATION_CONFIGS: ETFCreationConfig[] = [
-  { ticker: 'SPY', name: 'SPDR S&P 500 ETF Trust', baseAUM: 510.3, baseCreation: 3200, baseRedemption: 2800 },
-  { ticker: 'QQQ', name: 'Invesco QQQ Trust', baseAUM: 265.1, baseCreation: 1800, baseRedemption: 1500 },
-  { ticker: 'IWM', name: 'iShares Russell 2000 ETF', baseAUM: 62.4, baseCreation: 800, baseRedemption: 950 },
-  { ticker: 'EFA', name: 'iShares MSCI EAFE ETF', baseAUM: 58.9, baseCreation: 600, baseRedemption: 700 },
-  { ticker: 'AGG', name: 'iShares Core US Agg Bond ETF', baseAUM: 98.4, baseCreation: 1100, baseRedemption: 900 },
-  { ticker: 'HYG', name: 'iShares iBoxx $ HY Corporate Bond ETF', baseAUM: 15.8, baseCreation: 450, baseRedemption: 520 },
-  { ticker: 'LQD', name: 'iShares iBoxx $ IG Corporate Bond ETF', baseAUM: 32.5, baseCreation: 700, baseRedemption: 600 },
-  { ticker: 'GLD', name: 'SPDR Gold Shares', baseAUM: 62.1, baseCreation: 350, baseRedemption: 380 },
-  { ticker: 'TLT', name: 'iShares 20+ Year Treasury Bond ETF', baseAUM: 38.6, baseCreation: 500, baseRedemption: 650 },
-];
-
-// ── Sector rotation configuration ──
-
-interface SectorConfig {
-  sector: string;
-  baseFlow1W: number;
-  volatility: number;
-  baseRelativeStrength: number;
-}
-
-const SECTOR_CONFIGS: SectorConfig[] = [
-  { sector: 'Technology', baseFlow1W: 2.8, volatility: 1.5, baseRelativeStrength: 1.12 },
-  { sector: 'Healthcare', baseFlow1W: 1.2, volatility: 1.0, baseRelativeStrength: 1.05 },
-  { sector: 'Energy', baseFlow1W: -0.4, volatility: 1.2, baseRelativeStrength: 0.92 },
-  { sector: 'Financials', baseFlow1W: 1.5, volatility: 1.3, baseRelativeStrength: 1.08 },
-  { sector: 'Consumer Discretionary', baseFlow1W: 0.6, volatility: 1.1, baseRelativeStrength: 0.98 },
-  { sector: 'Consumer Staples', baseFlow1W: 0.3, volatility: 0.7, baseRelativeStrength: 0.95 },
-  { sector: 'Industrials', baseFlow1W: 0.8, volatility: 0.9, baseRelativeStrength: 1.02 },
-  { sector: 'Materials', baseFlow1W: -0.2, volatility: 0.8, baseRelativeStrength: 0.90 },
-  { sector: 'Utilities', baseFlow1W: 0.5, volatility: 0.6, baseRelativeStrength: 0.97 },
-  { sector: 'Real Estate', baseFlow1W: -0.3, volatility: 0.9, baseRelativeStrength: 0.88 },
-  { sector: 'Communication Services', baseFlow1W: 1.0, volatility: 1.1, baseRelativeStrength: 1.04 },
-];
-
-// ── Geographic flows configuration ──
-
-interface GeoFlowConfig {
-  region: string;
-  baseFlow1W: number;
-  volatility: number;
-  basePctOfTotal: number;
-}
-
-const GEO_FLOW_CONFIGS: GeoFlowConfig[] = [
-  { region: 'US', baseFlow1W: 14.2, volatility: 5.0, basePctOfTotal: 52.8 },
-  { region: 'Europe', baseFlow1W: 2.8, volatility: 2.5, basePctOfTotal: 18.4 },
-  { region: 'Japan', baseFlow1W: 1.1, volatility: 1.5, basePctOfTotal: 8.2 },
-  { region: 'China', baseFlow1W: -1.5, volatility: 2.0, basePctOfTotal: 7.6 },
-  { region: 'EM ex-China', baseFlow1W: -0.3, volatility: 1.8, basePctOfTotal: 8.5 },
-  { region: 'Other', baseFlow1W: 0.7, volatility: 1.2, basePctOfTotal: 4.5 },
-];
-
-// ── Flow momentum configuration ──
-
-interface MomentumConfig {
-  fundName: string;
-  ticker: string;
-  baseConsecutiveWeeks: number;
-  direction: 'INFLOW' | 'OUTFLOW';
-  baseWeeklyAvg: number;
-}
-
-const MOMENTUM_CONFIGS: MomentumConfig[] = [
-  { fundName: 'Vanguard S&P 500 ETF', ticker: 'VOO', baseConsecutiveWeeks: 18, direction: 'INFLOW', baseWeeklyAvg: 4.2 },
-  { fundName: 'iShares Core S&P 500 ETF', ticker: 'IVV', baseConsecutiveWeeks: 14, direction: 'INFLOW', baseWeeklyAvg: 3.8 },
-  { fundName: 'Vanguard Total Bond Market ETF', ticker: 'BND', baseConsecutiveWeeks: 12, direction: 'INFLOW', baseWeeklyAvg: 1.9 },
-  { fundName: 'Invesco QQQ Trust', ticker: 'QQQ', baseConsecutiveWeeks: 10, direction: 'INFLOW', baseWeeklyAvg: 2.5 },
-  { fundName: 'Schwab US Large-Cap ETF', ticker: 'SCHX', baseConsecutiveWeeks: 22, direction: 'INFLOW', baseWeeklyAvg: 1.1 },
-  { fundName: 'iShares MSCI Emerging Markets ETF', ticker: 'EEM', baseConsecutiveWeeks: 8, direction: 'OUTFLOW', baseWeeklyAvg: -0.9 },
-  { fundName: 'ARK Innovation ETF', ticker: 'ARKK', baseConsecutiveWeeks: 15, direction: 'OUTFLOW', baseWeeklyAvg: -0.4 },
-  { fundName: 'iShares China Large-Cap ETF', ticker: 'FXI', baseConsecutiveWeeks: 6, direction: 'OUTFLOW', baseWeeklyAvg: -0.3 },
-  { fundName: 'SPDR Bloomberg High Yield Bond ETF', ticker: 'JNK', baseConsecutiveWeeks: 5, direction: 'OUTFLOW', baseWeeklyAvg: -0.5 },
-  { fundName: 'Vanguard Real Estate ETF', ticker: 'VNQ', baseConsecutiveWeeks: 7, direction: 'OUTFLOW', baseWeeklyAvg: -0.6 },
-];
-
-// ── Leveraged/inverse ETF configuration ──
-
-interface LeveragedConfig {
-  ticker: string;
-  name: string;
-  type: 'BULL' | 'BEAR';
-  leverage: string;
-  baseAUM: number;
-  baseFlow1W: number;
-}
-
-const LEVERAGED_CONFIGS: LeveragedConfig[] = [
-  { ticker: 'TQQQ', name: 'ProShares UltraPro QQQ', type: 'BULL', leverage: '3x', baseAUM: 22.5, baseFlow1W: 1.2 },
-  { ticker: 'SPXL', name: 'Direxion Daily S&P 500 Bull 3X', type: 'BULL', leverage: '3x', baseAUM: 4.8, baseFlow1W: 0.3 },
-  { ticker: 'UPRO', name: 'ProShares UltraPro S&P 500', type: 'BULL', leverage: '3x', baseAUM: 3.9, baseFlow1W: 0.25 },
-  { ticker: 'SSO', name: 'ProShares Ultra S&P 500', type: 'BULL', leverage: '2x', baseAUM: 5.1, baseFlow1W: 0.18 },
-  { ticker: 'QLD', name: 'ProShares Ultra QQQ', type: 'BULL', leverage: '2x', baseAUM: 7.2, baseFlow1W: 0.4 },
-  { ticker: 'SQQQ', name: 'ProShares UltraPro Short QQQ', type: 'BEAR', leverage: '-3x', baseAUM: 5.8, baseFlow1W: -0.3 },
-  { ticker: 'SPXS', name: 'Direxion Daily S&P 500 Bear 3X', type: 'BEAR', leverage: '-3x', baseAUM: 1.2, baseFlow1W: -0.1 },
-  { ticker: 'SOXS', name: 'Direxion Daily Semicond Bear 3X', type: 'BEAR', leverage: '-3x', baseAUM: 1.5, baseFlow1W: -0.15 },
-  { ticker: 'SH', name: 'ProShares Short S&P 500', type: 'BEAR', leverage: '-1x', baseAUM: 2.8, baseFlow1W: -0.08 },
-  { ticker: 'PSQ', name: 'ProShares Short QQQ', type: 'BEAR', leverage: '-1x', baseAUM: 1.9, baseFlow1W: -0.06 },
-];
-
-// ── Data generation ──
-
-function generateWeeklyFlows(rng: () => number): WeeklyFlowEntry[] {
-  return WEEKLY_FLOW_CONFIGS.map((cfg) => {
-    const jitter1W = (rng() - 0.5) * cfg.volatility * 2;
-    const flow1W = Math.round((cfg.baseFlow1W + jitter1W + cfg.trendBias) * 10) / 10;
-
-    const flow1M = Math.round((flow1W * (3.5 + rng() * 1.5) + (rng() - 0.5) * cfg.volatility * 3) * 10) / 10;
-    const flow3M = Math.round((flow1M * (2.5 + rng() * 1.0) + (rng() - 0.5) * cfg.volatility * 5) * 10) / 10;
-    const flowYTD = Math.round((flow3M * (1.5 + rng() * 1.5) + (rng() - 0.5) * cfg.volatility * 8) * 10) / 10;
+function generateAssetClassFlows(rng: () => number): AssetClassFlow[] {
+  return ASSET_CLASS_DEFS.map((def) => {
+    const jitter = (rng() - 0.5) * def.volatility * 2;
+    const weeklyFlow = round2(def.baseWeekly + jitter);
+    const monthlyFlow = round2(weeklyFlow * (3.5 + rng() * 1.5));
+    const quarterlyFlow = round2(monthlyFlow * (2.5 + rng() * 1.0));
+    const ytdFlow = round2(quarterlyFlow * (1.5 + rng() * 1.5));
+    const aum = round2(def.baseAUM * (1 + (rng() - 0.5) * 0.06));
+    const flowPctOfAUM = round2((weeklyFlow / (aum * 1000)) * 100);
+    const streakJitter = Math.floor((rng() - 0.5) * 6);
+    const streakWeeks = Math.max(1, def.baseStreak + streakJitter);
 
     return {
-      category: cfg.category,
-      flow1W,
-      flow1M,
-      flow3M,
-      flowYTD,
-    };
-  });
-}
-
-function generateFundFlows(rng: () => number, configs: FundConfig[], isOutflow: boolean): FundFlowEntry[] {
-  return configs.map((cfg) => {
-    const baseFlow = isOutflow
-      ? -(0.5 + rng() * 2.5)
-      : (0.5 + rng() * 4.5);
-    const flowAmount = Math.round(baseFlow * 100) / 100;
-
-    const aumJitter = (rng() - 0.5) * cfg.baseAUM * 0.05;
-    const aum = Math.round((cfg.baseAUM + aumJitter) * 10) / 10;
-
-    const pctOfAUM = Math.round((Math.abs(flowAmount) / aum) * 10000) / 100;
-
-    return {
-      fundName: cfg.fundName,
-      ticker: cfg.ticker,
-      category: cfg.category,
-      flowAmount,
+      assetClass: def.assetClass,
+      weeklyFlow,
+      monthlyFlow,
+      quarterlyFlow,
+      ytdFlow,
       aum,
-      pctOfAUM,
+      flowPctOfAUM,
+      streakWeeks,
+      streakDirection: def.streakDir,
     };
   });
 }
 
-function generateETFCreationRedemption(rng: () => number): ETFCreationRedemption[] {
-  return ETF_CREATION_CONFIGS.map((cfg) => {
-    const creationJitter = Math.floor((rng() - 0.5) * cfg.baseCreation * 0.3);
-    const creationUnits = cfg.baseCreation + creationJitter;
+function generateRegionalFlows(rng: () => number): RegionalFlow[] {
+  const TREND_OPTIONS: RegionalFlow['trend'][] = ['accelerating', 'decelerating', 'stable', 'reversing'];
 
-    const redemptionJitter = Math.floor((rng() - 0.5) * cfg.baseRedemption * 0.3);
-    const redemptionUnits = cfg.baseRedemption + redemptionJitter;
+  const entries = REGIONAL_DEFS.map((def) => {
+    const jitter = (rng() - 0.5) * def.volatility * 2;
+    const weeklyFlow = round2(def.baseWeekly + jitter);
+    const monthlyFlow = round2(weeklyFlow * (3.8 + rng() * 1.2));
+    const ytdFlow = round2(monthlyFlow * (3.0 + rng() * 2.0));
+    const pctJitter = (rng() - 0.5) * 3;
+    const pctOfGlobal = round1(Math.max(1, def.basePctGlobal + pctJitter));
 
-    const netFlow = creationUnits - redemptionUnits;
-
-    const aumJitter = (rng() - 0.5) * cfg.baseAUM * 0.03;
-    const aum = Math.round((cfg.baseAUM + aumJitter) * 10) / 10;
-
-    return {
-      ticker: cfg.ticker,
-      name: cfg.name,
-      creationUnits,
-      redemptionUnits,
-      netFlow,
-      aum,
-    };
-  });
-}
-
-function generateSectorRotation(rng: () => number): SectorRotationEntry[] {
-  return SECTOR_CONFIGS.map((cfg) => {
-    const jitter1W = (rng() - 0.5) * cfg.volatility * 2;
-    const flow1W = Math.round((cfg.baseFlow1W + jitter1W) * 100) / 100;
-
-    const flow1M = Math.round((flow1W * (3.5 + rng() * 1.5) + (rng() - 0.5) * cfg.volatility * 2) * 100) / 100;
-
-    let flowTrend: 'INFLOW' | 'OUTFLOW' | 'NEUTRAL';
-    if (flow1W > 0.3) {
-      flowTrend = 'INFLOW';
-    } else if (flow1W < -0.3) {
-      flowTrend = 'OUTFLOW';
+    const trendRoll = rng();
+    let trend: RegionalFlow['trend'];
+    if (weeklyFlow > 2) {
+      trend = trendRoll < 0.5 ? 'accelerating' : trendRoll < 0.8 ? 'stable' : 'decelerating';
+    } else if (weeklyFlow < -1) {
+      trend = trendRoll < 0.4 ? 'decelerating' : trendRoll < 0.7 ? 'reversing' : 'stable';
     } else {
-      flowTrend = 'NEUTRAL';
+      trend = TREND_OPTIONS[Math.floor(trendRoll * TREND_OPTIONS.length)];
     }
 
-    const rsJitter = (rng() - 0.5) * 0.1;
-    const relativeStrength = Math.round((cfg.baseRelativeStrength + rsJitter) * 100) / 100;
-
-    return {
-      sector: cfg.sector,
-      flow1W,
-      flow1M,
-      flowTrend,
-      relativeStrength,
-    };
-  });
-}
-
-function generateGeographicFlows(rng: () => number): GeographicFlowEntry[] {
-  const entries = GEO_FLOW_CONFIGS.map((cfg) => {
-    const jitter1W = (rng() - 0.5) * cfg.volatility * 2;
-    const flow1W = Math.round((cfg.baseFlow1W + jitter1W) * 10) / 10;
-
-    const flow1M = Math.round((flow1W * (3.5 + rng() * 1.5) + (rng() - 0.5) * cfg.volatility * 3) * 10) / 10;
-    const flowYTD = Math.round((flow1M * (2.0 + rng() * 2.0) + (rng() - 0.5) * cfg.volatility * 6) * 10) / 10;
-
-    const pctJitter = (rng() - 0.5) * 3;
-    const pctOfTotal = Math.round(Math.max(1, cfg.basePctOfTotal + pctJitter) * 10) / 10;
-
-    return {
-      region: cfg.region,
-      flow1W,
-      flow1M,
-      flowYTD,
-      pctOfTotal,
-    };
+    return { region: def.region, weeklyFlow, monthlyFlow, ytdFlow, pctOfGlobal, trend };
   });
 
-  // Normalize pctOfTotal to sum to 100
-  const totalPct = entries.reduce((sum, e) => sum + e.pctOfTotal, 0);
+  // Normalize pctOfGlobal to sum to 100
+  const totalPct = entries.reduce((s, e) => s + e.pctOfGlobal, 0);
   entries.forEach((e) => {
-    e.pctOfTotal = Math.round((e.pctOfTotal / totalPct) * 1000) / 10;
+    e.pctOfGlobal = round1((e.pctOfGlobal / totalPct) * 100);
   });
 
   return entries;
 }
 
-function generateFlowMomentum(rng: () => number): FlowMomentumEntry[] {
-  return MOMENTUM_CONFIGS.map((cfg) => {
-    const weeksJitter = Math.floor((rng() - 0.5) * 6);
-    const consecutiveWeeks = Math.max(3, cfg.baseConsecutiveWeeks + weeksJitter);
+function generateETFvsMutualFund(rng: () => number): ETFvsMutualFundFlow[] {
+  // ETF flows
+  const etfWeekly = round2(16.5 + (rng() - 0.5) * 8);
+  const etfMonthly = round2(etfWeekly * (3.8 + rng() * 1.2));
+  const etfYtd = round2(etfMonthly * (3.0 + rng() * 2.0));
+  const etfAUM = round2(8.2 * (1 + (rng() - 0.5) * 0.06));
+  const etfCreation = Math.round(4500 + (rng() - 0.5) * 2000);
 
-    const avgJitter = (rng() - 0.5) * Math.abs(cfg.baseWeeklyAvg) * 0.3;
-    const weeklyAvg = Math.round((cfg.baseWeeklyAvg + avgJitter) * 100) / 100;
+  // Mutual fund flows - typically net negative as money shifts to ETFs
+  const mfWeekly = round2(-5.2 + (rng() - 0.5) * 6);
+  const mfMonthly = round2(mfWeekly * (3.5 + rng() * 1.5));
+  const mfYtd = round2(mfMonthly * (3.0 + rng() * 2.0));
+  const mfAUM = round2(19.8 * (1 + (rng() - 0.5) * 0.04));
+  const mfRedemption = Math.round(-2800 + (rng() - 0.5) * 1500);
 
-    const totalFlowStreak = Math.round(weeklyAvg * consecutiveWeeks * 10) / 10;
+  const totalAUM = etfAUM + mfAUM;
+  const etfShare = round1((etfAUM / totalAUM) * 100);
+  const mfShare = round1(100 - etfShare);
 
-    return {
-      fundName: cfg.fundName,
-      ticker: cfg.ticker,
-      consecutiveWeeks,
-      direction: cfg.direction,
-      totalFlowStreak,
-      weeklyAvg,
-    };
-  });
+  return [
+    {
+      vehicleType: 'ETF',
+      weeklyFlow: etfWeekly,
+      monthlyFlow: etfMonthly,
+      ytdFlow: etfYtd,
+      totalAUM: etfAUM,
+      marketShare: etfShare,
+      netCreationRedemption: etfCreation,
+    },
+    {
+      vehicleType: 'Mutual Fund',
+      weeklyFlow: mfWeekly,
+      monthlyFlow: mfMonthly,
+      ytdFlow: mfYtd,
+      totalAUM: mfAUM,
+      marketShare: mfShare,
+      netCreationRedemption: mfRedemption,
+    },
+  ];
 }
 
-function generateLeveragedInverse(rng: () => number): LeveragedInverseEntry[] {
-  return LEVERAGED_CONFIGS.map((cfg) => {
-    const flowJitter = (rng() - 0.5) * Math.abs(cfg.baseFlow1W) * 0.6;
-    const flow1W = Math.round((cfg.baseFlow1W + flowJitter) * 100) / 100;
+function generateTopFunds(
+  rng: () => number,
+  defs: TopFundDef[],
+  isOutflow: boolean
+): TopFundFlow[] {
+  return defs
+    .map((def, idx) => {
+      const flowJitter = 1 + (rng() - 0.5) * 0.6;
+      const weeklyFlow = round2(def.baseFlow * flowJitter);
+      const aum = round2(def.baseAUM * (1 + (rng() - 0.5) * 0.08));
+      const flowPctOfAUM = round2((Math.abs(weeklyFlow) / aum) * 100);
 
-    const aumJitter = (rng() - 0.5) * cfg.baseAUM * 0.08;
-    const aum = Math.round((cfg.baseAUM + aumJitter) * 10) / 10;
-
-    const pctOfAUM = Math.round((Math.abs(flow1W) / aum) * 10000) / 100;
-
-    return {
-      ticker: cfg.ticker,
-      name: cfg.name,
-      type: cfg.type,
-      leverage: cfg.leverage,
-      flow1W,
-      aum,
-      pctOfAUM,
-    };
-  });
+      return {
+        rank: idx + 1,
+        fundName: def.fundName,
+        ticker: def.ticker,
+        category: def.category,
+        weeklyFlow,
+        aum,
+        flowPctOfAUM,
+      };
+    })
+    .sort((a, b) =>
+      isOutflow ? a.weeklyFlow - b.weeklyFlow : b.weeklyFlow - a.weeklyFlow
+    )
+    .map((entry, idx) => ({ ...entry, rank: idx + 1 }));
 }
 
-function generateFundFlowTrackerData(): FundFlowTrackerResponse {
-  const rng = seededRandom('fund-flow-tracker');
+function generateHistoricalSeries(rng: () => number): HistoricalFlowWeek[] {
+  const weeks: HistoricalFlowWeek[] = [];
+  const today = new Date();
 
-  const weeklyFlows = generateWeeklyFlows(rng);
-  const topInflows = generateFundFlows(rng, TOP_INFLOW_CONFIGS, false);
-  const topOutflows = generateFundFlows(rng, TOP_OUTFLOW_CONFIGS, true);
-  const etfCreationRedemption = generateETFCreationRedemption(rng);
-  const sectorRotation = generateSectorRotation(rng);
-  const geographicFlows = generateGeographicFlows(rng);
-  const flowMomentum = generateFlowMomentum(rng);
-  const leveragedInverse = generateLeveragedInverse(rng);
+  // Base levels for each asset class
+  let eqBase = 8.5;
+  let fiBase = 5.2;
+  let mmBase = 12.8;
+  let coBase = -0.9;
+  let altBase = 0.6;
 
-  // Summary
-  const totalNetFlows1W = Math.round(
-    weeklyFlows.reduce((sum, f) => sum + f.flow1W, 0) * 10
-  ) / 10;
+  for (let w = 11; w >= 0; w--) {
+    const weekEnd = new Date(today);
+    weekEnd.setDate(today.getDate() - w * 7);
+    const weekEnding = weekEnd.toISOString().slice(0, 10);
 
-  const sortedByFlow = [...weeklyFlows].sort((a, b) => b.flow1W - a.flow1W);
-  const topInflowCategory = sortedByFlow[0].category;
-  const topOutflowCategory = sortedByFlow[sortedByFlow.length - 1].category;
+    // Apply random walk with mean reversion
+    eqBase = round2(eqBase + (rng() - 0.48) * 4.0);
+    fiBase = round2(fiBase + (rng() - 0.48) * 2.8);
+    mmBase = round2(mmBase + (rng() - 0.48) * 6.0);
+    coBase = round2(coBase + (rng() - 0.50) * 1.5);
+    altBase = round2(altBase + (rng() - 0.49) * 1.0);
 
-  // Bull/bear ratio from leveraged ETFs
-  const bullFlows = leveragedInverse
-    .filter((e) => e.type === 'BULL')
-    .reduce((sum, e) => sum + e.flow1W, 0);
-  const bearFlows = leveragedInverse
-    .filter((e) => e.type === 'BEAR')
-    .reduce((sum, e) => sum + Math.abs(e.flow1W), 0);
-  const bullBearRatio = bearFlows > 0
-    ? Math.round((bullFlows / bearFlows) * 100) / 100
-    : 999;
+    const equity = eqBase;
+    const fixedIncome = fiBase;
+    const moneyMarket = mmBase;
+    const commodity = coBase;
+    const alternative = altBase;
+    const totalNet = round2(equity + fixedIncome + moneyMarket + commodity + alternative);
 
-  let marketSentiment: 'RISK-ON' | 'RISK-OFF' | 'MIXED';
-  if (totalNetFlows1W > 15 && bullBearRatio > 2.5) {
-    marketSentiment = 'RISK-ON';
-  } else if (totalNetFlows1W < -5 || bullBearRatio < 1.0) {
-    marketSentiment = 'RISK-OFF';
-  } else {
-    marketSentiment = 'MIXED';
+    weeks.push({
+      weekEnding,
+      equity,
+      fixedIncome,
+      moneyMarket,
+      commodity,
+      alternative,
+      totalNet,
+    });
   }
 
-  const timestamp = new Date().toISOString();
+  return weeks;
+}
 
-  const summary: FundFlowSummary = {
-    totalNetFlows1W,
-    topInflowCategory,
-    topOutflowCategory,
-    bullBearRatio,
-    marketSentiment,
-    timestamp,
-  };
+function generateSectorRotation(rng: () => number): SectorRotationSignal[] {
+  return SECTOR_DEFS.map((def) => {
+    const jitter1W = (rng() - 0.5) * def.volatility * 2;
+    const weeklyFlow = round2(def.baseWeekly + jitter1W);
+    const monthlyFlow = round2(weeklyFlow * (3.5 + rng() * 1.5));
+    const threeMonthFlow = round2(monthlyFlow * (2.5 + rng() * 1.0));
+
+    const rsJitter = (rng() - 0.5) * 0.12;
+    const relativeStrength = round2(def.baseRS + rsJitter);
+
+    // Determine momentum based on weekly vs monthly direction alignment
+    let momentum: SectorRotationSignal['momentum'];
+    if (Math.sign(weeklyFlow) === Math.sign(monthlyFlow) && Math.abs(weeklyFlow) > Math.abs(monthlyFlow) / 4) {
+      momentum = 'accelerating';
+    } else if (Math.sign(weeklyFlow) !== Math.sign(monthlyFlow)) {
+      momentum = 'reversing';
+    } else {
+      momentum = 'decelerating';
+    }
+
+    // Determine signal from relative strength and flow direction
+    let signal: SectorRotationSignal['signal'];
+    if (relativeStrength > 1.04 && weeklyFlow > 0) {
+      signal = 'OVERWEIGHT';
+    } else if (relativeStrength < 0.94 || weeklyFlow < -0.5) {
+      signal = 'UNDERWEIGHT';
+    } else {
+      signal = 'NEUTRAL';
+    }
+
+    return {
+      sector: def.sector,
+      weeklyFlow,
+      monthlyFlow,
+      threeMonthFlow,
+      momentum,
+      relativeStrength,
+      signal,
+    };
+  });
+}
+
+function generateContrarianIndicators(rng: () => number): ContrarianIndicator[] {
+  return CONTRARIAN_DEFS.map((def) => {
+    const readingJitter = (rng() - 0.5) * def.readingVolatility * 2;
+    const currentReading = round2(def.baseReading + readingJitter);
+
+    const pctJitter = Math.floor((rng() - 0.5) * 16);
+    const historicalPercentile = Math.max(1, Math.min(99, def.basePercentile + pctJitter));
+
+    const hrJitter = Math.floor((rng() - 0.5) * 8);
+    const historicalHitRate = Math.max(40, Math.min(95, def.hitRate + hrJitter));
+
+    // Determine signal from percentile and implication direction
+    let signal: ContrarianIndicator['signal'];
+    if (def.implication === 'bullish') {
+      if (historicalPercentile <= 10) signal = 'EXTREME_BULLISH';
+      else if (historicalPercentile <= 25) signal = 'BULLISH';
+      else if (historicalPercentile <= 75) signal = 'NEUTRAL';
+      else if (historicalPercentile <= 90) signal = 'BEARISH';
+      else signal = 'EXTREME_BEARISH';
+    } else if (def.implication === 'bearish') {
+      if (historicalPercentile >= 90) signal = 'EXTREME_BEARISH';
+      else if (historicalPercentile >= 75) signal = 'BEARISH';
+      else if (historicalPercentile >= 25) signal = 'NEUTRAL';
+      else if (historicalPercentile >= 10) signal = 'BULLISH';
+      else signal = 'EXTREME_BULLISH';
+    } else {
+      if (historicalPercentile >= 90 || historicalPercentile <= 10) {
+        signal = historicalPercentile >= 90 ? 'EXTREME_BEARISH' : 'EXTREME_BULLISH';
+      } else {
+        signal = 'NEUTRAL';
+      }
+    }
+
+    return {
+      indicator: def.indicator,
+      description: def.description,
+      currentReading,
+      historicalPercentile,
+      signal,
+      historicalHitRate,
+      lookbackPeriod: def.lookbackPeriod,
+    };
+  });
+}
+
+function generateData(): FundFlowTrackerData {
+  const rng = seededRng('fund-flow-tracker');
+
+  const assetClassFlows = generateAssetClassFlows(rng);
+  const regionalFlows = generateRegionalFlows(rng);
+  const etfVsMutualFund = generateETFvsMutualFund(rng);
+  const topInflows = generateTopFunds(rng, TOP_INFLOW_DEFS, false);
+  const topOutflows = generateTopFunds(rng, TOP_OUTFLOW_DEFS, true);
+  const historicalSeries = generateHistoricalSeries(rng);
+  const sectorRotation = generateSectorRotation(rng);
+  const contrarianIndicators = generateContrarianIndicators(rng);
+
+  // Summary
+  const totalWeeklyNetFlow = round2(
+    assetClassFlows.reduce((s, a) => s + a.weeklyFlow, 0)
+  );
+
+  const sorted = [...assetClassFlows].sort((a, b) => b.weeklyFlow - a.weeklyFlow);
+  const topInflowAssetClass = sorted[0].assetClass;
+  const topOutflowAssetClass = sorted[sorted.length - 1].assetClass;
+
+  const etfRow = etfVsMutualFund.find((e) => e.vehicleType === 'ETF')!;
+  const totalWeeklyAbsFlow =
+    Math.abs(etfVsMutualFund[0].weeklyFlow) + Math.abs(etfVsMutualFund[1].weeklyFlow);
+  const etfShareOfFlows =
+    totalWeeklyAbsFlow > 0
+      ? round1((Math.abs(etfRow.weeklyFlow) / totalWeeklyAbsFlow) * 100)
+      : 50;
+
+  const extremeSignalsCount = contrarianIndicators.filter(
+    (c) => c.signal === 'EXTREME_BULLISH' || c.signal === 'EXTREME_BEARISH'
+  ).length;
+
+  let dominantDirection: 'RISK-ON' | 'RISK-OFF' | 'MIXED';
+  if (totalWeeklyNetFlow > 15 && extremeSignalsCount <= 1) {
+    dominantDirection = 'RISK-ON';
+  } else if (totalWeeklyNetFlow < -5 || extremeSignalsCount >= 3) {
+    dominantDirection = 'RISK-OFF';
+  } else {
+    dominantDirection = 'MIXED';
+  }
 
   return {
-    weeklyFlows,
+    assetClassFlows,
+    regionalFlows,
+    etfVsMutualFund,
     topInflows,
     topOutflows,
-    etfCreationRedemption,
+    historicalSeries,
     sectorRotation,
-    geographicFlows,
-    flowMomentum,
-    leveragedInverse,
-    summary,
-    timestamp,
+    contrarianIndicators,
+    summary: {
+      totalWeeklyNetFlow,
+      dominantDirection,
+      topInflowAssetClass,
+      topOutflowAssetClass,
+      etfShareOfFlows,
+      extremeSignalsCount,
+    },
+    timestamp: new Date().toISOString(),
   };
 }
 
@@ -507,12 +632,11 @@ function generateFundFlowTrackerData(): FundFlowTrackerResponse {
 router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-    if (cache.data && now < cache.expiresAt) {
+    if (cache.data && now - cache.ts < CACHE_TTL) {
       return res.json(cache.data);
     }
-
-    const data = generateFundFlowTrackerData();
-    cache = { data, expiresAt: now + CACHE_TTL };
+    const data = generateData();
+    cache = { data, ts: now };
     res.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -520,7 +644,7 @@ router.get('/', (_req, res) => {
     if (cache.data) {
       return res.json(cache.data);
     }
-    res.status(500).json({ error: 'Failed to generate fund flow tracker data' });
+    res.status(502).json({ error: 'Failed to generate fund flow tracker data' });
   }
 });
 

@@ -1,6 +1,6 @@
 import { useFundFlowTracker } from '../../api/hooks/use-fund-flow-tracker';
 import { useT } from '../../i18n';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Activity, TrendingUp, TrendingDown, AlertTriangle, BarChart3, PieChart } from 'lucide-react';
 
 // -- i18n fallback helper --
 
@@ -14,123 +14,671 @@ const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string =
 
 // -- Formatting helpers --
 
-function fmtFlow(n: number): string {
-  return n.toFixed(1);
+function fmtB(n: number): string {
+  const sign = n > 0 ? '+' : n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(1)}T`;
+  return `${sign}$${abs.toFixed(1)}B`;
 }
 
 function fmtPct(n: number): string {
-  return n.toFixed(1);
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
 }
 
-function fmtChg(n: number): string {
-  const sign = n >= 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)}`;
-}
-
-function fmtBn(n: number): string {
-  return n.toFixed(2);
+function fmtPctPlain(n: number): string {
+  return n.toFixed(1) + '%';
 }
 
 // -- Color helpers --
 
+const GREEN = '#34d399';
+const RED = '#f87171';
+const YELLOW = '#fbbf24';
+const DIM = 'rgba(255,255,255,0.25)';
+
 function flowColor(n: number): string {
-  if (n > 0) return 'text-green-400';
+  if (n > 0) return GREEN;
+  if (n < 0) return RED;
+  return DIM;
+}
+
+function flowCls(n: number): string {
+  if (n > 0) return 'text-emerald-400';
   if (n < 0) return 'text-red-400';
   return 'text-neutral-500';
 }
 
-function trendArrow(n: number): string {
-  if (n > 0) return '\u25B2';
-  if (n < 0) return '\u25BC';
-  return '\u25C6';
+function signalBadgeCls(signal: string): string {
+  const s = signal?.toUpperCase() ?? '';
+  if (s === 'BULLISH' || s === 'BUY' || s === 'STRONG BUY') return 'bg-emerald-400/15 text-emerald-400 border-emerald-400/30';
+  if (s === 'BEARISH' || s === 'SELL' || s === 'STRONG SELL') return 'bg-red-400/15 text-red-400 border-red-400/30';
+  if (s === 'CONTRARIAN BUY') return 'bg-yellow-400/15 text-yellow-400 border-yellow-400/30';
+  if (s === 'CONTRARIAN SELL') return 'bg-orange-400/15 text-orange-400 border-orange-400/30';
+  return 'bg-neutral-400/15 text-neutral-400 border-neutral-400/30';
 }
 
-function momentumColor(score: number): string {
-  if (score >= 70) return 'text-green-400';
-  if (score >= 40) return 'text-yellow-400';
-  return 'text-red-400';
+function heatColor(value: number, maxAbs: number): string {
+  if (maxAbs === 0) return 'rgba(255,255,255,0.05)';
+  const intensity = Math.min(Math.abs(value) / maxAbs, 1);
+  if (value > 0) return `rgba(52,211,153,${0.1 + intensity * 0.5})`;
+  if (value < 0) return `rgba(248,113,113,${0.1 + intensity * 0.5})`;
+  return 'rgba(255,255,255,0.05)';
 }
 
-function momentumBar(score: number): string {
-  if (score >= 70) return 'bg-green-400';
-  if (score >= 40) return 'bg-yellow-400';
-  return 'bg-red-400';
+// -- Section Header --
+
+function SectionHeader({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1 border-b border-border/20 bg-[#050505]">
+      {icon}
+      <span className="text-[7px] font-mono font-bold uppercase tracking-wider text-emerald-400/60">
+        {label}
+      </span>
+    </div>
+  );
 }
 
-function sentimentColor(sentiment: string): string {
-  const s = sentiment.toUpperCase();
-  if (s === 'BULLISH') return 'bg-green-400/20 text-green-400 border-green-400/30';
-  if (s === 'BEARISH') return 'bg-red-400/20 text-red-400 border-red-400/30';
-  return 'bg-neutral-400/20 text-neutral-400 border-neutral-400/30';
+// -- 1. Asset Class Flow Summary Cards --
+
+function AssetClassSummary({ data }: { data: any }) {
+  const items = [
+    { label: 'EQUITY', flow: data?.equityFlow ?? 0, aum: data?.equityAum ?? 0 },
+    { label: 'FIXED INCOME', flow: data?.fixedIncomeFlow ?? 0, aum: data?.fixedIncomeAum ?? 0 },
+    { label: 'MONEY MARKET', flow: data?.moneyMarketFlow ?? 0, aum: data?.moneyMarketAum ?? 0 },
+    { label: 'COMMODITY', flow: data?.commodityFlow ?? 0, aum: data?.commodityAum ?? 0 },
+  ];
+
+  return (
+    <div>
+      <SectionHeader
+        icon={<PieChart className="w-2.5 h-2.5 text-emerald-400/40" />}
+        label="Asset Class Flows (Weekly)"
+      />
+      <div className="grid grid-cols-4 divide-x divide-border/10">
+        {items.map((item) => (
+          <div key={item.label} className="px-2 py-1.5">
+            <div className="text-[6px] font-mono text-white/25 uppercase tracking-wider mb-0.5">
+              {item.label}
+            </div>
+            <div className={`text-[10px] font-mono font-black ${flowCls(item.flow)}`}>
+              {fmtB(item.flow)}
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <div className="flex-1 h-1 bg-white/[0.04] relative overflow-hidden">
+                <div
+                  className="absolute top-0 left-0 h-full"
+                  style={{
+                    width: `${Math.min(Math.abs(item.flow) / (Math.abs(item.aum) || 1) * 100 * 10, 100)}%`,
+                    backgroundColor: item.flow >= 0 ? GREEN : RED,
+                    opacity: 0.5,
+                  }}
+                />
+              </div>
+              <span className="text-[6px] font-mono text-white/20">
+                {item.aum > 0 ? fmtPct(item.flow / item.aum * 100) : '0.00%'}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-// -- Interfaces --
+// -- 2. Regional Flow Bar Chart (SVG) --
 
-interface FlowSummary {
-  totalWeeklyFlows: number;
-  equityFlows: number;
-  bondFlows: number;
-  moneyMarketFlows: number;
-  topCategory: string;
+function RegionalFlowChart({ items }: { items: any[] }) {
+  if (!items || items.length === 0) return null;
+
+  const maxAbs = Math.max(...items.map((r: any) => Math.abs(r.weeklyFlow ?? 0)), 0.1);
+  const barHeight = 14;
+  const labelWidth = 60;
+  const valueWidth = 50;
+  const chartWidth = 200;
+  const totalWidth = labelWidth + chartWidth + valueWidth + 10;
+  const totalHeight = items.length * (barHeight + 3) + 4;
+  const midX = labelWidth + chartWidth / 2;
+
+  return (
+    <div>
+      <SectionHeader
+        icon={<BarChart3 className="w-2.5 h-2.5 text-emerald-400/40" />}
+        label="Regional Flows"
+      />
+      <div className="px-2 py-1.5 overflow-x-auto no-scrollbar">
+        <svg
+          viewBox={`0 0 ${totalWidth} ${totalHeight}`}
+          className="w-full"
+          style={{ minWidth: 280 }}
+        >
+          {/* Center line */}
+          <line x1={midX} y1={0} x2={midX} y2={totalHeight} stroke="rgba(255,255,255,0.08)" strokeWidth={0.5} />
+
+          {items.map((item: any, i: number) => {
+            const flow = item.weeklyFlow ?? 0;
+            const barW = (Math.abs(flow) / maxAbs) * (chartWidth / 2);
+            const y = i * (barHeight + 3) + 2;
+
+            return (
+              <g key={`rgn-${i}`}>
+                {/* Region label */}
+                <text
+                  x={labelWidth - 4}
+                  y={y + barHeight / 2 + 1}
+                  textAnchor="end"
+                  fill="rgba(52,211,153,0.7)"
+                  fontSize={7}
+                  fontFamily="monospace"
+                  fontWeight="bold"
+                >
+                  {(item.region ?? '').toUpperCase()}
+                </text>
+
+                {/* Bar */}
+                {flow >= 0 ? (
+                  <rect
+                    x={midX}
+                    y={y + 1}
+                    width={barW}
+                    height={barHeight - 2}
+                    fill={GREEN}
+                    opacity={0.5}
+                  />
+                ) : (
+                  <rect
+                    x={midX - barW}
+                    y={y + 1}
+                    width={barW}
+                    height={barHeight - 2}
+                    fill={RED}
+                    opacity={0.5}
+                  />
+                )}
+
+                {/* Value label */}
+                <text
+                  x={labelWidth + chartWidth + 6}
+                  y={y + barHeight / 2 + 1}
+                  textAnchor="start"
+                  fill={flowColor(flow)}
+                  fontSize={7}
+                  fontFamily="monospace"
+                  fontWeight="bold"
+                >
+                  {fmtB(flow)}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    </div>
+  );
 }
 
-interface CategoryFlow {
-  category: string;
-  flow1w: number;
-  flow1m: number;
-  flow3m: number;
-  flowYtd: number;
-  aum: number;
+// -- 3. ETF vs Mutual Fund Comparison --
+
+function EtfVsMutualFund({ data }: { data: any }) {
+  const etf = data?.etf;
+  const mf = data?.mutualFund;
+  if (!etf && !mf) return null;
+
+  const rows = [
+    { label: 'WEEKLY FLOW', etfVal: etf?.weeklyFlow ?? 0, mfVal: mf?.weeklyFlow ?? 0, isFlow: true },
+    { label: 'MONTHLY FLOW', etfVal: etf?.monthlyFlow ?? 0, mfVal: mf?.monthlyFlow ?? 0, isFlow: true },
+    { label: 'YTD FLOW', etfVal: etf?.ytdFlow ?? 0, mfVal: mf?.ytdFlow ?? 0, isFlow: true },
+    { label: 'TOTAL AUM', etfVal: etf?.aum ?? 0, mfVal: mf?.aum ?? 0, isFlow: false },
+    { label: 'MARKET SHARE', etfVal: etf?.marketShare ?? 0, mfVal: mf?.marketShare ?? 0, isPct: true },
+  ];
+
+  return (
+    <div>
+      <SectionHeader
+        icon={<Activity className="w-2.5 h-2.5 text-emerald-400/40" />}
+        label="ETF vs Mutual Fund"
+      />
+      <div className="overflow-x-auto no-scrollbar">
+        <table className="w-full text-[8px] font-mono">
+          <thead>
+            <tr className="border-b border-border/20">
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 text-left">
+                Metric
+              </th>
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-emerald-400/50 text-right">
+                ETF
+              </th>
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-blue-400/50 text-right">
+                Mutual Fund
+              </th>
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 text-right">
+                Delta
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const delta = row.etfVal - row.mfVal;
+              return (
+                <tr key={row.label} className="border-b border-border/10 hover:bg-emerald-400/[0.02] transition-colors">
+                  <td className="px-1.5 py-1 whitespace-nowrap text-white/40">
+                    {row.label}
+                  </td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right font-bold" style={{ color: row.isFlow ? flowColor(row.etfVal) : GREEN }}>
+                    {row.isPct ? fmtPctPlain(row.etfVal) : fmtB(row.etfVal)}
+                  </td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right font-bold" style={{ color: row.isFlow ? flowColor(row.mfVal) : '#60a5fa' }}>
+                    {row.isPct ? fmtPctPlain(row.mfVal) : fmtB(row.mfVal)}
+                  </td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right font-bold" style={{ color: flowColor(delta) }}>
+                    {row.isPct ? fmtPct(delta) : fmtB(delta)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
-interface TopFlow {
-  name: string;
-  ticker: string;
-  flow1w: number;
-  flowPctAum: number;
-  aum: number;
-  category: string;
+// -- 4. Top Inflows / Outflows with Flow Bars --
+
+function TopFlowsList({ items, direction }: { items: any[]; direction: 'inflow' | 'outflow' }) {
+  const isInflow = direction === 'inflow';
+  const rows = (items ?? []).slice(0, 10);
+  const maxAbs = Math.max(...rows.map((r: any) => Math.abs(r.flow ?? r.weeklyFlow ?? 0)), 0.1);
+
+  return (
+    <div>
+      <SectionHeader
+        icon={isInflow
+          ? <TrendingUp className="w-2.5 h-2.5 text-emerald-400/40" />
+          : <TrendingDown className="w-2.5 h-2.5 text-red-400/40" />
+        }
+        label={isInflow ? 'Top Inflows' : 'Top Outflows'}
+      />
+      <div className="overflow-x-auto no-scrollbar">
+        <table className="w-full text-[8px] font-mono">
+          <thead>
+            <tr className="border-b border-border/20">
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 text-left">
+                Name
+              </th>
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 text-left">
+                Ticker
+              </th>
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 text-right">
+                Flow
+              </th>
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 w-20">
+                Bar
+              </th>
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 text-right">
+                % AUM
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row: any, i: number) => {
+              const flow = row.flow ?? row.weeklyFlow ?? 0;
+              const pctAum = row.flowPctAum ?? row.pctAum ?? 0;
+              const barPct = (Math.abs(flow) / maxAbs) * 100;
+
+              return (
+                <tr key={`tf-${i}`} className="border-b border-border/10 hover:bg-emerald-400/[0.02] transition-colors">
+                  <td className="px-1.5 py-1 whitespace-nowrap text-white/50 truncate max-w-[100px]">
+                    {row.name}
+                  </td>
+                  <td className="px-1.5 py-1 whitespace-nowrap font-bold text-emerald-400">
+                    {row.ticker}
+                  </td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right font-bold" style={{ color: flowColor(flow) }}>
+                    {fmtB(flow)}
+                  </td>
+                  <td className="px-1.5 py-1">
+                    <div className="w-full h-[5px] bg-white/[0.03] relative overflow-hidden">
+                      <div
+                        className="absolute top-0 left-0 h-full"
+                        style={{
+                          width: `${barPct}%`,
+                          backgroundColor: isInflow ? GREEN : RED,
+                          opacity: 0.5,
+                        }}
+                      />
+                    </div>
+                  </td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right" style={{ color: flowColor(pctAum) }}>
+                    {fmtPct(pctAum)}
+                  </td>
+                </tr>
+              );
+            })}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={5} className="text-center py-4 text-white/20 text-[8px] font-mono uppercase">
+                  No data
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
-interface EtfCreationRedemption {
-  ticker: string;
-  name: string;
-  sharesCreated: number;
-  sharesRedeemed: number;
-  netShares: number;
-  flowBn: number;
+// -- 5. Historical Flow Chart (SVG Line/Area, 12 weeks) --
+
+function HistoricalFlowChart({ data }: { data: any }) {
+  const weeks = data?.weeks ?? data?.history ?? [];
+  if (!weeks || weeks.length === 0) return null;
+
+  const W = 320;
+  const H = 100;
+  const padL = 35;
+  const padR = 8;
+  const padT = 8;
+  const padB = 16;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+
+  const equityFlows = weeks.map((w: any) => w.equityFlow ?? 0);
+  const bondFlows = weeks.map((w: any) => w.bondFlow ?? w.fixedIncomeFlow ?? 0);
+  const totalFlows = weeks.map((w: any) => w.totalFlow ?? (w.equityFlow ?? 0) + (w.bondFlow ?? w.fixedIncomeFlow ?? 0));
+
+  const allVals = [...equityFlows, ...bondFlows, ...totalFlows];
+  const maxVal = Math.max(...allVals, 1);
+  const minVal = Math.min(...allVals, -1);
+  const range = maxVal - minVal || 1;
+
+  const n = weeks.length;
+  const dx = n > 1 ? chartW / (n - 1) : chartW;
+
+  function toY(v: number): number {
+    return padT + chartH - ((v - minVal) / range) * chartH;
+  }
+
+  function toX(i: number): number {
+    return padL + i * dx;
+  }
+
+  const zeroY = toY(0);
+
+  function makePath(values: number[]): string {
+    return values.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+  }
+
+  function makeArea(values: number[]): string {
+    const line = values.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+    return `${line} L${toX(values.length - 1).toFixed(1)},${zeroY.toFixed(1)} L${toX(0).toFixed(1)},${zeroY.toFixed(1)} Z`;
+  }
+
+  // Y-axis ticks
+  const tickCount = 4;
+  const ticks = Array.from({ length: tickCount + 1 }, (_, i) => minVal + (range / tickCount) * i);
+
+  return (
+    <div>
+      <SectionHeader
+        icon={<Activity className="w-2.5 h-2.5 text-emerald-400/40" />}
+        label="Historical Flows (12 Weeks)"
+      />
+      <div className="px-2 py-1.5">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 260 }}>
+          {/* Grid lines */}
+          {ticks.map((tick, i) => {
+            const y = toY(tick);
+            return (
+              <g key={`tick-${i}`}>
+                <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth={0.5} />
+                <text x={padL - 3} y={y + 1} textAnchor="end" fill="rgba(255,255,255,0.2)" fontSize={5} fontFamily="monospace">
+                  {tick >= 0 ? '+' : ''}{tick.toFixed(0)}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Zero line */}
+          <line x1={padL} y1={zeroY} x2={W - padR} y2={zeroY} stroke="rgba(255,255,255,0.12)" strokeWidth={0.5} strokeDasharray="2,2" />
+
+          {/* Total flow area */}
+          <path d={makeArea(totalFlows)} fill="rgba(52,211,153,0.06)" />
+          <path d={makePath(totalFlows)} fill="none" stroke={GREEN} strokeWidth={1} opacity={0.6} />
+
+          {/* Equity flow line */}
+          <path d={makePath(equityFlows)} fill="none" stroke="#60a5fa" strokeWidth={0.8} opacity={0.7} strokeDasharray="3,2" />
+
+          {/* Bond flow line */}
+          <path d={makePath(bondFlows)} fill="none" stroke={YELLOW} strokeWidth={0.8} opacity={0.7} strokeDasharray="1,1" />
+
+          {/* Data points for total */}
+          {totalFlows.map((v: number, i: number) => (
+            <circle key={`pt-${i}`} cx={toX(i)} cy={toY(v)} r={1.5} fill={flowColor(v)} opacity={0.8} />
+          ))}
+
+          {/* X-axis labels */}
+          {weeks.map((w: any, i: number) => {
+            if (n <= 6 || i % 2 === 0 || i === n - 1) {
+              const label = w.label ?? w.week ?? `W${i + 1}`;
+              return (
+                <text
+                  key={`xl-${i}`}
+                  x={toX(i)}
+                  y={H - 2}
+                  textAnchor="middle"
+                  fill="rgba(255,255,255,0.2)"
+                  fontSize={4.5}
+                  fontFamily="monospace"
+                >
+                  {label}
+                </text>
+              );
+            }
+            return null;
+          })}
+        </svg>
+
+        {/* Legend */}
+        <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-[2px]" style={{ backgroundColor: GREEN }} />
+            <span className="text-[6px] font-mono text-white/30 uppercase">Total</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-[2px]" style={{ backgroundColor: '#60a5fa' }} />
+            <span className="text-[6px] font-mono text-white/30 uppercase">Equity</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-[2px]" style={{ backgroundColor: YELLOW }} />
+            <span className="text-[6px] font-mono text-white/30 uppercase">Bond</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-interface SectorRotation {
-  sector: string;
-  flow1w: number;
-  flow1m: number;
-  relativeFlow: number;
-  trend: number;
+// -- 6. Sector Rotation Heatmap/Grid --
+
+function SectorRotationHeatmap({ items }: { items: any[] }) {
+  if (!items || items.length === 0) return null;
+
+  const periods = ['1W', '1M', '3M', 'YTD'];
+  const allFlows = items.flatMap((s: any) => [
+    s.flow1w ?? 0,
+    s.flow1m ?? 0,
+    s.flow3m ?? 0,
+    s.flowYtd ?? 0,
+  ]);
+  const maxAbs = Math.max(...allFlows.map(Math.abs), 0.1);
+
+  function getFlow(sector: any, period: string): number {
+    switch (period) {
+      case '1W': return sector.flow1w ?? sector.weeklyFlow ?? 0;
+      case '1M': return sector.flow1m ?? sector.monthlyFlow ?? 0;
+      case '3M': return sector.flow3m ?? 0;
+      case 'YTD': return sector.flowYtd ?? sector.ytdFlow ?? 0;
+      default: return 0;
+    }
+  }
+
+  return (
+    <div>
+      <SectionHeader
+        icon={<BarChart3 className="w-2.5 h-2.5 text-emerald-400/40" />}
+        label="Sector Rotation Heatmap"
+      />
+      <div className="overflow-x-auto no-scrollbar">
+        <table className="w-full text-[8px] font-mono">
+          <thead>
+            <tr className="border-b border-border/20">
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 text-left">
+                Sector
+              </th>
+              {periods.map((p) => (
+                <th key={p} className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 text-center w-14">
+                  {p}
+                </th>
+              ))}
+              <th className="px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-white/25 text-center">
+                Trend
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((sector: any, i: number) => {
+              const trend = sector.trend ?? sector.momentum ?? 0;
+              const trendIcon = trend > 0 ? '\u25B2' : trend < 0 ? '\u25BC' : '\u25C6';
+
+              return (
+                <tr key={`sr-${i}`} className="border-b border-border/10">
+                  <td className="px-1.5 py-1 whitespace-nowrap font-bold text-emerald-400 text-[7px]">
+                    {(sector.sector ?? sector.name ?? '').toUpperCase()}
+                  </td>
+                  {periods.map((p) => {
+                    const flow = getFlow(sector, p);
+                    return (
+                      <td key={p} className="px-0.5 py-0.5 text-center">
+                        <div
+                          className="mx-auto px-1 py-0.5 text-[7px] font-mono font-bold"
+                          style={{
+                            backgroundColor: heatColor(flow, maxAbs),
+                            color: flow > 0 ? GREEN : flow < 0 ? RED : 'rgba(255,255,255,0.3)',
+                          }}
+                        >
+                          {fmtB(flow)}
+                        </div>
+                      </td>
+                    );
+                  })}
+                  <td className="px-1.5 py-1 text-center">
+                    <span
+                      className="text-[8px] font-bold"
+                      style={{ color: trend > 0 ? GREEN : trend < 0 ? RED : DIM }}
+                    >
+                      {trendIcon}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
-interface GeoFlow {
-  region: string;
-  flow1w: number;
-  flow1m: number;
-  flowPctAum: number;
-  trend: number;
-}
+// -- 7. Contrarian Signal Indicators --
 
-interface FlowMomentum {
-  category: string;
-  score: number;
-  streak: number;
-  zScore: number;
-  signal: string;
-}
+function ContrarianSignals({ items }: { items: any[] }) {
+  if (!items || items.length === 0) return null;
 
-interface LeveragedSentiment {
-  category: string;
-  leveragedFlow: number;
-  inverseFlow: number;
-  ratio: number;
-  sentiment: string;
+  return (
+    <div>
+      <SectionHeader
+        icon={<AlertTriangle className="w-2.5 h-2.5 text-yellow-400/40" />}
+        label="Contrarian Signals"
+      />
+      <div className="grid grid-cols-1 gap-0">
+        {items.map((sig: any, i: number) => {
+          const strength = sig.strength ?? sig.score ?? 50;
+          const strengthPct = Math.min(100, Math.max(0, strength));
+          const strengthColor = strengthPct >= 70 ? RED : strengthPct >= 40 ? YELLOW : GREEN;
+
+          return (
+            <div
+              key={`cs-${i}`}
+              className="px-2 py-1.5 border-b border-border/10 hover:bg-emerald-400/[0.02] transition-colors"
+            >
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[8px] font-mono font-bold text-emerald-400 uppercase">
+                  {sig.name ?? sig.signal ?? sig.indicator}
+                </span>
+                <span className={`text-[7px] font-bold px-1.5 py-0.5 border ${signalBadgeCls(sig.signal ?? sig.implication ?? 'neutral')}`}>
+                  {(sig.signal ?? sig.implication ?? 'NEUTRAL').toUpperCase()}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Reading */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[6px] font-mono text-white/20 uppercase">Reading:</span>
+                  <span className="text-[7px] font-mono font-bold text-white/60">
+                    {typeof sig.reading === 'number' ? sig.reading.toFixed(1) : sig.reading ?? '-'}
+                  </span>
+                </div>
+
+                {/* Strength gauge */}
+                <div className="flex items-center gap-1 flex-1">
+                  <span className="text-[6px] font-mono text-white/20 uppercase">Str:</span>
+                  <div className="flex-1 h-1.5 bg-white/[0.04] relative overflow-hidden max-w-[60px]">
+                    <div
+                      className="absolute top-0 left-0 h-full"
+                      style={{
+                        width: `${strengthPct}%`,
+                        backgroundColor: strengthColor,
+                        opacity: 0.6,
+                      }}
+                    />
+                  </div>
+                  <span className="text-[6px] font-mono text-white/30">{strengthPct.toFixed(0)}</span>
+                </div>
+
+                {/* Percentile */}
+                {sig.percentile != null && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[6px] font-mono text-white/20 uppercase">%ile:</span>
+                    <span className="text-[7px] font-mono font-bold text-white/40">
+                      {fmtPctPlain(sig.percentile)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Hit Rate */}
+                {sig.hitRate != null && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[6px] font-mono text-white/20 uppercase">Hit:</span>
+                    <span className="text-[7px] font-mono font-bold text-white/40">
+                      {fmtPctPlain(sig.hitRate)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {sig.description && (
+                <div className="text-[6px] font-mono text-white/15 mt-0.5 truncate">
+                  {sig.description}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 // -- Main Panel --
@@ -138,627 +686,84 @@ interface LeveragedSentiment {
 export function FundFlowTrackerPanel() {
   const t = useT();
   const { data, isLoading, refetch } = useFundFlowTracker();
-
-  const summary = data?.summary as FlowSummary | undefined;
-  const categoryFlows = data?.categoryFlows as CategoryFlow[] | undefined;
-  const topInflows = data?.topInflows as TopFlow[] | undefined;
-  const topOutflows = data?.topOutflows as TopFlow[] | undefined;
-  const etfCreationRedemption = data?.etfCreationRedemption as EtfCreationRedemption[] | undefined;
-  const sectorRotation = data?.sectorRotation as SectorRotation[] | undefined;
-  const geoFlows = data?.geoFlows as GeoFlow[] | undefined;
-  const flowMomentum = data?.flowMomentum as FlowMomentum[] | undefined;
-  const leveragedSentiment = data?.leveragedSentiment as LeveragedSentiment[] | undefined;
+  const d = data as any;
 
   return (
-    <div className="h-full flex flex-col bg-black overflow-hidden">
+    <div className="h-full flex flex-col bg-black overflow-hidden text-[9px] font-mono uppercase">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-green-400/30 shrink-0">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/20 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 bg-green-400" />
-          <span className="text-[9px] font-black font-mono uppercase tracking-wider text-green-400">
-            {tr(t, 'panelFundFlowTracker', 'Fund Flow Tracker')}
+          <Activity className="w-3 h-3 text-emerald-400" />
+          <span className="text-[9px] font-black font-mono uppercase tracking-tighter text-emerald-400">
+            {tr(t, 'fundFlowTrackerTitle', 'Fund Flow Tracker')}
           </span>
         </div>
         <button
           onClick={() => refetch()}
-          className="p-1 text-neutral-500 hover:text-green-400 transition-colors"
+          className="p-1 text-neutral-500 hover:text-emerald-400 transition-colors"
         >
           <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto no-scrollbar">
-        {isLoading && !data && (
-          <div className="text-center py-8 text-green-400 text-[9px] font-mono uppercase animate-pulse">
-            LOADING...
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        {isLoading && !d && (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-5 h-5 border-2 border-emerald-400/30 border-t-emerald-400 animate-spin" />
+              <span className="text-[10px] text-white/40 uppercase tracking-widest">
+                {tr(t, 'loading', 'Loading...')}
+              </span>
+            </div>
           </div>
         )}
 
-        {!data && !isLoading && (
-          <div className="text-center py-8 text-neutral-500 text-[9px] font-mono uppercase">
-            {tr(t, 'panelFundFlowTrackerNoData', 'No data available')}
+        {!d && !isLoading && (
+          <div className="flex items-center justify-center h-full">
+            <span className="text-[10px] text-white/20 uppercase tracking-widest">
+              {tr(t, 'noData', 'No data available')}
+            </span>
           </div>
         )}
 
-        {data && (
+        {d && (
           <>
-            {summary && <SummaryBar summary={summary} t={t} />}
-            {categoryFlows && categoryFlows.length > 0 && (
-              <CategoryFlowsSection flows={categoryFlows} t={t} />
-            )}
-            {topInflows && topInflows.length > 0 && (
-              <TopFlowsSection flows={topInflows} t={t} direction="inflow" />
-            )}
-            {topOutflows && topOutflows.length > 0 && (
-              <TopFlowsSection flows={topOutflows} t={t} direction="outflow" />
-            )}
-            {etfCreationRedemption && etfCreationRedemption.length > 0 && (
-              <EtfCreationRedemptionSection entries={etfCreationRedemption} t={t} />
-            )}
-            {sectorRotation && sectorRotation.length > 0 && (
-              <SectorRotationSection sectors={sectorRotation} t={t} />
-            )}
-            {geoFlows && geoFlows.length > 0 && (
-              <GeoFlowsSection flows={geoFlows} t={t} />
-            )}
-            {flowMomentum && flowMomentum.length > 0 && (
-              <FlowMomentumSection items={flowMomentum} t={t} />
-            )}
-            {leveragedSentiment && leveragedSentiment.length > 0 && (
-              <LeveragedSentimentSection items={leveragedSentiment} t={t} />
+            {/* 1. Asset Class Summary Cards */}
+            <AssetClassSummary data={d.assetClassSummary ?? d.summary ?? d} />
+
+            {/* 2. Regional Flow Bar Chart (SVG) */}
+            <RegionalFlowChart items={d.regionalFlows ?? d.geoFlows ?? []} />
+
+            {/* 3. ETF vs Mutual Fund */}
+            <EtfVsMutualFund data={d.etfVsMutualFund ?? d.vehicleComparison ?? d} />
+
+            {/* 4. Top Inflows */}
+            <TopFlowsList items={d.topInflows ?? []} direction="inflow" />
+
+            {/* 5. Top Outflows */}
+            <TopFlowsList items={d.topOutflows ?? []} direction="outflow" />
+
+            {/* 6. Historical Flow Chart (SVG) */}
+            <HistoricalFlowChart data={d.historicalFlows ?? d} />
+
+            {/* 7. Sector Rotation Heatmap */}
+            <SectorRotationHeatmap items={d.sectorRotation ?? d.sectorFlows ?? []} />
+
+            {/* 8. Contrarian Signals */}
+            <ContrarianSignals items={d.contrarianSignals ?? []} />
+
+            {/* Footer */}
+            {d.timestamp && (
+              <div className="px-3 py-1 border-t border-border/10">
+                <span className="text-[7px] font-mono text-white/15 normal-case">
+                  Last update: {new Date(d.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
             )}
           </>
         )}
       </div>
-    </div>
-  );
-}
-
-// -- Summary Bar --
-
-function SummaryBar({
-  summary,
-  t,
-}: {
-  summary: FlowSummary;
-  t: ReturnType<typeof useT>;
-}) {
-  return (
-    <div className="border-b border-green-400/30 bg-[#030303]">
-      <div className="flex items-center gap-0 divide-x divide-green-400/10">
-        <div className="flex-1 px-3 py-1.5 text-center">
-          <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-            {tr(t, 'panelFundFlowTrackerWeeklyTotal', 'Weekly Total ($B)')}
-          </div>
-          <div className={`text-[10px] font-mono font-bold ${flowColor(summary.totalWeeklyFlows)}`}>
-            {fmtChg(summary.totalWeeklyFlows)}
-          </div>
-        </div>
-        <div className="flex-1 px-3 py-1.5 text-center">
-          <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-            {tr(t, 'panelFundFlowTrackerEquity', 'Equity ($B)')}
-          </div>
-          <div className={`text-[10px] font-mono font-bold ${flowColor(summary.equityFlows)}`}>
-            {fmtChg(summary.equityFlows)}
-          </div>
-        </div>
-        <div className="flex-1 px-3 py-1.5 text-center">
-          <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-            {tr(t, 'panelFundFlowTrackerBond', 'Bond ($B)')}
-          </div>
-          <div className={`text-[10px] font-mono font-bold ${flowColor(summary.bondFlows)}`}>
-            {fmtChg(summary.bondFlows)}
-          </div>
-        </div>
-        <div className="flex-1 px-3 py-1.5 text-center">
-          <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-            {tr(t, 'panelFundFlowTrackerMMkt', 'Money Mkt ($B)')}
-          </div>
-          <div className={`text-[10px] font-mono font-bold ${flowColor(summary.moneyMarketFlows)}`}>
-            {fmtChg(summary.moneyMarketFlows)}
-          </div>
-        </div>
-        <div className="flex-1 px-3 py-1.5 text-center">
-          <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-            {tr(t, 'panelFundFlowTrackerTopCat', 'Top Category')}
-          </div>
-          <div className="text-[10px] font-mono font-bold text-green-400 truncate">
-            {summary.topCategory}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// -- Weekly Flows by Category (1W/1M/3M/YTD) --
-
-function CategoryFlowsSection({
-  flows,
-  t,
-}: {
-  flows: CategoryFlow[];
-  t: ReturnType<typeof useT>;
-}) {
-  return (
-    <div className="border-b border-green-400/30">
-      <div className="px-3 py-1 border-b border-green-400/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'panelFundFlowTrackerCategoryFlows', 'Flows by Category')}
-        </span>
-      </div>
-
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_56px_56px_56px_56px_64px] gap-0 px-2 py-0.5 border-b border-green-400/5 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'panelFundFlowTrackerCategory', 'Category')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTracker1W', '1W $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTracker1M', '1M $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTracker3M', '3M $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerYTD', 'YTD $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right pr-2">
-          {tr(t, 'panelFundFlowTrackerAUM', 'AUM $B')}
-        </span>
-      </div>
-
-      {/* Rows */}
-      {flows.map((flow) => (
-        <div
-          key={flow.category}
-          className="grid grid-cols-[1fr_56px_56px_56px_56px_64px] gap-0 px-2 py-[3px] border-b border-green-400/5 hover:bg-green-400/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold text-green-400 truncate">
-            {flow.category}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(flow.flow1w)}`}>
-            {fmtChg(flow.flow1w)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(flow.flow1m)}`}>
-            {fmtChg(flow.flow1m)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(flow.flow3m)}`}>
-            {fmtChg(flow.flow3m)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(flow.flowYtd)}`}>
-            {fmtChg(flow.flowYtd)}
-          </span>
-          <span className="text-[8px] font-mono text-neutral-300 text-right pr-2">
-            {fmtBn(flow.aum)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// -- Top Inflows / Top Outflows Table --
-
-function TopFlowsSection({
-  flows,
-  t,
-  direction,
-}: {
-  flows: TopFlow[];
-  t: ReturnType<typeof useT>;
-  direction: 'inflow' | 'outflow';
-}) {
-  const isInflow = direction === 'inflow';
-  const titleKey = isInflow ? 'panelFundFlowTrackerTopInflows' : 'panelFundFlowTrackerTopOutflows';
-  const titleFallback = isInflow ? 'Top Inflows' : 'Top Outflows';
-
-  return (
-    <div className="border-b border-green-400/30">
-      <div className="px-3 py-1 border-b border-green-400/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, titleKey, titleFallback)}
-        </span>
-      </div>
-
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_48px_56px_48px_56px_64px] gap-0 px-2 py-0.5 border-b border-green-400/5 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'panelFundFlowTrackerName', 'Name')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerTicker', 'Ticker')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerFlow1W', '1W $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerFlowPct', '% AUM')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerAUM', 'AUM $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right pr-2">
-          {tr(t, 'panelFundFlowTrackerCat', 'Category')}
-        </span>
-      </div>
-
-      {/* Rows */}
-      {flows.map((flow, i) => (
-        <div
-          key={`${flow.ticker}-${i}`}
-          className="grid grid-cols-[1fr_48px_56px_48px_56px_64px] gap-0 px-2 py-[3px] border-b border-green-400/5 hover:bg-green-400/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold text-white truncate">
-            {flow.name}
-          </span>
-          <span className="text-[8px] font-mono font-bold text-green-400 text-right">
-            {flow.ticker}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(flow.flow1w)}`}>
-            {fmtChg(flow.flow1w)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(flow.flowPctAum)}`}>
-            {fmtChg(flow.flowPctAum)}%
-          </span>
-          <span className="text-[8px] font-mono text-neutral-300 text-right">
-            {fmtBn(flow.aum)}
-          </span>
-          <span className="text-[8px] font-mono text-neutral-500 text-right pr-2 truncate">
-            {flow.category}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// -- ETF Creation / Redemption --
-
-function EtfCreationRedemptionSection({
-  entries,
-  t,
-}: {
-  entries: EtfCreationRedemption[];
-  t: ReturnType<typeof useT>;
-}) {
-  return (
-    <div className="border-b border-green-400/30">
-      <div className="px-3 py-1 border-b border-green-400/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'panelFundFlowTrackerEtfCreation', 'ETF Creation / Redemption')}
-        </span>
-      </div>
-
-      {/* Table header */}
-      <div className="grid grid-cols-[48px_1fr_56px_56px_56px_56px] gap-0 px-2 py-0.5 border-b border-green-400/5 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'panelFundFlowTrackerTicker', 'Ticker')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'panelFundFlowTrackerName', 'Name')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerCreated', 'Created')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerRedeemed', 'Redeemed')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerNet', 'Net')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right pr-2">
-          {tr(t, 'panelFundFlowTrackerFlowBn', 'Flow $B')}
-        </span>
-      </div>
-
-      {/* Rows */}
-      {entries.map((entry, i) => (
-        <div
-          key={`${entry.ticker}-${i}`}
-          className="grid grid-cols-[48px_1fr_56px_56px_56px_56px] gap-0 px-2 py-[3px] border-b border-green-400/5 hover:bg-green-400/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold text-green-400">
-            {entry.ticker}
-          </span>
-          <span className="text-[8px] font-mono text-neutral-400 truncate">
-            {entry.name}
-          </span>
-          <span className="text-[8px] font-mono text-green-400 text-right">
-            {fmtFlow(entry.sharesCreated)}
-          </span>
-          <span className="text-[8px] font-mono text-red-400 text-right">
-            {fmtFlow(entry.sharesRedeemed)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(entry.netShares)}`}>
-            {fmtChg(entry.netShares)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right pr-2 ${flowColor(entry.flowBn)}`}>
-            {fmtChg(entry.flowBn)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// -- Sector Rotation Flows --
-
-function SectorRotationSection({
-  sectors,
-  t,
-}: {
-  sectors: SectorRotation[];
-  t: ReturnType<typeof useT>;
-}) {
-  return (
-    <div className="border-b border-green-400/30">
-      <div className="px-3 py-1 border-b border-green-400/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'panelFundFlowTrackerSectorRotation', 'Sector Rotation')}
-        </span>
-      </div>
-
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_56px_56px_64px_32px] gap-0 px-2 py-0.5 border-b border-green-400/5 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'panelFundFlowTrackerSector', 'Sector')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTracker1W', '1W $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTracker1M', '1M $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerRelFlow', 'Rel Flow')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right pr-2">
-          {tr(t, 'panelFundFlowTrackerTrend', 'Trend')}
-        </span>
-      </div>
-
-      {/* Rows */}
-      {sectors.map((sector) => (
-        <div
-          key={sector.sector}
-          className="grid grid-cols-[1fr_56px_56px_64px_32px] gap-0 px-2 py-[3px] border-b border-green-400/5 hover:bg-green-400/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold text-green-400 truncate">
-            {sector.sector}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(sector.flow1w)}`}>
-            {fmtChg(sector.flow1w)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(sector.flow1m)}`}>
-            {fmtChg(sector.flow1m)}
-          </span>
-          {/* Relative flow bar */}
-          <div className="flex items-center gap-1 justify-end">
-            <div className="w-12 h-1.5 bg-neutral-800 relative">
-              <div
-                className={`absolute top-0 h-full ${sector.relativeFlow >= 0 ? 'bg-green-400' : 'bg-red-400'}`}
-                style={{
-                  width: `${Math.min(Math.abs(sector.relativeFlow), 100)}%`,
-                  left: sector.relativeFlow >= 0 ? '50%' : undefined,
-                  right: sector.relativeFlow < 0 ? '50%' : undefined,
-                }}
-              />
-              <div className="absolute top-0 left-1/2 w-[1px] h-full bg-neutral-600" />
-            </div>
-            <span className={`text-[8px] font-mono font-bold w-8 text-right ${flowColor(sector.relativeFlow)}`}>
-              {fmtChg(sector.relativeFlow)}
-            </span>
-          </div>
-          <span className={`text-[8px] font-mono font-bold text-right pr-2 ${flowColor(sector.trend)}`}>
-            {trendArrow(sector.trend)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// -- Geographic Flows --
-
-function GeoFlowsSection({
-  flows,
-  t,
-}: {
-  flows: GeoFlow[];
-  t: ReturnType<typeof useT>;
-}) {
-  return (
-    <div className="border-b border-green-400/30">
-      <div className="px-3 py-1 border-b border-green-400/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'panelFundFlowTrackerGeoFlows', 'Geographic Flows')}
-        </span>
-      </div>
-
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_56px_56px_48px_32px] gap-0 px-2 py-0.5 border-b border-green-400/5 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'panelFundFlowTrackerRegion', 'Region')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTracker1W', '1W $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTracker1M', '1M $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerFlowPct', '% AUM')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right pr-2">
-          {tr(t, 'panelFundFlowTrackerTrend', 'Trend')}
-        </span>
-      </div>
-
-      {/* Rows */}
-      {flows.map((flow) => (
-        <div
-          key={flow.region}
-          className="grid grid-cols-[1fr_56px_56px_48px_32px] gap-0 px-2 py-[3px] border-b border-green-400/5 hover:bg-green-400/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold text-green-400 truncate">
-            {flow.region}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(flow.flow1w)}`}>
-            {fmtChg(flow.flow1w)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(flow.flow1m)}`}>
-            {fmtChg(flow.flow1m)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(flow.flowPctAum)}`}>
-            {fmtChg(flow.flowPctAum)}%
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right pr-2 ${flowColor(flow.trend)}`}>
-            {trendArrow(flow.trend)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// -- Flow Momentum --
-
-function FlowMomentumSection({
-  items,
-  t,
-}: {
-  items: FlowMomentum[];
-  t: ReturnType<typeof useT>;
-}) {
-  return (
-    <div className="border-b border-green-400/30">
-      <div className="px-3 py-1 border-b border-green-400/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'panelFundFlowTrackerMomentum', 'Flow Momentum')}
-        </span>
-      </div>
-
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_48px_48px_48px_64px] gap-0 px-2 py-0.5 border-b border-green-400/5 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'panelFundFlowTrackerCategory', 'Category')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerScore', 'Score')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerStreak', 'Streak')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerZScore', 'Z-Score')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right pr-2">
-          {tr(t, 'panelFundFlowTrackerSignal', 'Signal')}
-        </span>
-      </div>
-
-      {/* Rows */}
-      {items.map((item) => (
-        <div
-          key={item.category}
-          className="grid grid-cols-[1fr_48px_48px_48px_64px] gap-0 px-2 py-[3px] border-b border-green-400/5 hover:bg-green-400/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold text-green-400 truncate">
-            {item.category}
-          </span>
-          {/* Score with bar */}
-          <div className="flex items-center gap-1 justify-end">
-            <div className="w-8 h-1.5 bg-neutral-800 relative">
-              <div
-                className={`absolute top-0 left-0 h-full ${momentumBar(item.score)}`}
-                style={{ width: `${Math.min(item.score, 100)}%` }}
-              />
-            </div>
-            <span className={`text-[8px] font-mono font-bold ${momentumColor(item.score)}`}>
-              {item.score}
-            </span>
-          </div>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(item.streak)}`}>
-            {fmtChg(item.streak)}w
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(item.zScore)}`}>
-            {fmtChg(item.zScore)}
-          </span>
-          <span className="text-[8px] font-mono text-neutral-400 text-right pr-2 uppercase">
-            {item.signal}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// -- Leveraged / Inverse Sentiment --
-
-function LeveragedSentimentSection({
-  items,
-  t,
-}: {
-  items: LeveragedSentiment[];
-  t: ReturnType<typeof useT>;
-}) {
-  return (
-    <div>
-      <div className="px-3 py-1 border-b border-green-400/10">
-        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
-          {tr(t, 'panelFundFlowTrackerLevInverse', 'Leveraged / Inverse Sentiment')}
-        </span>
-      </div>
-
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_56px_56px_48px_64px] gap-0 px-2 py-0.5 border-b border-green-400/5 bg-[#030303]">
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
-          {tr(t, 'panelFundFlowTrackerCategory', 'Category')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerLevFlow', 'Lev $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerInvFlow', 'Inv $B')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
-          {tr(t, 'panelFundFlowTrackerRatio', 'Ratio')}
-        </span>
-        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right pr-2">
-          {tr(t, 'panelFundFlowTrackerSentiment', 'Sentiment')}
-        </span>
-      </div>
-
-      {/* Rows */}
-      {items.map((item) => (
-        <div
-          key={item.category}
-          className="grid grid-cols-[1fr_56px_56px_48px_64px] gap-0 px-2 py-[3px] border-b border-green-400/5 hover:bg-green-400/[0.02] transition-colors items-center"
-        >
-          <span className="text-[8px] font-mono font-bold text-green-400 truncate">
-            {item.category}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(item.leveragedFlow)}`}>
-            {fmtChg(item.leveragedFlow)}
-          </span>
-          <span className={`text-[8px] font-mono font-bold text-right ${flowColor(item.inverseFlow)}`}>
-            {fmtChg(item.inverseFlow)}
-          </span>
-          <span className="text-[8px] font-mono font-bold text-white text-right">
-            {fmtPct(item.ratio)}x
-          </span>
-          <span className="text-right pr-2">
-            <span
-              className={`inline-block px-1.5 py-0.5 text-[7px] font-mono font-bold uppercase tracking-wider border ${sentimentColor(item.sentiment)}`}
-            >
-              {item.sentiment}
-            </span>
-          </span>
-        </div>
-      ))}
     </div>
   );
 }
