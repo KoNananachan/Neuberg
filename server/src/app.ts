@@ -468,6 +468,9 @@ import centralBankRouter from './routes/central-bank.js';
 import commercialPaperRouter from './routes/commercial-paper.js';
 import fxReservesRouter from './routes/fx-reserves.js';
 import equityIndexFuturesRouter from './routes/equity-index-futures.js';
+import preferredStockRouter from './routes/preferred-stock.js';
+import treasuryStripsRouter from './routes/treasury-strips.js';
+import commodityWarehouseRouter from './routes/commodity-warehouse.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1037,6 +1040,9 @@ export function createApp() {
   app.use('/api/commercial-paper', commercialPaperRouter);
   app.use('/api/fx-reserves', fxReservesRouter);
   app.use('/api/equity-index-futures', equityIndexFuturesRouter);
+  app.use('/api/preferred-stock', preferredStockRouter);
+  app.use('/api/treasury-strips', treasuryStripsRouter);
+  app.use('/api/commodity-warehouse', commodityWarehouseRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
