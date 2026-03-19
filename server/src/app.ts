@@ -516,6 +516,9 @@ import naturalGasStorageRouter from './routes/natural-gas-storage.js';
 import preciousMetalsLeaseRouter from './routes/precious-metals-lease.js';
 import corporateActionCalendarRouter from './routes/corporate-action-calendar.js';
 import sovereignDebtMaturityRouter from './routes/sovereign-debt-maturity.js';
+import agriculturalFuturesRouter from './routes/agricultural-futures.js';
+import bankEarningsRouter from './routes/bank-earnings.js';
+import privateEquitySecondariesRouter from './routes/private-equity-secondaries.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1133,6 +1136,9 @@ export function createApp() {
   app.use('/api/precious-metals-lease', preciousMetalsLeaseRouter);
   app.use('/api/corporate-action-calendar', corporateActionCalendarRouter);
   app.use('/api/sovereign-debt-maturity', sovereignDebtMaturityRouter);
+  app.use('/api/agricultural-futures', agriculturalFuturesRouter);
+  app.use('/api/bank-earnings', bankEarningsRouter);
+  app.use('/api/private-equity-secondaries', privateEquitySecondariesRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

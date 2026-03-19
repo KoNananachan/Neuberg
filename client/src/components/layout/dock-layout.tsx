@@ -522,6 +522,9 @@ const NaturalGasStoragePanel = lazy(() => import('../panels/natural-gas-storage-
 const PreciousMetalsLeasePanel = lazy(() => import('../panels/precious-metals-lease-panel').then(m => ({ default: m.PreciousMetalsLeasePanel })));
 const CorporateActionCalendarPanel = lazy(() => import('../panels/corporate-action-calendar-panel').then(m => ({ default: m.CorporateActionCalendarPanel })));
 const SovereignDebtMaturityPanel = lazy(() => import('../panels/sovereign-debt-maturity-panel').then(m => ({ default: m.SovereignDebtMaturityPanel })));
+const AgriculturalFuturesPanel = lazy(() => import('../panels/agricultural-futures-panel').then(m => ({ default: m.AgriculturalFuturesPanel })));
+const BankEarningsPanel = lazy(() => import('../panels/bank-earnings-panel').then(m => ({ default: m.BankEarningsPanel })));
+const PrivateEquitySecondariesPanel = lazy(() => import('../panels/private-equity-secondaries-panel').then(m => ({ default: m.PrivateEquitySecondariesPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1054,6 +1057,9 @@ export const PANEL_IDS = {
   PRECIOUS_METALS_LEASE: 'precious-metals-lease',
   CORPORATE_ACTION_CALENDAR: 'corporate-action-calendar',
   SOVEREIGN_DEBT_MATURITY: 'sovereign-debt-maturity',
+  AGRICULTURAL_FUTURES: 'agricultural-futures',
+  BANK_EARNINGS: 'bank-earnings',
+  PRIVATE_EQUITY_SECONDARIES: 'private-equity-secondaries',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1570,6 +1576,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.PRECIOUS_METALS_LEASE]: 'PRECIOUS METALS LEASE',
   [PANEL_IDS.CORPORATE_ACTION_CALENDAR]: 'CORPORATE ACTION CALENDAR',
   [PANEL_IDS.SOVEREIGN_DEBT_MATURITY]: 'SOVEREIGN DEBT MATURITY',
+  [PANEL_IDS.AGRICULTURAL_FUTURES]: 'AGRICULTURAL FUTURES',
+  [PANEL_IDS.BANK_EARNINGS]: 'BANK EARNINGS',
+  [PANEL_IDS.PRIVATE_EQUITY_SECONDARIES]: 'PE SECONDARIES',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -2087,6 +2096,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.PRECIOUS_METALS_LEASE]: 'panelPreciousMetalsLease',
   [PANEL_IDS.CORPORATE_ACTION_CALENDAR]: 'panelCorporateActionCalendar',
   [PANEL_IDS.SOVEREIGN_DEBT_MATURITY]: 'panelSovereignDebtMaturity',
+  [PANEL_IDS.AGRICULTURAL_FUTURES]: 'panelAgriculturalFutures',
+  [PANEL_IDS.BANK_EARNINGS]: 'panelBankEarnings',
+  [PANEL_IDS.PRIVATE_EQUITY_SECONDARIES]: 'panelPrivateEquitySecondaries',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2900,6 +2912,9 @@ export function DockLayout() {
       case PANEL_IDS.PRECIOUS_METALS_LEASE: content = <LazyWrap><PreciousMetalsLeasePanel /></LazyWrap>; break;
       case PANEL_IDS.CORPORATE_ACTION_CALENDAR: content = <LazyWrap><CorporateActionCalendarPanel /></LazyWrap>; break;
       case PANEL_IDS.SOVEREIGN_DEBT_MATURITY: content = <LazyWrap><SovereignDebtMaturityPanel /></LazyWrap>; break;
+      case PANEL_IDS.AGRICULTURAL_FUTURES: content = <LazyWrap><AgriculturalFuturesPanel /></LazyWrap>; break;
+      case PANEL_IDS.BANK_EARNINGS: content = <LazyWrap><BankEarningsPanel /></LazyWrap>; break;
+      case PANEL_IDS.PRIVATE_EQUITY_SECONDARIES: content = <LazyWrap><PrivateEquitySecondariesPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
