@@ -377,6 +377,9 @@ const CdsMonitorPanel = lazy(() => import('../panels/cds-monitor-panel').then(m 
 const RepoRateMonitorPanel = lazy(() => import('../panels/repo-rate-monitor-panel').then(m => ({ default: m.RepoRateMonitorPanel })));
 const SovereignDebtMonitorPanel = lazy(() => import('../panels/sovereign-debt-monitor-panel').then(m => ({ default: m.SovereignDebtMonitorPanel })));
 const LiquidityDashboardPanel = lazy(() => import('../panels/liquidity-dashboard-panel').then(m => ({ default: m.LiquidityDashboardPanel })));
+const PreciousMetalsPanel = lazy(() => import('../panels/precious-metals-panel').then(m => ({ default: m.PreciousMetalsPanel })));
+const BankCapitalPanel = lazy(() => import('../panels/bank-capital-panel').then(m => ({ default: m.BankCapitalPanel })));
+const AgriculturalCommoditiesPanel = lazy(() => import('../panels/agricultural-commodities-panel').then(m => ({ default: m.AgriculturalCommoditiesPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -764,6 +767,9 @@ export const PANEL_IDS = {
   REPO_RATE_MONITOR: 'repo-rate-monitor',
   SOVEREIGN_DEBT_MONITOR: 'sovereign-debt-monitor',
   LIQUIDITY_DASHBOARD: 'liquidity-dashboard',
+  PRECIOUS_METALS: 'precious-metals',
+  BANK_CAPITAL: 'bank-capital',
+  AGRICULTURAL_COMMODITIES: 'agricultural-commodities',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1135,6 +1141,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.REPO_RATE_MONITOR]: 'REPO RATE MONITOR',
   [PANEL_IDS.SOVEREIGN_DEBT_MONITOR]: 'SOVEREIGN DEBT MONITOR',
   [PANEL_IDS.LIQUIDITY_DASHBOARD]: 'LIQUIDITY DASHBOARD',
+  [PANEL_IDS.PRECIOUS_METALS]: 'PRECIOUS METALS',
+  [PANEL_IDS.BANK_CAPITAL]: 'BANK CAPITAL',
+  [PANEL_IDS.AGRICULTURAL_COMMODITIES]: 'AGRICULTURAL COMMODITIES',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1507,6 +1516,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.REPO_RATE_MONITOR]: 'panelRepoRateMonitor',
   [PANEL_IDS.SOVEREIGN_DEBT_MONITOR]: 'panelSovereignDebtMonitor',
   [PANEL_IDS.LIQUIDITY_DASHBOARD]: 'panelLiquidityDashboard',
+  [PANEL_IDS.PRECIOUS_METALS]: 'panelPreciousMetals',
+  [PANEL_IDS.BANK_CAPITAL]: 'panelBankCapital',
+  [PANEL_IDS.AGRICULTURAL_COMMODITIES]: 'panelAgriculturalCommodities',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2175,6 +2187,9 @@ export function DockLayout() {
       case PANEL_IDS.REPO_RATE_MONITOR: content = <LazyWrap><RepoRateMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.SOVEREIGN_DEBT_MONITOR: content = <LazyWrap><SovereignDebtMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.LIQUIDITY_DASHBOARD: content = <LazyWrap><LiquidityDashboardPanel /></LazyWrap>; break;
+      case PANEL_IDS.PRECIOUS_METALS: content = <LazyWrap><PreciousMetalsPanel /></LazyWrap>; break;
+      case PANEL_IDS.BANK_CAPITAL: content = <LazyWrap><BankCapitalPanel /></LazyWrap>; break;
+      case PANEL_IDS.AGRICULTURAL_COMMODITIES: content = <LazyWrap><AgriculturalCommoditiesPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

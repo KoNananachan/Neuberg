@@ -370,6 +370,9 @@ import cdsMonitorRouter from './routes/cds-monitor.js';
 import repoRateMonitorRouter from './routes/repo-rate-monitor.js';
 import sovereignDebtMonitorRouter from './routes/sovereign-debt-monitor.js';
 import liquidityDashboardRouter from './routes/liquidity-dashboard.js';
+import preciousMetalsRouter from './routes/precious-metals.js';
+import bankCapitalRouter from './routes/bank-capital.js';
+import agriculturalCommoditiesRouter from './routes/agricultural-commodities.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -841,6 +844,9 @@ export function createApp() {
   app.use('/api/repo-rate-monitor', repoRateMonitorRouter);
   app.use('/api/sovereign-debt-monitor', sovereignDebtMonitorRouter);
   app.use('/api/liquidity-dashboard', liquidityDashboardRouter);
+  app.use('/api/precious-metals', preciousMetalsRouter);
+  app.use('/api/bank-capital', bankCapitalRouter);
+  app.use('/api/agricultural-commodities', agriculturalCommoditiesRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
