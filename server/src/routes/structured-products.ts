@@ -2,56 +2,24 @@ import { Router } from 'express';
 
 const router = Router();
 
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-  return h >>> 0;
+// -- Seeded PRNG --
+
+function hashSeed(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) { const char = str.charCodeAt(i); hash = ((hash << 5) - hash) + char; hash |= 0; }
+  return Math.abs(hash);
 }
-function mulberry32(seed: number) {
-  let s = seed | 0;
-  return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+function mulberry32(a: number): () => number {
+  return function() { let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 
-// ── Static Data ──
-
-const PRODUCT_TYPES = [
-  'Autocallable', 'Autocallable', 'Autocallable', 'Autocallable', 'Autocallable',
-  'Reverse Convertible', 'Reverse Convertible',
-  'Range Accrual',
-  'Barrier Note', 'Barrier Note',
-  'Capital Protected',
-  'Digital',
-] as const;
-
-const UNDERLYINGS = [
-  { name: 'SPX', spotBase: 5280 },
-  { name: 'EuroStoxx 50', spotBase: 4950 },
-  { name: 'Nikkei 225', spotBase: 38500 },
-  { name: 'AAPL', spotBase: 218 },
-  { name: 'TSLA', spotBase: 245 },
-  { name: 'NVDA', spotBase: 875 },
-] as const;
-
-const ISSUERS = ['Goldman Sachs', 'JPMorgan', 'Morgan Stanley', 'Citi', 'BofA', 'Barclays'] as const;
-
-const NAME_PREFIXES: Record<string, string[]> = {
-  'Autocallable': ['Autocallable', 'Phoenix Autocall', 'Snowball Autocall', 'Callable Yield Note'],
-  'Reverse Convertible': ['Reverse Convertible', 'Yield Enhancement Note', 'Income Note'],
-  'Range Accrual': ['Range Accrual Note', 'Corridor Note'],
-  'Barrier Note': ['Barrier Note', 'Knock-In Put Note', 'Protected Barrier Note'],
-  'Capital Protected': ['Capital Protected Note', 'Principal Protected Note', 'Buffer Note'],
-  'Digital': ['Digital Note', 'Binary Coupon Note', 'Digital Barrier Note'],
-};
-
-const TENORS = ['6M', '12M', '18M', '24M', '36M'] as const;
-const STATUSES = ['Live', 'Called', 'At Risk', 'Matured'] as const;
-
-// ── Cache ──
+// -- Cache --
 
 const CACHE_TTL = 5 * 60 * 1000;
-let cache: { data: unknown; ts: number } | null = null;
+let cacheData: unknown = null;
+let cacheTime = 0;
 
-// ── Helpers ──
+// -- Helpers --
 
 function pick<T>(arr: readonly T[], rng: () => number): T {
   return arr[Math.floor(rng() * arr.length)];
@@ -70,256 +38,303 @@ function round(v: number, decimals: number): number {
   return Math.round(v * m) / m;
 }
 
-// ── Generator ──
+// -- Generator --
 
 function generate() {
-  const now = new Date();
-  const day = now.toISOString().slice(0, 10);
+  const day = new Date().toISOString().slice(0, 10);
   const rng = mulberry32(hashSeed(day + '-structured-products'));
-  const currentYear = now.getFullYear();
 
-  // Generate 12 structured products
-  const products = Array.from({ length: 12 }, (_, i) => {
-    const type = PRODUCT_TYPES[i % PRODUCT_TYPES.length];
-    const underlying = UNDERLYINGS[i % UNDERLYINGS.length];
-    const issuer = ISSUERS[i % ISSUERS.length];
-    const tenor = pick(TENORS, rng);
-    const tenorMonths = parseInt(tenor);
-
-    const prefixes = NAME_PREFIXES[type];
-    const prefix = pick(prefixes, rng);
-    const name = `${underlying.name} ${prefix} ${tenor}`;
-
-    // Coupon depends on product type
-    let couponBase: number;
-    switch (type) {
-      case 'Autocallable': couponBase = rangef(8, 15, rng); break;
-      case 'Reverse Convertible': couponBase = rangef(10, 15, rng); break;
-      case 'Range Accrual': couponBase = rangef(6, 10, rng); break;
-      case 'Barrier Note': couponBase = rangef(7, 12, rng); break;
-      case 'Capital Protected': couponBase = rangef(3, 6, rng); break;
-      case 'Digital': couponBase = rangef(8, 14, rng); break;
-      default: couponBase = rangef(6, 12, rng);
-    }
-    const coupon = round(couponBase, 2);
-
-    // Barrier level: typically 60-75% of spot
-    const barrierLevel = round(rangef(60, 75, rng), 1);
-
-    // Knock-in level: at or slightly below barrier
-    const knockInLevel = round(barrierLevel - rangef(0, 5, rng), 1);
-
-    // Maturity date
-    const maturityDate = new Date(now);
-    maturityDate.setMonth(maturityDate.getMonth() + tenorMonths - Math.floor(rng() * 3));
-    const maturity = maturityDate.toISOString().slice(0, 10);
-
-    // Notional in $M
-    const notional = Math.round(rangef(10, 150, rng));
-
-    // Current value as % of par
-    let currentValueBase: number;
-    if (type === 'Capital Protected') {
-      currentValueBase = rangef(98, 105, rng);
-    } else {
-      currentValueBase = rangef(85, 108, rng);
-    }
-    const currentValue = round(currentValueBase, 2);
-
-    // Status determination
-    let status: string;
-    const isMatured = maturityDate < now;
-    if (isMatured) {
-      status = 'Matured';
-    } else if (type === 'Autocallable' && rng() < 0.25) {
-      status = 'Called';
-    } else if (currentValue < 92 || rng() < 0.1) {
-      status = 'At Risk';
-    } else {
-      status = 'Live';
-    }
-
-    return {
-      name,
-      type,
-      underlying: underlying.name,
-      issuer,
-      coupon,
-      barrierLevel,
-      knockInLevel,
-      maturity,
-      notional,
-      currentValue,
-      status,
-    };
-  });
-
-  // Summary
-  const totalOutstanding = round(jitter(320, 0.08, rng), 1);
-  const newIssuanceYTD = round(jitter(85, 0.12, rng), 1);
-  const avgCoupon = round(products.reduce((s, p) => s + p.coupon, 0) / products.length, 2);
-  const typeCounts: Record<string, number> = {};
-  for (const p of products) {
-    typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
-  }
-  const mostPopularType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0][0];
-  const avgBarrierLevel = round(products.reduce((s, p) => s + p.barrierLevel, 0) / products.length, 1);
-
-  const summary = {
-    totalOutstanding,
-    totalOutstandingUnit: 'B USD',
-    newIssuanceYTD,
-    newIssuanceYTDUnit: 'B USD',
-    avgCoupon,
-    avgCouponUnit: '%',
-    mostPopularType,
-    avgBarrierLevel,
-    avgBarrierLevelUnit: '%',
+  // ---- Market Overview ----
+  const marketOverview = {
+    totalOutstanding: round(jitter(12.4, 0.03, rng), 1),
+    totalOutstandingUnit: 'T USD',
+    ytdIssuance: round(jitter(485, 0.06, rng), 1),
+    ytdIssuanceUnit: 'B USD',
+    avgSpread: round(jitter(142, 0.05, rng), 0),
+    avgSpreadUnit: 'bps',
+    delinquencyRate: round(jitter(2.8, 0.08, rng), 2),
+    delinquencyRateUnit: '%',
   };
 
-  // Payoff analysis for top 5 products by notional
-  const top5 = [...products].sort((a, b) => b.notional - a.notional).slice(0, 5);
-  const payoffAnalysis = top5.map(p => {
-    const isProtected = p.type === 'Capital Protected';
-    const barrierPct = p.barrierLevel / 100;
+  // ---- RMBS ----
+  const agencySeeds = [
+    { name: 'Fannie Mae 30Y', couponBase: 5.5, priceBase: 99.25, spreadBase: 68, cprBase: 8.2, delBase: 2.1, outBase: 4200 },
+    { name: 'Fannie Mae 15Y', couponBase: 4.75, priceBase: 100.12, spreadBase: 52, cprBase: 12.5, delBase: 1.4, outBase: 820 },
+    { name: 'Freddie Mac 30Y', couponBase: 5.5, priceBase: 99.18, spreadBase: 70, cprBase: 7.8, delBase: 2.0, outBase: 3100 },
+    { name: 'Freddie Mac 15Y', couponBase: 4.75, priceBase: 100.06, spreadBase: 54, cprBase: 11.8, delBase: 1.3, outBase: 610 },
+    { name: 'Ginnie Mae I 30Y', couponBase: 5.5, priceBase: 99.50, spreadBase: 82, cprBase: 9.5, delBase: 3.8, outBase: 2100 },
+    { name: 'Ginnie Mae II 30Y', couponBase: 5.5, priceBase: 99.44, spreadBase: 85, cprBase: 10.1, delBase: 4.0, outBase: 780 },
+  ];
 
-    // Scenario up (+20%)
-    let scenarioUp: number;
-    if (p.type === 'Autocallable' || p.type === 'Digital') {
-      scenarioUp = round(p.coupon, 2); // capped at coupon
-    } else if (isProtected) {
-      scenarioUp = round(rangef(12, 20, rng), 2); // participation rate ~60-100%
-    } else {
-      scenarioUp = round(p.coupon, 2);
-    }
+  const agency = agencySeeds.map(s => ({
+    name: s.name,
+    coupon: round(jitter(s.couponBase, 0.02, rng), 3),
+    price: round(jitter(s.priceBase, 0.005, rng), 4),
+    spread: round(jitter(s.spreadBase, 0.06, rng), 0),
+    prepaymentSpeed: round(jitter(s.cprBase, 0.08, rng), 1),
+    prepaymentSpeedUnit: 'CPR',
+    delinquency: round(jitter(s.delBase, 0.10, rng), 2),
+    delinquencyUnit: '%',
+    outstanding: round(jitter(s.outBase, 0.04, rng), 0),
+    outstandingUnit: 'B USD',
+  }));
 
-    // Scenario flat (0% move)
-    const scenarioFlat = round(p.coupon, 2);
+  const nonAgencySeeds = [
+    { name: 'Prime Jumbo', couponBase: 5.85, priceBase: 98.50, spreadBase: 125, cprBase: 6.2, delBase: 1.5, outBase: 180 },
+    { name: 'Prime Seasoned', couponBase: 4.25, priceBase: 96.75, spreadBase: 145, cprBase: 4.8, delBase: 2.2, outBase: 95 },
+    { name: 'Alt-A Fixed', couponBase: 5.40, priceBase: 92.25, spreadBase: 285, cprBase: 5.5, delBase: 8.5, outBase: 62 },
+    { name: 'Alt-A Hybrid ARM', couponBase: 4.90, priceBase: 88.50, spreadBase: 350, cprBase: 7.2, delBase: 11.2, outBase: 38 },
+    { name: 'Subprime Fixed', couponBase: 6.80, priceBase: 78.25, spreadBase: 520, cprBase: 4.1, delBase: 18.5, outBase: 28 },
+    { name: 'Subprime ARM', couponBase: 5.50, priceBase: 72.00, spreadBase: 680, cprBase: 3.8, delBase: 24.2, outBase: 15 },
+  ];
 
-    // Scenario down (-20%)
-    let scenarioDown: number;
-    if (isProtected) {
-      scenarioDown = round(rangef(0, 2, rng), 2); // protected principal + small coupon
-    } else if (0.8 > barrierPct) {
-      // -20% doesn't breach barrier
-      scenarioDown = round(p.coupon * rangef(0.6, 1.0, rng), 2);
-    } else {
-      // -20% breaches barrier
-      scenarioDown = round(-20 + p.coupon, 2);
-    }
+  const nonAgency = nonAgencySeeds.map(s => ({
+    name: s.name,
+    coupon: round(jitter(s.couponBase, 0.03, rng), 3),
+    price: round(jitter(s.priceBase, 0.01, rng), 4),
+    spread: round(jitter(s.spreadBase, 0.06, rng), 0),
+    prepaymentSpeed: round(jitter(s.cprBase, 0.10, rng), 1),
+    prepaymentSpeedUnit: 'CPR',
+    delinquency: round(jitter(s.delBase, 0.08, rng), 2),
+    delinquencyUnit: '%',
+    outstanding: round(jitter(s.outBase, 0.05, rng), 0),
+    outstandingUnit: 'B USD',
+  }));
 
-    // Scenario barrier breached
-    let scenarioBarrier: number;
-    if (isProtected) {
-      scenarioBarrier = round(rangef(-5, 0, rng), 2);
-    } else {
-      const lossFromBarrier = round((1 - barrierPct) * 100, 1);
-      scenarioBarrier = round(-lossFromBarrier + p.coupon * 0.5, 2);
-    }
+  const rmbs = { agency, nonAgency };
 
-    // Max loss
-    const maxLoss = isProtected ? round(rangef(5, 15, rng), 2) : round(100 - p.coupon, 2);
+  // ---- CMBS ----
+  const collateralTypes = ['Office', 'Retail', 'Multifamily', 'Industrial', 'Hotel'] as const;
+  const cmbsDealSeeds = [
+    { name: 'BANK 2024-BNK47', vintage: 2024, colIdx: 0, origBal: 1250, curFactor: 0.96, delBase: 4.8, walBase: 5.2, spreadBase: 145, rating: 'AAA' },
+    { name: 'BBCMS 2024-C28', vintage: 2024, colIdx: 1, origBal: 980, curFactor: 0.97, delBase: 3.2, walBase: 4.8, spreadBase: 138, rating: 'AAA' },
+    { name: 'BMARK 2023-B40', vintage: 2023, colIdx: 2, origBal: 1420, curFactor: 0.91, delBase: 1.5, walBase: 6.1, spreadBase: 112, rating: 'AAA' },
+    { name: 'CGCMT 2023-GC55', vintage: 2023, colIdx: 0, origBal: 870, curFactor: 0.89, delBase: 6.2, walBase: 5.8, spreadBase: 168, rating: 'AA' },
+    { name: 'WFCM 2024-C62', vintage: 2024, colIdx: 3, origBal: 1150, curFactor: 0.95, delBase: 0.8, walBase: 4.5, spreadBase: 108, rating: 'AAA' },
+    { name: 'JPMCC 2023-CBM3', vintage: 2023, colIdx: 4, origBal: 680, curFactor: 0.88, delBase: 5.5, walBase: 6.8, spreadBase: 195, rating: 'AA' },
+    { name: 'MSBAM 2024-C35', vintage: 2024, colIdx: 2, origBal: 1340, curFactor: 0.94, delBase: 1.2, walBase: 5.0, spreadBase: 118, rating: 'AAA' },
+    { name: 'CSAIL 2022-C5', vintage: 2022, colIdx: 0, origBal: 760, curFactor: 0.82, delBase: 8.5, walBase: 7.2, spreadBase: 225, rating: 'A' },
+    { name: 'COMM 2024-CBM7', vintage: 2024, colIdx: 1, origBal: 920, curFactor: 0.93, delBase: 3.8, walBase: 5.5, spreadBase: 152, rating: 'AAA' },
+    { name: 'GS 2023-GC54', vintage: 2023, colIdx: 3, origBal: 1080, curFactor: 0.90, delBase: 0.6, walBase: 6.3, spreadBase: 105, rating: 'AAA' },
+  ];
 
-    // Max gain
-    const maxGain = p.type === 'Capital Protected'
-      ? round(rangef(15, 30, rng), 2)
-      : round(p.coupon * (p.type === 'Range Accrual' ? 1.0 : 1.0), 2);
-
+  const cmbs = cmbsDealSeeds.map(s => {
+    const origBalance = round(jitter(s.origBal, 0.03, rng), 0);
+    const currentBalance = round(origBalance * jitter(s.curFactor, 0.02, rng), 0);
     return {
-      name: p.name,
-      scenarioUp,
-      scenarioUpUnit: '%',
-      scenarioFlat,
-      scenarioFlatUnit: '%',
-      scenarioDown,
-      scenarioDownUnit: '%',
-      scenarioBarrier,
-      scenarioBarrierUnit: '%',
-      maxLoss,
-      maxLossUnit: '%',
-      maxGain,
-      maxGainUnit: '%',
+      name: s.name,
+      vintage: s.vintage,
+      collateralType: collateralTypes[s.colIdx],
+      originalBalance: origBalance,
+      originalBalanceUnit: 'M USD',
+      currentBalance,
+      currentBalanceUnit: 'M USD',
+      delinquencyRate: round(jitter(s.delBase, 0.10, rng), 2),
+      delinquencyRateUnit: '%',
+      wal: round(jitter(s.walBase, 0.05, rng), 1),
+      walUnit: 'years',
+      spread: round(jitter(s.spreadBase, 0.06, rng), 0),
+      spreadUnit: 'bps',
+      rating: s.rating,
     };
   });
 
-  // Issuance by type (6 types)
-  const allTypes = ['Autocallable', 'Reverse Convertible', 'Range Accrual', 'Barrier Note', 'Capital Protected', 'Digital'];
-  const issuanceByType = allTypes.map(type => {
-    const typeProducts = products.filter(p => p.type === type);
-    const count = typeProducts.length || Math.floor(rangef(5, 25, rng));
-    const totalNotional = typeProducts.length > 0
-      ? typeProducts.reduce((s, p) => s + p.notional, 0)
-      : Math.round(rangef(200, 2000, rng));
-    const avgTypeCoupon = typeProducts.length > 0
-      ? round(typeProducts.reduce((s, p) => s + p.coupon, 0) / typeProducts.length, 2)
-      : round(rangef(6, 14, rng), 2);
-    const avgTypeBarrier = typeProducts.length > 0
-      ? round(typeProducts.reduce((s, p) => s + p.barrierLevel, 0) / typeProducts.length, 1)
-      : round(rangef(60, 75, rng), 1);
+  // ---- CLO ----
+  const cloManagers = ['Carlyle', 'Apollo', 'Ares', 'PGIM', 'Blackstone', 'KKR', 'Oak Hill', 'GSO/Blackstone', 'Canyon', 'HPS', 'BlueMountain', 'Octagon'] as const;
+  const cloSeeds = [
+    { name: 'Carlyle US CLO 2024-1', mgrIdx: 0, vintage: 2024, aumBase: 520, defBase: 0.35, recBase: 62, reinvEnd: '2029-04' },
+    { name: 'Apollo Credit CLO XIX', mgrIdx: 1, vintage: 2024, aumBase: 480, defBase: 0.28, recBase: 65, reinvEnd: '2029-01' },
+    { name: 'Ares LXVIII CLO', mgrIdx: 2, vintage: 2023, aumBase: 610, defBase: 0.42, recBase: 58, reinvEnd: '2028-07' },
+    { name: 'PGIM CLO 2024-2', mgrIdx: 3, vintage: 2024, aumBase: 445, defBase: 0.22, recBase: 68, reinvEnd: '2029-06' },
+    { name: 'Blackstone CLO 2023-3', mgrIdx: 4, vintage: 2023, aumBase: 550, defBase: 0.48, recBase: 55, reinvEnd: '2028-10' },
+    { name: 'KKR CLO 42', mgrIdx: 5, vintage: 2024, aumBase: 490, defBase: 0.31, recBase: 63, reinvEnd: '2029-03' },
+    { name: 'Oak Hill CLO 2024-1', mgrIdx: 6, vintage: 2024, aumBase: 410, defBase: 0.39, recBase: 60, reinvEnd: '2029-05' },
+    { name: 'GSO Logan Park CLO V', mgrIdx: 7, vintage: 2023, aumBase: 530, defBase: 0.25, recBase: 66, reinvEnd: '2028-09' },
+    { name: 'Canyon CLO 2024-2', mgrIdx: 8, vintage: 2024, aumBase: 380, defBase: 0.52, recBase: 54, reinvEnd: '2029-02' },
+    { name: 'HPS Loan Mgmt 2023-18', mgrIdx: 9, vintage: 2023, aumBase: 470, defBase: 0.36, recBase: 61, reinvEnd: '2028-11' },
+    { name: 'BlueMountain CLO XXXII', mgrIdx: 10, vintage: 2024, aumBase: 425, defBase: 0.44, recBase: 57, reinvEnd: '2029-07' },
+    { name: 'Octagon 58 CLO', mgrIdx: 11, vintage: 2024, aumBase: 395, defBase: 0.33, recBase: 64, reinvEnd: '2029-08' },
+  ];
+
+  const clo = cloSeeds.map(s => {
+    const aaaSpread = round(jitter(145, 0.05, rng), 0);
+    const aaSpread = round(jitter(205, 0.06, rng), 0);
+    const aSpread = round(jitter(280, 0.07, rng), 0);
+    const bbbSpread = round(jitter(450, 0.08, rng), 0);
+    const bbSpread = round(jitter(800, 0.10, rng), 0);
+    const equityYield = round(rangef(12.5, 18.5, rng), 2);
 
     return {
-      type,
-      count,
-      totalNotional,
-      totalNotionalUnit: 'M USD',
-      avgCoupon: avgTypeCoupon,
+      name: s.name,
+      manager: cloManagers[s.mgrIdx],
+      vintage: s.vintage,
+      aum: round(jitter(s.aumBase, 0.04, rng), 0),
+      aumUnit: 'M USD',
+      tranches: {
+        AAA: { spread: aaaSpread, spreadUnit: 'bps', price: round(jitter(99.85, 0.003, rng), 3), rating: 'Aaa/AAA' },
+        AA: { spread: aaSpread, spreadUnit: 'bps', price: round(jitter(99.50, 0.005, rng), 3), rating: 'Aa2/AA' },
+        A: { spread: aSpread, spreadUnit: 'bps', price: round(jitter(98.75, 0.008, rng), 3), rating: 'A2/A' },
+        BBB: { spread: bbbSpread, spreadUnit: 'bps', price: round(jitter(97.25, 0.012, rng), 3), rating: 'Baa2/BBB' },
+        BB: { spread: bbSpread, spreadUnit: 'bps', price: round(jitter(94.50, 0.018, rng), 3), rating: 'Ba2/BB' },
+        Equity: { spread: equityYield, spreadUnit: '% IRR', price: round(jitter(82.00, 0.03, rng), 3), rating: 'NR' },
+      },
+      defaultRate: round(jitter(s.defBase, 0.12, rng), 2),
+      defaultRateUnit: '%',
+      recoveryRate: round(jitter(s.recBase, 0.05, rng), 1),
+      recoveryRateUnit: '%',
+      reinvestmentEnd: s.reinvEnd,
+    };
+  });
+
+  // ---- ABS ----
+  const abs = {
+    autoLoans: {
+      outstanding: round(jitter(310, 0.04, rng), 0),
+      outstandingUnit: 'B USD',
+      spread: round(jitter(85, 0.06, rng), 0),
+      spreadUnit: 'bps',
+      delinquencyRate: round(jitter(3.8, 0.08, rng), 2),
+      delinquencyRateUnit: '%',
+      chargeOffRate: round(jitter(2.1, 0.10, rng), 2),
+      chargeOffRateUnit: '%',
+      avgCoupon: round(jitter(5.25, 0.03, rng), 2),
       avgCouponUnit: '%',
-      avgBarrier: avgTypeBarrier,
-      avgBarrierUnit: '%',
+      wal: round(jitter(2.4, 0.06, rng), 1),
+      walUnit: 'years',
+    },
+    creditCards: {
+      outstanding: round(jitter(185, 0.04, rng), 0),
+      outstandingUnit: 'B USD',
+      spread: round(jitter(62, 0.06, rng), 0),
+      spreadUnit: 'bps',
+      delinquencyRate: round(jitter(2.5, 0.08, rng), 2),
+      delinquencyRateUnit: '%',
+      chargeOffRate: round(jitter(3.8, 0.10, rng), 2),
+      chargeOffRateUnit: '%',
+      avgCoupon: round(jitter(4.85, 0.03, rng), 2),
+      avgCouponUnit: '%',
+      wal: round(jitter(1.8, 0.06, rng), 1),
+      walUnit: 'years',
+    },
+    studentLoans: {
+      outstanding: round(jitter(145, 0.04, rng), 0),
+      outstandingUnit: 'B USD',
+      spread: round(jitter(95, 0.06, rng), 0),
+      spreadUnit: 'bps',
+      delinquencyRate: round(jitter(5.2, 0.08, rng), 2),
+      delinquencyRateUnit: '%',
+      chargeOffRate: round(jitter(1.8, 0.10, rng), 2),
+      chargeOffRateUnit: '%',
+      avgCoupon: round(jitter(4.50, 0.03, rng), 2),
+      avgCouponUnit: '%',
+      wal: round(jitter(5.5, 0.06, rng), 1),
+      walUnit: 'years',
+    },
+    equipment: {
+      outstanding: round(jitter(78, 0.04, rng), 0),
+      outstandingUnit: 'B USD',
+      spread: round(jitter(72, 0.06, rng), 0),
+      spreadUnit: 'bps',
+      delinquencyRate: round(jitter(1.4, 0.08, rng), 2),
+      delinquencyRateUnit: '%',
+      chargeOffRate: round(jitter(0.8, 0.10, rng), 2),
+      chargeOffRateUnit: '%',
+      avgCoupon: round(jitter(5.10, 0.03, rng), 2),
+      avgCouponUnit: '%',
+      wal: round(jitter(3.2, 0.06, rng), 1),
+      walUnit: 'years',
+    },
+  };
+
+  // ---- Recent Issuance ----
+  const leadManagers = ['JPMorgan', 'Goldman Sachs', 'Morgan Stanley', 'Citi', 'Wells Fargo', 'BofA Securities', 'Barclays', 'Deutsche Bank'] as const;
+  const issuanceTypes = ['RMBS', 'CMBS', 'CLO', 'ABS'] as const;
+
+  const issuanceSeeds = [
+    { name: 'FNMA 2024-M18', type: 0, sizeBase: 1850, spreadBase: 58 },
+    { name: 'BANK 2024-BNK48', type: 1, sizeBase: 1120, spreadBase: 132 },
+    { name: 'Carlyle US CLO 2024-3', type: 2, sizeBase: 510, spreadBase: 142 },
+    { name: 'World Omni Auto 2024-B', type: 3, sizeBase: 875, spreadBase: 78 },
+    { name: 'FHLMC 2024-HQA3', type: 0, sizeBase: 920, spreadBase: 62 },
+    { name: 'BBCMS 2024-C29', type: 1, sizeBase: 1350, spreadBase: 128 },
+    { name: 'Ares LXIX CLO', type: 2, sizeBase: 620, spreadBase: 148 },
+    { name: 'Chase Issuance Trust 2024-A2', type: 3, sizeBase: 750, spreadBase: 55 },
+    { name: 'GNMA 2024-H12', type: 0, sizeBase: 2100, spreadBase: 72 },
+    { name: 'MSBAM 2024-C36', type: 1, sizeBase: 980, spreadBase: 138 },
+    { name: 'KKR CLO 44', type: 2, sizeBase: 480, spreadBase: 140 },
+    { name: 'SLM Student Loan Trust 2024-A', type: 3, sizeBase: 680, spreadBase: 92 },
+  ];
+
+  // Generate pricing dates for the last 30 days
+  const now = new Date();
+  const issuance = issuanceSeeds.map(s => {
+    const daysAgo = Math.floor(rng() * 30);
+    const pricingDate = new Date(now);
+    pricingDate.setDate(pricingDate.getDate() - daysAgo);
+
+    return {
+      name: s.name,
+      type: issuanceTypes[s.type],
+      size: round(jitter(s.sizeBase, 0.08, rng), 0),
+      sizeUnit: 'M USD',
+      pricingDate: pricingDate.toISOString().slice(0, 10),
+      leadManager: pick(leadManagers, rng),
+      topTrancheSpread: round(jitter(s.spreadBase, 0.06, rng), 0),
+      topTrancheSpreadUnit: 'bps',
     };
   });
 
-  // Underlying performance (6 underlyings)
-  const underlyingPerformance = UNDERLYINGS.map(u => {
-    const spotPrice = round(jitter(u.spotBase, 0.04, rng), 2);
-    const change1m = round((rng() - 0.45) * 12, 2); // slight positive bias
+  // ---- Prepayment Monitor (30Y FNMA coupon stack) ----
+  const couponStack = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5];
+  // CPR expectations: low coupons have very low prepay, higher coupons have higher prepay
+  const cprBases: Record<number, number> = {
+    2.0: 2.8, 2.5: 3.5, 3.0: 4.8, 3.5: 6.2, 4.0: 8.5,
+    4.5: 12.0, 5.0: 18.5, 5.5: 25.0, 6.0: 32.0, 6.5: 38.0,
+  };
 
-    // Find nearest barrier product for this underlying
-    const linkedProducts = products.filter(p => p.underlying === u.name && p.status === 'Live');
-    const productsLinked = linkedProducts.length || Math.floor(rangef(3, 15, rng));
-
-    // Distance to barrier: how far spot is from nearest barrier level
-    let distToBarrier: number;
-    if (linkedProducts.length > 0) {
-      const nearestBarrier = Math.max(...linkedProducts.map(p => p.barrierLevel));
-      distToBarrier = round(100 - nearestBarrier + (rng() - 0.5) * 5, 1);
-    } else {
-      distToBarrier = round(rangef(20, 40, rng), 1);
-    }
+  const prepaymentMonitor = couponStack.map(coupon => {
+    const cprBase = cprBases[coupon];
+    const cpr = round(jitter(cprBase, 0.08, rng), 1);
+    const change1m = round((rng() - 0.48) * cprBase * 0.12, 1);
+    const avg3m = round(jitter(cprBase, 0.04, rng), 1);
 
     return {
-      underlying: u.name,
-      spotPrice,
+      coupon,
+      couponLabel: `FNMA 30Y ${coupon.toFixed(1)}`,
+      cpr,
+      cprUnit: 'CPR',
       change1m,
-      change1mUnit: '%',
-      distToBarrier,
-      distToBarrierUnit: '%',
-      productsLinked,
+      change1mUnit: 'CPR',
+      avg3m,
+      avg3mUnit: 'CPR',
     };
   });
 
   return {
-    summary,
-    products,
-    payoffAnalysis,
-    issuanceByType,
-    underlyingPerformance,
+    marketOverview,
+    rmbs,
+    cmbs,
+    clo,
+    abs,
+    issuance,
+    prepaymentMonitor,
     generatedAt: new Date().toISOString(),
   };
 }
 
-// ── Route ──
+// -- Route --
 
 router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-    if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
+    if (cacheData && now - cacheTime < CACHE_TTL) return res.json(cacheData);
     const data = generate();
-    cache = { data, ts: now };
+    cacheData = data;
+    cacheTime = now;
     res.json(data);
-  } catch (err) {
-    console.error('[StructuredProducts] Error:', (err as Error).message);
-    if (cache) return res.json(cache.data);
+  } catch (err: unknown) {
+    console.error('[StructuredProducts] Error:', (err as Error)?.message);
+    if (cacheData) return res.json(cacheData);
     res.status(500).json({ error: 'Failed to generate structured products data' });
   }
 });

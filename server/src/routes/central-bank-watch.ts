@@ -6,11 +6,7 @@ const router = Router();
 
 function hashSeed(str: string): number {
   let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
+  for (let i = 0; i < str.length; i++) { const char = str.charCodeAt(i); hash = ((hash << 5) - hash) + char; hash |= 0; }
   return Math.abs(hash);
 }
 
@@ -32,86 +28,151 @@ let cacheTime = 0;
 // ── Static configs ──
 
 interface BankConfig {
+  id: string;
   name: string;
-  abbr: string;
+  country: string;
   currentRate: number;
-  previousRate: number;
+  lastChange: number; // bps
   lastChangeDate: string;
-  lastChangeDirection: 'hike' | 'cut' | 'hold';
   nextMeetingDayOffset: number;
   meetingIntervalDays: number;
-  ytdChangeBps: number;
+  inflationTarget: number;
+  baseInflation: number;
+  baseBias: 'hawkish' | 'dovish' | 'neutral';
+  balanceSheet: number; // trillions in local currency
+  balanceSheetChangeYoY: number; // percent
+  currency: string;
 }
 
 const BANKS: BankConfig[] = [
-  { name: 'Federal Reserve', abbr: 'Fed', currentRate: 5.375, previousRate: 5.50, lastChangeDate: '2024-12-18', lastChangeDirection: 'cut', nextMeetingDayOffset: 42, meetingIntervalDays: 42, ytdChangeBps: -25 },
-  { name: 'European Central Bank', abbr: 'ECB', currentRate: 4.00, previousRate: 4.25, lastChangeDate: '2024-10-17', lastChangeDirection: 'cut', nextMeetingDayOffset: 35, meetingIntervalDays: 42, ytdChangeBps: -75 },
-  { name: 'Bank of Japan', abbr: 'BOJ', currentRate: 0.50, previousRate: 0.25, lastChangeDate: '2025-01-24', lastChangeDirection: 'hike', nextMeetingDayOffset: 28, meetingIntervalDays: 49, ytdChangeBps: 25 },
-  { name: 'Bank of England', abbr: 'BOE', currentRate: 5.25, previousRate: 5.25, lastChangeDate: '2024-09-19', lastChangeDirection: 'hold', nextMeetingDayOffset: 38, meetingIntervalDays: 42, ytdChangeBps: 0 },
-  { name: "People's Bank of China", abbr: 'PBOC', currentRate: 3.45, previousRate: 3.55, lastChangeDate: '2024-08-20', lastChangeDirection: 'cut', nextMeetingDayOffset: 20, meetingIntervalDays: 30, ytdChangeBps: -35 },
-  { name: 'Reserve Bank of Australia', abbr: 'RBA', currentRate: 4.35, previousRate: 4.35, lastChangeDate: '2023-11-07', lastChangeDirection: 'hold', nextMeetingDayOffset: 45, meetingIntervalDays: 42, ytdChangeBps: 0 },
-  { name: 'Bank of Canada', abbr: 'BOC', currentRate: 5.00, previousRate: 5.00, lastChangeDate: '2024-01-24', lastChangeDirection: 'hold', nextMeetingDayOffset: 50, meetingIntervalDays: 49, ytdChangeBps: 0 },
-  { name: 'Swiss National Bank', abbr: 'SNB', currentRate: 1.75, previousRate: 1.75, lastChangeDate: '2023-12-14', lastChangeDirection: 'hold', nextMeetingDayOffset: 60, meetingIntervalDays: 91, ytdChangeBps: 0 },
-  { name: 'Sveriges Riksbank', abbr: 'Riksbank', currentRate: 4.00, previousRate: 4.00, lastChangeDate: '2024-02-01', lastChangeDirection: 'hold', nextMeetingDayOffset: 55, meetingIntervalDays: 49, ytdChangeBps: 0 },
-  { name: 'Reserve Bank of New Zealand', abbr: 'RBNZ', currentRate: 5.50, previousRate: 5.50, lastChangeDate: '2024-02-28', lastChangeDirection: 'hold', nextMeetingDayOffset: 48, meetingIntervalDays: 49, ytdChangeBps: 0 },
+  { id: 'fed', name: 'Federal Reserve', country: 'United States', currentRate: 5.375, lastChange: -25, lastChangeDate: '2024-12-18', nextMeetingDayOffset: 42, meetingIntervalDays: 42, inflationTarget: 2.0, baseInflation: 3.1, baseBias: 'hawkish', balanceSheet: 7.5, balanceSheetChangeYoY: -8.2, currency: 'USD' },
+  { id: 'ecb', name: 'European Central Bank', country: 'Eurozone', currentRate: 4.50, lastChange: -25, lastChangeDate: '2024-10-17', nextMeetingDayOffset: 35, meetingIntervalDays: 42, inflationTarget: 2.0, baseInflation: 2.9, baseBias: 'neutral', balanceSheet: 6.6, balanceSheetChangeYoY: -12.5, currency: 'EUR' },
+  { id: 'boj', name: 'Bank of Japan', country: 'Japan', currentRate: -0.10, lastChange: 0, lastChangeDate: '2024-03-19', nextMeetingDayOffset: 28, meetingIntervalDays: 49, inflationTarget: 2.0, baseInflation: 2.8, baseBias: 'dovish', balanceSheet: 756, balanceSheetChangeYoY: 2.1, currency: 'JPY' },
+  { id: 'boe', name: 'Bank of England', country: 'United Kingdom', currentRate: 5.25, lastChange: 0, lastChangeDate: '2024-09-19', nextMeetingDayOffset: 38, meetingIntervalDays: 42, inflationTarget: 2.0, baseInflation: 4.0, baseBias: 'hawkish', balanceSheet: 0.82, balanceSheetChangeYoY: -14.3, currency: 'GBP' },
+  { id: 'pboc', name: "People's Bank of China", country: 'China', currentRate: 3.45, lastChange: -10, lastChangeDate: '2024-08-20', nextMeetingDayOffset: 20, meetingIntervalDays: 30, inflationTarget: 3.0, baseInflation: 0.7, baseBias: 'dovish', balanceSheet: 45.2, balanceSheetChangeYoY: 3.8, currency: 'CNY' },
+  { id: 'rba', name: 'Reserve Bank of Australia', country: 'Australia', currentRate: 4.35, lastChange: 0, lastChangeDate: '2023-11-07', nextMeetingDayOffset: 45, meetingIntervalDays: 42, inflationTarget: 2.5, baseInflation: 3.4, baseBias: 'neutral', balanceSheet: 0.53, balanceSheetChangeYoY: -9.7, currency: 'AUD' },
+  { id: 'boc', name: 'Bank of Canada', country: 'Canada', currentRate: 5.00, lastChange: 0, lastChangeDate: '2024-01-24', nextMeetingDayOffset: 50, meetingIntervalDays: 49, inflationTarget: 2.0, baseInflation: 2.9, baseBias: 'neutral', balanceSheet: 0.27, balanceSheetChangeYoY: -18.6, currency: 'CAD' },
+  { id: 'snb', name: 'Swiss National Bank', country: 'Switzerland', currentRate: 1.75, lastChange: 0, lastChangeDate: '2023-12-14', nextMeetingDayOffset: 60, meetingIntervalDays: 91, inflationTarget: 2.0, baseInflation: 1.3, baseBias: 'neutral', balanceSheet: 0.84, balanceSheetChangeYoY: -5.1, currency: 'CHF' },
+  { id: 'riksbank', name: 'Sveriges Riksbank', country: 'Sweden', currentRate: 4.00, lastChange: 0, lastChangeDate: '2024-02-01', nextMeetingDayOffset: 55, meetingIntervalDays: 49, inflationTarget: 2.0, baseInflation: 3.2, baseBias: 'neutral', balanceSheet: 0.88, balanceSheetChangeYoY: -22.1, currency: 'SEK' },
+  { id: 'norges', name: 'Norges Bank', country: 'Norway', currentRate: 4.50, lastChange: 25, lastChangeDate: '2023-12-14', nextMeetingDayOffset: 40, meetingIntervalDays: 49, inflationTarget: 2.0, baseInflation: 4.8, baseBias: 'hawkish', balanceSheet: 0.42, balanceSheetChangeYoY: -3.2, currency: 'NOK' },
+  { id: 'rbnz', name: 'Reserve Bank of New Zealand', country: 'New Zealand', currentRate: 5.50, lastChange: 0, lastChangeDate: '2024-02-28', nextMeetingDayOffset: 48, meetingIntervalDays: 49, inflationTarget: 2.0, baseInflation: 4.7, baseBias: 'hawkish', balanceSheet: 0.058, balanceSheetChangeYoY: -11.4, currency: 'NZD' },
+  { id: 'rbi', name: 'Reserve Bank of India', country: 'India', currentRate: 6.50, lastChange: 0, lastChangeDate: '2023-02-08', nextMeetingDayOffset: 32, meetingIntervalDays: 56, inflationTarget: 4.0, baseInflation: 5.1, baseBias: 'neutral', balanceSheet: 62.5, balanceSheetChangeYoY: 12.3, currency: 'INR' },
 ];
 
-const RATE_PATH_BANKS = ['Fed', 'ECB', 'BOE'] as const;
+const VOTE_SPLITS = ['9-0', '8-1', '7-2', '6-3', '5-4', '8-0-1', '7-1-1', '6-2-1', '5-3-1', '11-0', '10-1', '9-2'];
 
-const RATE_PATH_BASE: Record<string, { baseRate: number; cutBias: number }> = {
-  Fed: { baseRate: 5.375, cutBias: 0.65 },
-  ECB: { baseRate: 4.00, cutBias: 0.70 },
-  BOE: { baseRate: 5.25, cutBias: 0.60 },
+const GUIDANCE_PHRASES: Record<string, string[]> = {
+  fed: [
+    'Prepared to adjust the stance of monetary policy as appropriate',
+    'Committee remains highly attentive to inflation risks',
+    'Economic activity expanded at a solid pace',
+    'Labor market remains tight but gradually rebalancing',
+    'Need sustained evidence inflation is moving to 2%',
+    'We will let the data guide our decisions',
+  ],
+  ecb: [
+    'Governing Council determined to ensure timely return to target',
+    'Data-dependent approach remains appropriate',
+    'Domestic price pressures remain elevated',
+    'The transmission of our policy is working',
+    'We should not declare victory too early',
+    'Inflation expected to decline gradually',
+  ],
+  boj: [
+    'Accommodative financial conditions to be maintained',
+    'Virtuous cycle between wages and prices strengthening',
+    'Will adjust degree of easing if outlook realized',
+    'The exit from ultra-loose policy must be carefully managed',
+    'Spring wage negotiations show promising results',
+    'Underlying inflation expected to gradually increase',
+  ],
+  boe: [
+    'Committee voted to maintain Bank Rate at current level',
+    'Services inflation remains elevated',
+    'Restrictive monetary policy is weighing on activity',
+    'We need to see more evidence that inflation persistence is fading',
+    'Rate cuts will come, but we must be patient',
+    'We are on the last mile of bringing inflation down',
+  ],
+  pboc: [
+    'Prudent monetary policy will be precise and forceful',
+    'Will keep liquidity reasonably ample',
+    'Focus on supporting the real economy',
+    'Will use structural monetary policy tools flexibly',
+    'Cross-cyclical adjustment to stabilize expectations',
+    'Maintain the yuan exchange rate basically stable',
+  ],
+  rba: [
+    'Returning inflation to target within a reasonable timeframe',
+    'Board remains resolute in its determination to return inflation to target',
+    'Inflation is still too high and is proving persistent',
+    'The path of interest rates will depend upon the data',
+    'A further increase in rates cannot be ruled out',
+    'Conditions in the labor market continue to ease gradually',
+  ],
+  boc: [
+    'Governing Council remains prepared to raise rates further if needed',
+    'Monetary policy is working to ease price pressures',
+    'Shelter cost inflation remains elevated',
+    'The economy is in excess supply',
+    'Looking for sustained downward momentum in core inflation',
+    'Progress toward 2% target is expected to be gradual and uneven',
+  ],
+  snb: [
+    'Tighter monetary policy counters inflationary pressure',
+    'Swiss franc appreciation has dampened imported inflation',
+    'Inflation is likely to remain in the target range',
+    'Prepared to be active in the foreign exchange market as necessary',
+    'The global economic outlook remains uncertain',
+    'Conditions in the mortgage and real estate markets remain under watch',
+  ],
+  riksbank: [
+    'Monetary policy needs to remain contractionary',
+    'Inflation is on the way down but risks remain',
+    'The krona has strengthened somewhat',
+    'Rate cuts may begin if inflation continues falling',
+    'Economic activity is expected to be weak in the near term',
+    'Underlying inflation trend is still above target',
+  ],
+  norges: [
+    'Policy rate likely to remain at current level for some time',
+    'Inflation is above target and the krone is weak',
+    'Tighter policy is needed to bring inflation down',
+    'Output and employment are expected to decline slightly',
+    'Wage growth has been higher than projected',
+    'Monetary policy is having a tightening effect on the economy',
+  ],
+  rbnz: [
+    'The OCR needs to remain at restrictive levels for the foreseeable future',
+    'Non-tradables inflation is still too high',
+    'Demand growth needs to weaken further to reduce inflation',
+    'Migration has eased some pressure in the labor market',
+    'House price inflation is a risk to the outlook',
+    'Committee is confident that inflation will return to target',
+  ],
+  rbi: [
+    'Remains focused on withdrawal of accommodation',
+    'Food inflation has been volatile and warrants monitoring',
+    'The Indian economy has shown resilience amid global uncertainty',
+    'Policy stance remains disinflationary',
+    'High-frequency indicators suggest economic activity remains buoyant',
+    'Core inflation has moderated but services inflation remains sticky',
+  ],
 };
 
-const BALANCE_SHEET_BANKS = ['Fed', 'ECB', 'BOJ'] as const;
-
-interface BalanceSheetConfig {
-  totalAssets: number;
-  govtBonds: number;
-  mortgageBonds: number;
-  corporateBonds: number;
-  percentOfGDP: number;
-  peakAssets: number;
-}
-
-const BALANCE_SHEET_BASE: Record<string, BalanceSheetConfig> = {
-  Fed: { totalAssets: 7.5, govtBonds: 4.8, mortgageBonds: 2.3, corporateBonds: 0, percentOfGDP: 27.2, peakAssets: 8.97 },
-  ECB: { totalAssets: 6.6, govtBonds: 4.0, mortgageBonds: 0, corporateBonds: 0.38, percentOfGDP: 48.5, peakAssets: 8.84 },
-  BOJ: { totalAssets: 5.4, govtBonds: 4.2, mortgageBonds: 0, corporateBonds: 0.22, percentOfGDP: 127.0, peakAssets: 5.56 },
+const TONE_MAP: Record<string, ('hawkish' | 'dovish' | 'neutral' | 'mixed')[]> = {
+  hawkish: ['hawkish', 'hawkish', 'mixed', 'neutral'],
+  dovish: ['dovish', 'dovish', 'mixed', 'neutral'],
+  neutral: ['neutral', 'mixed', 'hawkish', 'dovish'],
 };
-
-const DIVERGENCE_PAIRS = [
-  { pair: 'Fed-ECB', bank1: 'Fed', bank2: 'ECB', fxPair: 'EUR/USD' },
-  { pair: 'Fed-BOJ', bank1: 'Fed', bank2: 'BOJ', fxPair: 'USD/JPY' },
-  { pair: 'Fed-BOE', bank1: 'Fed', bank2: 'BOE', fxPair: 'GBP/USD' },
-  { pair: 'ECB-BOE', bank1: 'ECB', bank2: 'BOE', fxPair: 'EUR/GBP' },
-  { pair: 'ECB-BOJ', bank1: 'ECB', bank2: 'BOJ', fxPair: 'EUR/JPY' },
-];
-
-interface StatementTemplate {
-  bank: string;
-  type: 'meeting' | 'minutes' | 'speech';
-  phrases: string[];
-}
-
-const STATEMENT_TEMPLATES: StatementTemplate[] = [
-  { bank: 'Federal Reserve', type: 'meeting', phrases: ['Committee remains attentive to inflation risks', 'Prepared to adjust stance if risks emerge', 'Economic activity expanded at a solid pace', 'Labor market remains tight but gradually rebalancing'] },
-  { bank: 'Federal Reserve', type: 'minutes', phrases: ['Several participants noted upside risks to inflation', 'Most agreed policy is well positioned', 'Some members saw risks of easing too soon', 'Participants discussed the uncertain path of disinflation'] },
-  { bank: 'Federal Reserve', type: 'speech', phrases: ['We are not yet at the point of considering rate cuts', 'Need sustained evidence inflation is moving to 2%', 'The labor market has come into better balance', 'We will let the data guide our decisions'] },
-  { bank: 'European Central Bank', type: 'meeting', phrases: ['Governing Council determined to ensure timely return to target', 'Data-dependent approach remains appropriate', 'Domestic price pressures remain elevated', 'Inflation expected to decline gradually over 2024'] },
-  { bank: 'European Central Bank', type: 'speech', phrases: ['We see encouraging signs on the inflation front', 'Wage growth moderating but still above compatible levels', 'The transmission of our policy is working', 'We should not declare victory too early'] },
-  { bank: 'Bank of Japan', type: 'meeting', phrases: ['Accommodative financial conditions to be maintained', 'Virtuous cycle between wages and prices strengthening', 'Will adjust degree of easing if outlook realized', 'Underlying inflation expected to gradually increase'] },
-  { bank: 'Bank of Japan', type: 'speech', phrases: ['Spring wage negotiations show promising results', 'Conditions for normalizing policy are falling into place', 'We must watch for second-round effects of yen weakness', 'The exit from ultra-loose policy must be carefully managed'] },
-  { bank: 'Bank of England', type: 'meeting', phrases: ['Committee voted to maintain Bank Rate at current level', 'Services inflation remains elevated', 'Restrictive monetary policy is weighing on activity', 'Risks around the inflation outlook remain skewed to the upside'] },
-  { bank: 'Bank of England', type: 'speech', phrases: ['We need to see more evidence that inflation persistence is fading', 'The economy is evolving broadly in line with expectations', 'We are on the last mile of bringing inflation down', 'Rate cuts will come, but we must be patient'] },
-];
 
 // ── Data generation ──
 
 function generate() {
-  const seed = hashSeed('central-bank-watch-' + new Date().toISOString().slice(0, 10));
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const seed = hashSeed('central-bank-watch-' + todayStr);
   const rng = mulberry32(seed);
+
   const round2 = (v: number) => Math.round(v * 100) / 100;
   const round1 = (v: number) => Math.round(v * 10) / 10;
   const pick = <T>(arr: readonly T[] | T[]): T => arr[Math.floor(rng() * arr.length)];
@@ -119,247 +180,234 @@ function generate() {
 
   const today = new Date();
 
-  // Helper: generate a future date from today
   const futureDate = (daysAhead: number): string => {
     const d = new Date(today);
     d.setDate(d.getDate() + daysAhead);
     return d.toISOString().slice(0, 10);
   };
 
-  // Helper: generate a past date from today
   const pastDate = (daysAgo: number): string => {
     const d = new Date(today);
     d.setDate(d.getDate() - daysAgo);
     return d.toISOString().slice(0, 10);
   };
 
-  // ── 1. Rate Decisions ──
+  // ── 1. Banks ──
 
-  const rateDecisions = BANKS.map((b) => {
-    const rateJitter = round2(jitter(b.currentRate, 0.03));
-    const currentRate = rateJitter;
-    const previousRate = round2(b.previousRate + (rng() - 0.5) * 0.02);
+  const banks = BANKS.map((b) => {
+    const rateNoise = round2(jitter(b.currentRate, 0.02));
+    const currentRate = rateNoise;
+    const lastChange = b.lastChange + (rng() < 0.3 ? (rng() > 0.5 ? 25 : -25) : 0);
+    const lastChangeDate = b.lastChangeDate;
 
-    // Determine last change
-    const directions: Array<'hike' | 'cut' | 'hold'> = ['hike', 'cut', 'hold'];
-    const lastChangeDirection = rng() < 0.6 ? b.lastChangeDirection : pick(directions);
+    const meetingOffset = Math.floor(rng() * 30) + 10;
+    const nextMeeting = futureDate(meetingOffset);
 
-    // Realistic last change date
-    const daysAgoChange = Math.floor(rng() * 90) + 14;
-    const lastChangeDate = rng() < 0.5 ? b.lastChangeDate : pastDate(daysAgoChange);
+    const inflationTarget = b.inflationTarget;
+    const currentInflation = round1(jitter(b.baseInflation, 0.4));
 
-    // Next meeting date
-    const meetingOffset = Math.floor(rng() * b.meetingIntervalDays) + 7;
-    const nextMeetingDate = futureDate(meetingOffset);
+    const biases: Array<'hawkish' | 'dovish' | 'neutral'> = ['hawkish', 'dovish', 'neutral'];
+    const bias = rng() < 0.7 ? b.baseBias : pick(biases);
 
-    // Market-implied rate for next meeting
-    const impliedShift = (rng() - 0.45) * 0.5; // slight downward bias (cut expectations)
-    const marketImpliedRate = round2(currentRate + impliedShift * 0.25);
-
-    // Probabilities sum to 100
-    const holdBase = 30 + rng() * 50; // 30-80
-    const remainingProb = 100 - holdBase;
-    const hikeShare = rng();
-    const rawHike = round1(remainingProb * hikeShare);
-    const rawCut = round1(remainingProb - rawHike);
-    const probabilityHold = round1(100 - rawHike - rawCut);
-
-    // YTD change
-    const ytdBase = b.ytdChangeBps;
-    const ytdJitter = Math.floor((rng() - 0.5) * 30);
-    const ytdChangeBps = ytdBase + ytdJitter;
+    const balanceSheet = round2(jitter(b.balanceSheet, b.balanceSheet * 0.02));
+    const balanceSheetChangeYoY = round1(jitter(b.balanceSheetChangeYoY, 1.5));
 
     return {
       name: b.name,
+      country: b.country,
       currentRate,
-      previousRate,
+      lastChange,
       lastChangeDate,
-      lastChangeDirection,
-      nextMeetingDate,
-      marketImpliedRate,
-      probabilityHike: rawHike,
-      probabilityHold,
-      probabilityCut: rawCut,
-      ytdChangeBps,
+      nextMeeting,
+      inflationTarget,
+      currentInflation,
+      bias,
+      balanceSheet,
+      balanceSheetChangeYoY,
+      currency: b.currency,
     };
   });
 
-  // ── 2. Rate Path (Fed, ECB, BOE) ──
+  // ── 2. Rate History ──
 
-  const ratePath: Record<string, Array<{ date: string; impliedRate: number; changeFromCurrent: number; probability: number }>> = {};
+  const rateHistory: Record<string, Array<{ date: string; rate: number; change: number; voteSplit: string }>> = {};
 
-  for (const abbr of RATE_PATH_BANKS) {
-    const cfg = RATE_PATH_BASE[abbr];
-    const currentRate = round2(jitter(cfg.baseRate, 0.02));
-    const meetings: Array<{ date: string; impliedRate: number; changeFromCurrent: number; probability: number }> = [];
+  for (const b of BANKS) {
+    const decisions: Array<{ date: string; rate: number; change: number; voteSplit: string }> = [];
+    let runningRate = b.currentRate;
 
-    let cumulativeRate = currentRate;
-    for (let i = 1; i <= 6; i++) {
-      const meetingDate = futureDate(i * 42 + Math.floor(rng() * 7));
+    for (let i = 0; i < 8; i++) {
+      const daysBack = 30 + i * b.meetingIntervalDays + Math.floor(rng() * 7);
+      const date = pastDate(daysBack);
 
-      // Gradual cuts priced in, with diminishing confidence
-      const cutMagnitude = cfg.cutBias * 0.25 * (rng() * 0.6 + 0.7);
-      cumulativeRate = round2(cumulativeRate - cutMagnitude);
-      // Ensure rate doesn't go negative
-      if (cumulativeRate < 0) cumulativeRate = 0;
+      // Earlier decisions may have had different rates
+      const changeBps = i === 0 ? b.lastChange :
+        rng() < 0.4 ? 0 :
+        rng() < 0.6 ? -25 :
+        rng() < 0.8 ? 25 : (rng() > 0.5 ? 50 : -50);
 
-      const changeFromCurrent = round2(cumulativeRate - currentRate);
-      const probability = round1(Math.max(25, 90 - i * 10 - rng() * 8));
+      const rate = round2(runningRate);
+      const voteSplit = pick(VOTE_SPLITS);
+
+      decisions.push({ date, rate, change: changeBps, voteSplit });
+
+      // Walk rate backwards
+      runningRate = round2(runningRate - changeBps / 100);
+    }
+
+    rateHistory[b.id] = decisions;
+  }
+
+  // ── 3. Market Expectations (Fed, ECB, BOE) ──
+
+  const expectationBanks = ['fed', 'ecb', 'boe'] as const;
+
+  const marketExpectations: Record<string, Array<{
+    meeting: string;
+    date: string;
+    probabilityHike: number;
+    probabilityHold: number;
+    probabilityCut: number;
+  }>> = {};
+
+  for (const bankId of expectationBanks) {
+    const cfg = BANKS.find((b) => b.id === bankId)!;
+    const meetings: Array<{
+      meeting: string;
+      date: string;
+      probabilityHike: number;
+      probabilityHold: number;
+      probabilityCut: number;
+    }> = [];
+
+    for (let i = 1; i <= 3; i++) {
+      const offset = cfg.nextMeetingDayOffset + (i - 1) * cfg.meetingIntervalDays + Math.floor(rng() * 5);
+      const date = futureDate(offset);
+
+      // First meeting: more certainty; later meetings: more uncertainty
+      let holdProb: number;
+      let hikeProb: number;
+      let cutProb: number;
+
+      if (i === 1) {
+        holdProb = round1(40 + rng() * 40); // 40-80
+        const remaining = round1(100 - holdProb);
+        cutProb = round1(remaining * (0.5 + rng() * 0.4));
+        hikeProb = round1(100 - holdProb - cutProb);
+      } else if (i === 2) {
+        holdProb = round1(25 + rng() * 35); // 25-60
+        const remaining = round1(100 - holdProb);
+        cutProb = round1(remaining * (0.4 + rng() * 0.4));
+        hikeProb = round1(100 - holdProb - cutProb);
+      } else {
+        holdProb = round1(15 + rng() * 30); // 15-45
+        const remaining = round1(100 - holdProb);
+        cutProb = round1(remaining * (0.3 + rng() * 0.5));
+        hikeProb = round1(100 - holdProb - cutProb);
+      }
+
+      // Ensure non-negative
+      hikeProb = Math.max(0, hikeProb);
+      cutProb = Math.max(0, cutProb);
+
+      const meetingLabel = i === 1 ? 'Next' : i === 2 ? 'Second' : 'Third';
 
       meetings.push({
-        date: meetingDate,
-        impliedRate: cumulativeRate,
-        changeFromCurrent,
-        probability,
+        meeting: meetingLabel,
+        date,
+        probabilityHike: hikeProb,
+        probabilityHold: holdProb,
+        probabilityCut: cutProb,
       });
     }
 
-    ratePath[abbr] = meetings;
+    marketExpectations[bankId] = meetings;
   }
 
-  // ── 3. Balance Sheets ──
+  // ── 4. Forward Guidance ──
 
-  const balanceSheets: Record<string, {
-    totalAssets: number;
-    monthlyChange: number;
-    govtBonds: number;
-    mortgageBonds: number;
-    corporateBonds: number;
-    percentOfGDP: number;
-    peakAssets: number;
-    currentDrawdown: number;
+  const forwardGuidance: Record<string, {
+    lastStatementSummary: string;
+    tone: 'hawkish' | 'dovish' | 'neutral' | 'mixed';
+    keyPhrase: string;
   }> = {};
 
-  for (const abbr of BALANCE_SHEET_BANKS) {
-    const cfg = BALANCE_SHEET_BASE[abbr];
-    const totalAssets = round2(jitter(cfg.totalAssets, 0.15));
-    // Monthly change: slight QT bias
-    const monthlyChange = round2((rng() - 0.6) * 80); // -80 to +32 billion
-    const govtBonds = round2(jitter(cfg.govtBonds, 0.1));
-    const mortgageBonds = cfg.mortgageBonds > 0 ? round2(jitter(cfg.mortgageBonds, 0.08)) : 0;
-    const corporateBonds = cfg.corporateBonds > 0 ? round2(jitter(cfg.corporateBonds, 0.05)) : 0;
-    const percentOfGDP = round1(jitter(cfg.percentOfGDP, 2.0));
-    const peakAssets = round2(cfg.peakAssets + (rng() - 0.5) * 0.1);
-    const currentDrawdown = round2(peakAssets - totalAssets);
-
-    balanceSheets[abbr] = {
-      totalAssets,
-      monthlyChange,
-      govtBonds,
-      mortgageBonds,
-      corporateBonds,
-      percentOfGDP,
-      peakAssets,
-      currentDrawdown: Math.max(0, currentDrawdown),
-    };
-  }
-
-  // ── 4. Policy Divergence ──
-
-  const bankRateMap: Record<string, number> = {};
   for (const b of BANKS) {
-    bankRateMap[b.abbr] = round2(jitter(b.currentRate, 0.03));
+    const phrases = GUIDANCE_PHRASES[b.id] || GUIDANCE_PHRASES.fed;
+    const keyPhrase = pick(phrases);
+
+    const toneOptions = TONE_MAP[b.baseBias] || TONE_MAP.neutral;
+    const tone = pick(toneOptions);
+
+    // Build a short summary
+    const summaries = [
+      `${b.name} signals patience on rate changes`,
+      `${b.name} emphasizes data-dependent approach`,
+      `${b.name} maintains restrictive stance`,
+      `${b.name} hints at potential easing ahead`,
+      `${b.name} flags upside risks to inflation`,
+      `${b.name} notes improving economic conditions`,
+      `${b.name} warns of persistent price pressures`,
+      `${b.name} sees balanced risks to the outlook`,
+    ];
+    const lastStatementSummary = pick(summaries);
+
+    forwardGuidance[b.id] = { lastStatementSummary, tone, keyPhrase };
   }
 
-  const policyDivergence = DIVERGENCE_PAIRS.map((p) => {
-    const rate1 = bankRateMap[p.bank1] ?? 0;
-    const rate2 = bankRateMap[p.bank2] ?? 0;
-    const currentDiff = round2(rate1 - rate2);
+  // ── 5. Global Rate Heatmap ──
 
-    // 1yr ago diff: slightly different
-    const oneYrAgoDiff = round2(currentDiff + (rng() - 0.5) * 1.5);
-    const change = round2(currentDiff - oneYrAgoDiff);
-    const direction = Math.abs(currentDiff) > Math.abs(oneYrAgoDiff) ? 'widening' : 'narrowing';
+  const globalRateHeatmap = banks
+    .map((b) => {
+      let direction: string;
+      const bankCfg = BANKS.find((cfg) => cfg.name === b.name)!;
+      if (bankCfg.lastChange > 0) direction = 'up';
+      else if (bankCfg.lastChange < 0) direction = 'down';
+      else direction = 'unchanged';
 
-    // FX impact: if rate differential widens for bank1, bank1 currency strengthens
-    let fxImpact: string;
-    if (p.fxPair === 'USD/JPY') {
-      fxImpact = change > 0 ? 'USD strength vs JPY' : 'JPY recovery likely';
-    } else if (p.fxPair === 'EUR/USD') {
-      fxImpact = change > 0 ? 'USD strength vs EUR' : 'EUR support from narrowing spread';
-    } else if (p.fxPair === 'GBP/USD') {
-      fxImpact = change > 0 ? 'USD strength vs GBP' : 'GBP supported by narrowing differential';
-    } else if (p.fxPair === 'EUR/GBP') {
-      fxImpact = change > 0 ? 'EUR outperformance vs GBP' : 'GBP supported vs EUR';
-    } else {
-      fxImpact = change > 0 ? 'First currency strengthening' : 'Second currency strengthening';
-    }
+      return {
+        name: b.name,
+        country: b.country,
+        currentRate: b.currentRate,
+        direction,
+      };
+    })
+    .sort((a, b) => b.currentRate - a.currentRate);
 
-    return {
-      pair: p.pair,
-      fxPair: p.fxPair,
-      currentDiff,
-      oneYrAgoDiff: round2(oneYrAgoDiff),
-      change,
-      direction,
-      fxImpact,
-    };
-  });
+  // ── 6. Policy Timeline ──
 
-  // ── 5. Recent Statements ──
-
-  const statementCount = 4 + (rng() > 0.5 ? 1 : 0); // 4 or 5
-  const usedTemplates = new Set<number>();
-  const recentStatements: Array<{
+  const policyTimeline: Array<{
     bank: string;
+    country: string;
     date: string;
-    type: 'meeting' | 'minutes' | 'speech';
-    hawkishDovishScore: number;
-    keyPhrase: string;
-    marketReaction: string;
+    type: string;
   }> = [];
 
-  for (let i = 0; i < statementCount; i++) {
-    let templateIdx: number;
-    do {
-      templateIdx = Math.floor(rng() * STATEMENT_TEMPLATES.length);
-    } while (usedTemplates.has(templateIdx) && usedTemplates.size < STATEMENT_TEMPLATES.length);
-    usedTemplates.add(templateIdx);
-
-    const tpl = STATEMENT_TEMPLATES[templateIdx];
-    const daysAgo = Math.floor(rng() * 28) + 1;
-    const date = pastDate(daysAgo);
-
-    // Hawkish-dovish score: -5 to +5
-    const rawScore = (rng() - 0.5) * 10;
-    const hawkishDovishScore = Math.round(rawScore * 10) / 10;
-
-    const keyPhrase = pick(tpl.phrases);
-
-    // Market reaction
-    const reactions = [
-      'Yields rose 3-5bp on hawkish tone',
-      'Yields fell 2-4bp as dovish tilt noted',
-      'Curve flattened on hold signal',
-      'Minimal market reaction, in line with expectations',
-      'Dollar strengthened on rate guidance',
-      'Risk assets rallied on easing hints',
-      'Bond sell-off on tighter-for-longer language',
-      'FX volatility spiked on policy surprise',
-      'Front-end repriced higher probability of cut',
-      'Equity futures dipped on restrictive stance',
-    ];
-    const marketReaction = pick(reactions);
-
-    recentStatements.push({
-      bank: tpl.bank,
-      date,
-      type: tpl.type,
-      hawkishDovishScore,
-      keyPhrase,
-      marketReaction,
-    });
+  for (const b of BANKS) {
+    // Generate next 2-3 meetings within 3 months
+    const numMeetings = 2 + (rng() > 0.5 ? 1 : 0);
+    for (let i = 0; i < numMeetings; i++) {
+      const offset = b.nextMeetingDayOffset + i * b.meetingIntervalDays + Math.floor(rng() * 5);
+      if (offset > 90) break; // Only next 3 months
+      policyTimeline.push({
+        bank: b.name,
+        country: b.country,
+        date: futureDate(offset),
+        type: 'Rate Decision',
+      });
+    }
   }
 
-  // Sort statements by date descending
-  recentStatements.sort((a, b) => b.date.localeCompare(a.date));
+  // Sort by date ascending
+  policyTimeline.sort((a, b) => a.date.localeCompare(b.date));
 
   return {
-    rateDecisions,
-    ratePath,
-    balanceSheets,
-    policyDivergence,
-    recentStatements,
+    banks,
+    rateHistory,
+    marketExpectations,
+    forwardGuidance,
+    globalRateHeatmap,
+    policyTimeline,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -377,7 +425,7 @@ router.get('/', (_req, res) => {
     cacheTime = now;
     res.json(data);
   } catch (err) {
-    console.error('[CentralBankWatch] Error:', (err as Error).message);
+    console.error('[CentralBankWatch] Error:', (err as Error)?.message);
     if (cacheData) return res.json(cacheData);
     res.status(500).json({ error: 'Failed to generate central bank watch data' });
   }

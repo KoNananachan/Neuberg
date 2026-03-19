@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../client';
 
-export function useCentralBankWatch() {
+export function useDemographicTrends() {
   return useQuery({
-    queryKey: ['central-bank-watch'],
-    queryFn: () => api.get<any>('/central-bank-watch'),
+    queryKey: ['demographic-trends'],
+    queryFn: () => api.get<any>('/demographic-trends'),
     refetchInterval: 5 * 60 * 1000,
     staleTime: 3 * 60 * 1000,
   });
