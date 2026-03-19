@@ -445,6 +445,8 @@ const LeveragedLoanPanel = lazy(() => import('../panels/leveraged-loan-panel').t
 const StructuredProductPanel = lazy(() => import('../panels/structured-product-panel').then(m => ({ default: m.StructuredProductPanel })));
 const CatastropheBondPanel = lazy(() => import('../panels/catastrophe-bond-panel').then(m => ({ default: m.CatastropheBondPanel })));
 const MergerArbPanel = lazy(() => import('../panels/merger-arb-panel').then(m => ({ default: m.MergerArbPanel })));
+const GreenBondPanel = lazy(() => import('../panels/green-bond-panel').then(m => ({ default: m.GreenBondPanel })));
+const LiquidityMonitorPanel = lazy(() => import('../panels/liquidity-monitor-panel').then(m => ({ default: m.LiquidityMonitorPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -900,6 +902,8 @@ export const PANEL_IDS = {
   STRUCTURED_PRODUCT: 'structured-product',
   CATASTROPHE_BOND: 'catastrophe-bond',
   MERGER_ARB: 'merger-arb',
+  GREEN_BOND: 'green-bond',
+  LIQUIDITY_MONITOR: 'liquidity-monitor',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1339,6 +1343,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.STRUCTURED_PRODUCT]: 'STRUCTURED PRODUCT',
   [PANEL_IDS.CATASTROPHE_BOND]: 'CATASTROPHE BOND',
   [PANEL_IDS.MERGER_ARB]: 'MERGER ARB',
+  [PANEL_IDS.GREEN_BOND]: 'GREEN BOND',
+  [PANEL_IDS.LIQUIDITY_MONITOR]: 'LIQUIDITY MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1779,6 +1785,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.STRUCTURED_PRODUCT]: 'panelStructuredProduct',
   [PANEL_IDS.CATASTROPHE_BOND]: 'panelCatastropheBond',
   [PANEL_IDS.MERGER_ARB]: 'panelMergerArb',
+  [PANEL_IDS.GREEN_BOND]: 'panelGreenBond',
+  [PANEL_IDS.LIQUIDITY_MONITOR]: 'panelLiquidityMonitor',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2515,6 +2523,8 @@ export function DockLayout() {
       case PANEL_IDS.STRUCTURED_PRODUCT: content = <LazyWrap><StructuredProductPanel /></LazyWrap>; break;
       case PANEL_IDS.CATASTROPHE_BOND: content = <LazyWrap><CatastropheBondPanel /></LazyWrap>; break;
       case PANEL_IDS.MERGER_ARB: content = <LazyWrap><MergerArbPanel /></LazyWrap>; break;
+      case PANEL_IDS.GREEN_BOND: content = <LazyWrap><GreenBondPanel /></LazyWrap>; break;
+      case PANEL_IDS.LIQUIDITY_MONITOR: content = <LazyWrap><LiquidityMonitorPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

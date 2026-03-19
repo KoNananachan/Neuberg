@@ -1610,6 +1610,9 @@ const en = {
   panelStructuredProduct: 'STRUCTURED PRODUCT',
   panelCatastropheBond: 'CATASTROPHE BOND',
   panelMergerArb: 'MERGER ARB',
+  panelGreenBond: 'GREEN BOND',
+
+  panelLiquidityMonitor: 'LIQUIDITY MONITOR',
   ddNoData: 'No drawdown data available',
   ddSummary: 'Summary',
   ddMaxDrawdown: 'Max Drawdown',
@@ -3104,6 +3107,9 @@ const zh: Record<TranslationKey, string> = {
   panelStructuredProduct: '结构化产品',
   panelCatastropheBond: '巨灾债券',
   panelMergerArb: '并购套利',
+  panelGreenBond: '绿色债券',
+
+  panelLiquidityMonitor: '流动性监控',
   ddNoData: '暂无回撤数据',
   ddSummary: '概览',
   ddMaxDrawdown: '最大回撤',
@@ -4593,6 +4599,9 @@ const ja: Record<TranslationKey, string> = {
   panelStructuredProduct: 'ストラクチャードプロダクト',
   panelCatastropheBond: 'カタストロフィボンド',
   panelMergerArb: 'M&Aアービトラージ',
+  panelGreenBond: 'グリーンボンド',
+
+  panelLiquidityMonitor: '流動性モニター',
   ddNoData: 'ドローダウンデータなし',
   ddSummary: '概要',
   ddMaxDrawdown: '最大DD',
@@ -6082,6 +6091,9 @@ const ko: Record<TranslationKey, string> = {
   panelStructuredProduct: '구조화 상품',
   panelCatastropheBond: '재해 채권',
   panelMergerArb: '합병 차익거래',
+  panelGreenBond: '녹색 채권',
+
+  panelLiquidityMonitor: '유동성 모니터',
   ddNoData: '드로다운 데이터 없음',
   ddSummary: '요약',
   ddMaxDrawdown: '최대 DD',
@@ -7571,6 +7583,9 @@ const es: Record<TranslationKey, string> = {
   panelStructuredProduct: 'PRODUCTO ESTRUCTURADO',
   panelCatastropheBond: 'BONO CATASTROFE',
   panelMergerArb: 'ARBITRAJE DE FUSIONES',
+  panelGreenBond: 'BONO VERDE',
+
+  panelLiquidityMonitor: 'MONITOR DE LIQUIDEZ',
   ddNoData: 'Sin datos de drawdown',
   ddSummary: 'Resumen',
   ddMaxDrawdown: 'DD Max',
@@ -9060,6 +9075,9 @@ const fr: Record<TranslationKey, string> = {
   panelStructuredProduct: 'PRODUIT STRUCTURE',
   panelCatastropheBond: 'OBLIGATION CATASTROPHE',
   panelMergerArb: 'ARBITRAGE DE FUSION',
+  panelGreenBond: 'OBLIGATION VERTE',
+
+  panelLiquidityMonitor: 'MONITEUR DE LIQUIDITE',
   ddNoData: 'Pas de donnees de drawdown',
   ddSummary: 'Resume',
   ddMaxDrawdown: 'DD Max',
