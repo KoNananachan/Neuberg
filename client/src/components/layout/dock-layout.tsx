@@ -436,6 +436,9 @@ const CreditSpreadPanel = lazy(() => import('../panels/credit-spread-panel').the
 const EarningsRevisionPanel = lazy(() => import('../panels/earnings-revision-panel').then(m => ({ default: m.EarningsRevisionPanel })));
 const SwapSpreadPanel = lazy(() => import('../panels/swap-spread-panel').then(m => ({ default: m.SwapSpreadPanel })));
 const BreakevenInflationPanel = lazy(() => import('../panels/breakeven-inflation-panel').then(m => ({ default: m.BreakevenInflationPanel })));
+const FxCarryPanel = lazy(() => import('../panels/fx-carry-panel').then(m => ({ default: m.FxCarryPanel })));
+const OptionsSkewPanel = lazy(() => import('../panels/options-skew-panel').then(m => ({ default: m.OptionsSkewPanel })));
+const QuantFactorPanel = lazy(() => import('../panels/quant-factor-panel').then(m => ({ default: m.QuantFactorPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -882,6 +885,9 @@ export const PANEL_IDS = {
   EARNINGS_REVISION: 'earnings-revision',
   SWAP_SPREAD: 'swap-spread',
   BREAKEVEN_INFLATION: 'breakeven-inflation',
+  FX_CARRY: 'fx-carry',
+  OPTIONS_SKEW: 'options-skew',
+  QUANT_FACTOR: 'quant-factor',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1312,6 +1318,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.EARNINGS_REVISION]: 'EARNINGS REVISION',
   [PANEL_IDS.SWAP_SPREAD]: 'SWAP SPREAD',
   [PANEL_IDS.BREAKEVEN_INFLATION]: 'BREAKEVEN INFLATION',
+  [PANEL_IDS.FX_CARRY]: 'FX CARRY',
+  [PANEL_IDS.OPTIONS_SKEW]: 'OPTIONS SKEW',
+  [PANEL_IDS.QUANT_FACTOR]: 'QUANT FACTOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1743,6 +1752,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.EARNINGS_REVISION]: 'panelEarningsRevision',
   [PANEL_IDS.SWAP_SPREAD]: 'panelSwapSpread',
   [PANEL_IDS.BREAKEVEN_INFLATION]: 'panelBreakevenInflation',
+  [PANEL_IDS.FX_CARRY]: 'panelFxCarry',
+  [PANEL_IDS.OPTIONS_SKEW]: 'panelOptionsSkew',
+  [PANEL_IDS.QUANT_FACTOR]: 'panelQuantFactor',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2470,6 +2482,9 @@ export function DockLayout() {
       case PANEL_IDS.EARNINGS_REVISION: content = <LazyWrap><EarningsRevisionPanel /></LazyWrap>; break;
       case PANEL_IDS.SWAP_SPREAD: content = <LazyWrap><SwapSpreadPanel /></LazyWrap>; break;
       case PANEL_IDS.BREAKEVEN_INFLATION: content = <LazyWrap><BreakevenInflationPanel /></LazyWrap>; break;
+      case PANEL_IDS.FX_CARRY: content = <LazyWrap><FxCarryPanel /></LazyWrap>; break;
+      case PANEL_IDS.OPTIONS_SKEW: content = <LazyWrap><OptionsSkewPanel /></LazyWrap>; break;
+      case PANEL_IDS.QUANT_FACTOR: content = <LazyWrap><QuantFactorPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

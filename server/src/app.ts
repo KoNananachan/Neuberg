@@ -429,6 +429,9 @@ import creditSpreadRouter from './routes/credit-spread.js';
 import earningsRevisionRouter from './routes/earnings-revision.js';
 import swapSpreadRouter from './routes/swap-spread.js';
 import breakevenInflationRouter from './routes/breakeven-inflation.js';
+import fxCarryRouter from './routes/fx-carry.js';
+import optionsSkewRouter from './routes/options-skew.js';
+import quantFactorRouter from './routes/quant-factor.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -959,6 +962,9 @@ export function createApp() {
   app.use('/api/earnings-revision', earningsRevisionRouter);
   app.use('/api/swap-spread', swapSpreadRouter);
   app.use('/api/breakeven-inflation', breakevenInflationRouter);
+  app.use('/api/fx-carry', fxCarryRouter);
+  app.use('/api/options-skew', optionsSkewRouter);
+  app.use('/api/quant-factor', quantFactorRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
