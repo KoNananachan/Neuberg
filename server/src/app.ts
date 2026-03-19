@@ -379,6 +379,9 @@ import laborMarketRouter from './routes/labor-market.js';
 import housingMarketRouter from './routes/housing-market.js';
 import supplyChainStressRouter from './routes/supply-chain-stress.js';
 import creditImpulseRouter from './routes/credit-impulse.js';
+import consumerConfidenceRouter from './routes/consumer-confidence.js';
+import sovereignYieldRouter from './routes/sovereign-yield.js';
+import tradeBalanceRouter from './routes/trade-balance.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -859,6 +862,9 @@ export function createApp() {
   app.use('/api/housing-market', housingMarketRouter);
   app.use('/api/supply-chain-stress', supplyChainStressRouter);
   app.use('/api/credit-impulse', creditImpulseRouter);
+  app.use('/api/consumer-confidence', consumerConfidenceRouter);
+  app.use('/api/sovereign-yield', sovereignYieldRouter);
+  app.use('/api/trade-balance', tradeBalanceRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

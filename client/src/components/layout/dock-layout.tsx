@@ -386,6 +386,9 @@ const LaborMarketPanel = lazy(() => import('../panels/labor-market-panel').then(
 const HousingMarketPanel = lazy(() => import('../panels/housing-market-panel').then(m => ({ default: m.HousingMarketPanel })));
 const SupplyChainStressPanel = lazy(() => import('../panels/supply-chain-stress-panel').then(m => ({ default: m.SupplyChainStressPanel })));
 const CreditImpulsePanel = lazy(() => import('../panels/credit-impulse-panel').then(m => ({ default: m.CreditImpulsePanel })));
+const ConsumerConfidencePanel = lazy(() => import('../panels/consumer-confidence-panel').then(m => ({ default: m.ConsumerConfidencePanel })));
+const SovereignYieldPanel = lazy(() => import('../panels/sovereign-yield-panel').then(m => ({ default: m.SovereignYieldPanel })));
+const TradeBalancePanel = lazy(() => import('../panels/trade-balance-panel').then(m => ({ default: m.TradeBalancePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -782,6 +785,9 @@ export const PANEL_IDS = {
   HOUSING_MARKET: 'housing-market',
   SUPPLY_CHAIN_STRESS: 'supply-chain-stress',
   CREDIT_IMPULSE: 'credit-impulse',
+  CONSUMER_CONFIDENCE: 'consumer-confidence',
+  SOVEREIGN_YIELD: 'sovereign-yield',
+  TRADE_BALANCE: 'trade-balance',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1162,6 +1168,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.HOUSING_MARKET]: 'HOUSING MARKET',
   [PANEL_IDS.SUPPLY_CHAIN_STRESS]: 'SUPPLY CHAIN STRESS',
   [PANEL_IDS.CREDIT_IMPULSE]: 'CREDIT IMPULSE',
+  [PANEL_IDS.CONSUMER_CONFIDENCE]: 'CONSUMER CONFIDENCE',
+  [PANEL_IDS.SOVEREIGN_YIELD]: 'SOVEREIGN YIELD',
+  [PANEL_IDS.TRADE_BALANCE]: 'TRADE BALANCE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1543,6 +1552,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.HOUSING_MARKET]: 'panelHousingMarket',
   [PANEL_IDS.SUPPLY_CHAIN_STRESS]: 'panelSupplyChainStress',
   [PANEL_IDS.CREDIT_IMPULSE]: 'panelCreditImpulse',
+  [PANEL_IDS.CONSUMER_CONFIDENCE]: 'panelConsumerConfidence',
+  [PANEL_IDS.SOVEREIGN_YIELD]: 'panelSovereignYield',
+  [PANEL_IDS.TRADE_BALANCE]: 'panelTradeBalance',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2220,6 +2232,9 @@ export function DockLayout() {
       case PANEL_IDS.HOUSING_MARKET: content = <LazyWrap><HousingMarketPanel /></LazyWrap>; break;
       case PANEL_IDS.SUPPLY_CHAIN_STRESS: content = <LazyWrap><SupplyChainStressPanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_IMPULSE: content = <LazyWrap><CreditImpulsePanel /></LazyWrap>; break;
+      case PANEL_IDS.CONSUMER_CONFIDENCE: content = <LazyWrap><ConsumerConfidencePanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_YIELD: content = <LazyWrap><SovereignYieldPanel /></LazyWrap>; break;
+      case PANEL_IDS.TRADE_BALANCE: content = <LazyWrap><TradeBalancePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
