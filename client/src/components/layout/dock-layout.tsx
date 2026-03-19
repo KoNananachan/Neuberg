@@ -430,6 +430,9 @@ const SpaceEconomyPanel = lazy(() => import('../panels/space-economy-panel').the
 const CybersecurityPanel = lazy(() => import('../panels/cybersecurity-panel').then(m => ({ default: m.CybersecurityPanel })));
 const GlobalFoodPricePanel = lazy(() => import('../panels/global-food-price-panel').then(m => ({ default: m.GlobalFoodPricePanel })));
 const PharmaPipelinePanel = lazy(() => import('../panels/pharma-pipeline-panel').then(m => ({ default: m.PharmaPipelinePanel })));
+const EtfFlowPanel = lazy(() => import('../panels/etf-flow-panel').then(m => ({ default: m.EtfFlowPanel })));
+const VolatilitySurfacePanel = lazy(() => import('../panels/volatility-surface-panel').then(m => ({ default: m.VolatilitySurfacePanel })));
+const CreditSpreadPanel = lazy(() => import('../panels/credit-spread-panel').then(m => ({ default: m.CreditSpreadPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -870,6 +873,9 @@ export const PANEL_IDS = {
   CYBERSECURITY: 'cybersecurity',
   GLOBAL_FOOD_PRICE: 'global-food-price',
   PHARMA_PIPELINE: 'pharma-pipeline',
+  ETF_FLOW: 'etf-flow',
+  VOLATILITY_SURFACE: 'volatility-surface',
+  CREDIT_SPREAD: 'credit-spread',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1294,6 +1300,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CYBERSECURITY]: 'CYBERSECURITY',
   [PANEL_IDS.GLOBAL_FOOD_PRICE]: 'GLOBAL FOOD PRICE',
   [PANEL_IDS.PHARMA_PIPELINE]: 'PHARMA PIPELINE',
+  [PANEL_IDS.ETF_FLOW]: 'ETF FLOW',
+  [PANEL_IDS.VOLATILITY_SURFACE]: 'VOLATILITY SURFACE',
+  [PANEL_IDS.CREDIT_SPREAD]: 'CREDIT SPREAD',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1719,6 +1728,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CYBERSECURITY]: 'panelCybersecurity',
   [PANEL_IDS.GLOBAL_FOOD_PRICE]: 'panelGlobalFoodPrice',
   [PANEL_IDS.PHARMA_PIPELINE]: 'panelPharmaPipeline',
+  [PANEL_IDS.ETF_FLOW]: 'panelEtfFlow',
+  [PANEL_IDS.VOLATILITY_SURFACE]: 'panelVolatilitySurface',
+  [PANEL_IDS.CREDIT_SPREAD]: 'panelCreditSpread',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2440,6 +2452,9 @@ export function DockLayout() {
       case PANEL_IDS.CYBERSECURITY: content = <LazyWrap><CybersecurityPanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_FOOD_PRICE: content = <LazyWrap><GlobalFoodPricePanel /></LazyWrap>; break;
       case PANEL_IDS.PHARMA_PIPELINE: content = <LazyWrap><PharmaPipelinePanel /></LazyWrap>; break;
+      case PANEL_IDS.ETF_FLOW: content = <LazyWrap><EtfFlowPanel /></LazyWrap>; break;
+      case PANEL_IDS.VOLATILITY_SURFACE: content = <LazyWrap><VolatilitySurfacePanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_SPREAD: content = <LazyWrap><CreditSpreadPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

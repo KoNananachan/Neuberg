@@ -423,6 +423,9 @@ import spaceEconomyRouter from './routes/space-economy.js';
 import cybersecurityRouter from './routes/cybersecurity.js';
 import globalFoodPriceRouter from './routes/global-food-price.js';
 import pharmaPipelineRouter from './routes/pharma-pipeline.js';
+import etfFlowRouter from './routes/etf-flow.js';
+import volatilitySurfaceRouter from './routes/volatility-surface.js';
+import creditSpreadRouter from './routes/credit-spread.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -947,6 +950,9 @@ export function createApp() {
   app.use('/api/cybersecurity', cybersecurityRouter);
   app.use('/api/global-food-price', globalFoodPriceRouter);
   app.use('/api/pharma-pipeline', pharmaPipelineRouter);
+  app.use('/api/etf-flow', etfFlowRouter);
+  app.use('/api/volatility-surface', volatilitySurfaceRouter);
+  app.use('/api/credit-spread', creditSpreadRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
