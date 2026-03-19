@@ -382,6 +382,8 @@ import creditImpulseRouter from './routes/credit-impulse.js';
 import consumerConfidenceRouter from './routes/consumer-confidence.js';
 import sovereignYieldRouter from './routes/sovereign-yield.js';
 import tradeBalanceRouter from './routes/trade-balance.js';
+import semiconductorRouter from './routes/semiconductor.js';
+import infrastructureInvestmentRouter from './routes/infrastructure-investment.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -865,6 +867,8 @@ export function createApp() {
   app.use('/api/consumer-confidence', consumerConfidenceRouter);
   app.use('/api/sovereign-yield', sovereignYieldRouter);
   app.use('/api/trade-balance', tradeBalanceRouter);
+  app.use('/api/semiconductor', semiconductorRouter);
+  app.use('/api/infrastructure-investment', infrastructureInvestmentRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

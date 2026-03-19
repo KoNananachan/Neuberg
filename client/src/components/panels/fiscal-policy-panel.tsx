@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useFiscalPolicy } from '../../api/hooks/use-fiscal-policy';
 import { useT } from '../../i18n';
-import { RefreshCw, Landmark } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
-// i18n fallback helper
+// ── i18n fallback helper ──
+
 const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
   try {
     return (t as (k: string) => string)(key) || fallback;
@@ -11,429 +13,542 @@ const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string =
   }
 };
 
-// ── Types (matching server response) ──
+// ── Formatting helpers ──
 
-interface CountryFiscalData {
-  country: string;
-  rating: string;
-  debtToGdp: number;
-  fiscalBalance: number;
-  primaryBalance: number;
-  interestToGdp: number;
-  spendingToGdp: number;
-  outlook: 'POSITIVE' | 'STABLE' | 'NEGATIVE' | 'WATCH';
+function fmtPct(n: number): string {
+  return n.toFixed(1) + '%';
 }
 
-interface FiscalEvent {
-  date: string;
-  country: string;
-  event: string;
-  expectedImpact: string;
-  significance: 'HIGH' | 'MEDIUM' | 'LOW';
+function fmtSignedPct(n: number): string {
+  const sign = n >= 0 ? '+' : '';
+  return sign + n.toFixed(1) + '%';
 }
 
-interface DebtSustainability {
-  country: string;
-  debtToGdp: number;
-  growthRate: number;
-  interestRate: number;
-  primaryBalanceNeeded: number;
-  yearsToTarget: number;
-  score: number;
-}
-
-interface FiscalSummary {
-  avgG7DebtToGdp: number;
-  avgEmDebtToGdp: number;
-  highestDeficitCountry: string;
-  mostFiscalSpaceCountry: string;
-}
-
-interface FiscalPolicyData {
-  summary: FiscalSummary;
-  countries: CountryFiscalData[];
-  events: FiscalEvent[];
-  debtSustainability: DebtSustainability[];
+function fmtTrillions(n: number): string {
+  return '$' + n.toFixed(1) + 'T';
 }
 
 // ── Color helpers ──
 
-function outlookBadge(outlook: string): { color: string; bg: string } {
-  switch (outlook) {
-    case 'POSITIVE':
-      return { color: 'text-emerald-400', bg: 'bg-emerald-400/15' };
-    case 'NEGATIVE':
-      return { color: 'text-red-400', bg: 'bg-red-400/15' };
-    case 'WATCH':
-      return { color: 'text-orange-400', bg: 'bg-orange-400/15' };
-    default:
-      return { color: 'text-yellow-400', bg: 'bg-yellow-400/15' };
-  }
+function balanceColor(n: number): string {
+  if (n > 0) return 'text-green-400';
+  if (n < 0) return 'text-red-400';
+  return 'text-neutral-400';
 }
 
-function significanceBadge(level: string): { color: string; bg: string } {
-  switch (level) {
-    case 'HIGH':
-      return { color: 'text-red-400', bg: 'bg-red-400/15' };
-    case 'MEDIUM':
-      return { color: 'text-yellow-400', bg: 'bg-yellow-400/15' };
-    default:
-      return { color: 'text-emerald-400', bg: 'bg-emerald-400/15' };
-  }
+function debtIntensityColor(debtToGdp: number): string {
+  if (debtToGdp >= 120) return 'text-red-400';
+  if (debtToGdp >= 90) return 'text-orange-400';
+  if (debtToGdp >= 60) return 'text-yellow-400';
+  return 'text-green-400';
 }
 
-function debtGdpColor(value: number): string {
-  if (value > 120) return 'text-red-400';
-  if (value > 90) return 'text-orange-400';
-  if (value > 60) return 'text-yellow-400';
-  return 'text-emerald-400';
+function debtIntensityBg(debtToGdp: number): string {
+  if (debtToGdp >= 120) return 'bg-red-400/15';
+  if (debtToGdp >= 90) return 'bg-orange-400/10';
+  if (debtToGdp >= 60) return 'bg-yellow-400/10';
+  return 'bg-green-400/10';
 }
 
-function balanceColor(value: number): string {
-  if (value < -5) return 'text-red-400';
-  if (value < -3) return 'text-orange-400';
-  if (value < 0) return 'text-yellow-400';
-  return 'text-emerald-400';
+function fiscalStatusColor(status: string): string {
+  const s = status.toUpperCase();
+  if (s === 'EXPANSIONARY' || s === 'STIMULUS') return 'text-green-400';
+  if (s === 'CONTRACTIONARY' || s === 'AUSTERITY') return 'text-red-400';
+  if (s === 'NEUTRAL') return 'text-neutral-400';
+  return 'text-amber-400';
 }
 
-function sustainabilityScoreColor(score: number): string {
-  if (score >= 80) return '#34d399'; // green
-  if (score >= 60) return '#fbbf24'; // yellow
-  if (score >= 40) return '#fb923c'; // orange
-  return '#f87171'; // red
+function fiscalStatusBg(status: string): string {
+  const s = status.toUpperCase();
+  if (s === 'EXPANSIONARY' || s === 'STIMULUS') return 'bg-green-400/10';
+  if (s === 'CONTRACTIONARY' || s === 'AUSTERITY') return 'bg-red-400/10';
+  if (s === 'NEUTRAL') return 'bg-neutral-400/10';
+  return 'bg-amber-400/10';
 }
 
-function sustainabilityScoreTextColor(score: number): string {
-  if (score >= 80) return 'text-emerald-400';
-  if (score >= 60) return 'text-yellow-400';
-  if (score >= 40) return 'text-orange-400';
-  return 'text-red-400';
+function trendArrow(n: number): string {
+  if (n > 0) return '\u25B2';
+  if (n < 0) return '\u25BC';
+  return '\u25C6';
 }
 
-// ── Section Header ──
-
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <div className="flex items-center gap-1.5 px-2 py-1 border-b border-cyan-400/30">
-      <div className="w-1 h-1 shrink-0 bg-cyan-400" />
-      <span className="text-[7px] font-black font-mono uppercase tracking-widest text-cyan-400">
-        {title}
-      </span>
-    </div>
-  );
+function changeColor(n: number): string {
+  if (n > 0) return 'text-green-400';
+  if (n < 0) return 'text-red-400';
+  return 'text-neutral-500';
 }
 
-// ── Table header cell ──
+// ── Spending category colors ──
 
-function ThCell({ label, align }: { label: string; align: 'left' | 'right' }) {
-  return (
-    <th
-      className={`px-1.5 py-1 text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap ${
-        align === 'right' ? 'text-right' : 'text-left'
-      }`}
-    >
-      {label}
-    </th>
-  );
+const SPENDING_COLORS: Record<string, string> = {
+  defense: '#f87171',
+  healthcare: '#34d399',
+  education: '#60a5fa',
+  socialSecurity: '#fbbf24',
+  infrastructure: '#a78bfa',
+  interest: '#f472b6',
+};
+
+const SPENDING_LABELS: Record<string, string> = {
+  defense: 'DEF',
+  healthcare: 'HLTH',
+  education: 'EDU',
+  socialSecurity: 'SOC',
+  infrastructure: 'INFRA',
+  interest: 'INT',
+};
+
+// ── Interfaces ──
+
+interface FiscalSummary {
+  globalAvgDeficit: number;
+  totalDebtLevels: number;
+  countriesTracked: number;
+  avgDebtToGdp: number;
 }
 
-// ── Summary Bar ──
-
-function SummaryBar({ summary, t }: { summary: FiscalSummary; t: ReturnType<typeof useT> }) {
-  const metrics = [
-    {
-      label: tr(t, 'fpAvgG7Debt', 'Avg G7 Debt/GDP'),
-      value: `${summary.avgG7DebtToGdp.toFixed(1)}%`,
-      color: debtGdpColor(summary.avgG7DebtToGdp),
-    },
-    {
-      label: tr(t, 'fpAvgEmDebt', 'Avg EM Debt/GDP'),
-      value: `${summary.avgEmDebtToGdp.toFixed(1)}%`,
-      color: debtGdpColor(summary.avgEmDebtToGdp),
-    },
-    {
-      label: tr(t, 'fpHighestDeficit', 'Highest Deficit'),
-      value: summary.highestDeficitCountry,
-      color: 'text-red-400',
-    },
-    {
-      label: tr(t, 'fpMostSpace', 'Most Fiscal Space'),
-      value: summary.mostFiscalSpaceCountry,
-      color: 'text-emerald-400',
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-4 border-b border-cyan-400/30 bg-black">
-      {metrics.map((m, i) => (
-        <div key={m.label} className={`px-2 py-1.5 ${i < 3 ? 'border-r border-cyan-400/10' : ''}`}>
-          <div className="text-[7px] font-mono uppercase tracking-wider text-neutral-500">
-            {m.label}
-          </div>
-          <div className={`text-[10px] font-mono font-bold ${m.color}`}>
-            {m.value}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Country Fiscal Data Table ──
-
-function CountryFiscalTable({ countries }: { countries: CountryFiscalData[] }) {
-  const sorted = [...countries].sort((a, b) => b.debtToGdp - a.debtToGdp);
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[9px] font-mono">
-        <thead className="sticky top-0 bg-[#080808] z-10">
-          <tr className="border-b border-border/20">
-            <ThCell label="Country" align="left" />
-            <ThCell label="Rating" align="left" />
-            <ThCell label="Debt/GDP (%)" align="right" />
-            <ThCell label="Fiscal Bal (%)" align="right" />
-            <ThCell label="Primary Bal (%)" align="right" />
-            <ThCell label="Interest/GDP (%)" align="right" />
-            <ThCell label="Spending/GDP (%)" align="right" />
-            <ThCell label="Outlook" align="left" />
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((c) => {
-            const outlook = outlookBadge(c.outlook);
-            return (
-              <tr key={c.country} className="border-b border-border/10 hover:bg-cyan-400/[0.02] transition-colors">
-                <td className="px-1.5 py-1 whitespace-nowrap text-left text-white font-bold">
-                  {c.country}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-left text-neutral-300 font-bold">
-                  {c.rating}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right font-bold ${debtGdpColor(c.debtToGdp)}`}>
-                  {c.debtToGdp.toFixed(1)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right font-bold ${balanceColor(c.fiscalBalance)}`}>
-                  {c.fiscalBalance > 0 ? '+' : ''}{c.fiscalBalance.toFixed(1)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right font-bold ${balanceColor(c.primaryBalance)}`}>
-                  {c.primaryBalance > 0 ? '+' : ''}{c.primaryBalance.toFixed(1)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right ${c.interestToGdp > 3 ? 'text-red-400' : c.interestToGdp > 2 ? 'text-yellow-400' : 'text-neutral-300'}`}>
-                  {c.interestToGdp.toFixed(1)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right ${c.spendingToGdp > 45 ? 'text-red-400' : c.spendingToGdp > 35 ? 'text-yellow-400' : 'text-neutral-300'}`}>
-                  {c.spendingToGdp.toFixed(1)}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-left">
-                  <span className={`text-[7px] font-bold px-1 py-0.5 uppercase ${outlook.color} ${outlook.bg}`}>
-                    {c.outlook}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ── Fiscal Events Table ──
-
-function FiscalEventsTable({ events }: { events: FiscalEvent[] }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[9px] font-mono">
-        <thead className="sticky top-0 bg-[#080808] z-10">
-          <tr className="border-b border-border/20">
-            <ThCell label="Date" align="left" />
-            <ThCell label="Country" align="left" />
-            <ThCell label="Event" align="left" />
-            <ThCell label="Expected Impact" align="left" />
-            <ThCell label="Significance" align="left" />
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((ev, i) => {
-            const sig = significanceBadge(ev.significance);
-            return (
-              <tr key={`${ev.country}-${ev.event}-${i}`} className="border-b border-border/10 hover:bg-cyan-400/[0.02] transition-colors">
-                <td className="px-1.5 py-1 whitespace-nowrap text-left text-neutral-400">
-                  {ev.date}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-left text-white font-bold">
-                  {ev.country}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-left text-neutral-300">
-                  {ev.event}
-                </td>
-                <td className="px-1.5 py-1 text-left text-neutral-500 max-w-[200px] truncate">
-                  {ev.expectedImpact}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-left">
-                  <span className={`text-[7px] font-bold px-1 py-0.5 uppercase ${sig.color} ${sig.bg}`}>
-                    {ev.significance}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ── Debt Sustainability Table ──
-
-function DebtSustainabilityTable({ entries }: { entries: DebtSustainability[] }) {
-  const sorted = [...entries].sort((a, b) => a.score - b.score);
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[9px] font-mono">
-        <thead className="sticky top-0 bg-[#080808] z-10">
-          <tr className="border-b border-border/20">
-            <ThCell label="Country" align="left" />
-            <ThCell label="Debt/GDP (%)" align="right" />
-            <ThCell label="Growth (%)" align="right" />
-            <ThCell label="Int. Rate (%)" align="right" />
-            <ThCell label="Prim. Bal Needed (%)" align="right" />
-            <ThCell label="Yrs to Target" align="right" />
-            <ThCell label="Score" align="left" />
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((d) => {
-            const barColor = sustainabilityScoreColor(d.score);
-            const textColor = sustainabilityScoreTextColor(d.score);
-            return (
-              <tr key={d.country} className="border-b border-border/10 hover:bg-cyan-400/[0.02] transition-colors">
-                <td className="px-1.5 py-1 whitespace-nowrap text-left text-white font-bold">
-                  {d.country}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right font-bold ${debtGdpColor(d.debtToGdp)}`}>
-                  {d.debtToGdp.toFixed(1)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right ${d.growthRate >= 2 ? 'text-emerald-400' : d.growthRate >= 0 ? 'text-yellow-400' : 'text-red-400'}`}>
-                  {d.growthRate.toFixed(1)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right ${d.interestRate > 5 ? 'text-red-400' : d.interestRate > 3 ? 'text-yellow-400' : 'text-neutral-300'}`}>
-                  {d.interestRate.toFixed(1)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right font-bold ${d.primaryBalanceNeeded > 3 ? 'text-red-400' : d.primaryBalanceNeeded > 1 ? 'text-yellow-400' : 'text-emerald-400'}`}>
-                  {d.primaryBalanceNeeded > 0 ? '+' : ''}{d.primaryBalanceNeeded.toFixed(1)}
-                </td>
-                <td className={`px-1.5 py-1 whitespace-nowrap text-right ${d.yearsToTarget > 20 ? 'text-red-400' : d.yearsToTarget > 10 ? 'text-yellow-400' : 'text-neutral-300'}`}>
-                  {d.yearsToTarget > 99 ? '>99' : d.yearsToTarget}
-                </td>
-                <td className="px-1.5 py-1 whitespace-nowrap text-left">
-                  <div className="flex items-center gap-1">
-                    <div className="w-12 h-1.5 bg-neutral-900 relative">
-                      <div
-                        className="absolute top-0 left-0 h-full"
-                        style={{ width: `${Math.min(d.score, 100)}%`, backgroundColor: barColor, opacity: 0.7 }}
-                      />
-                    </div>
-                    <span className={`text-[8px] font-mono font-bold tabular-nums ${textColor}`}>
-                      {d.score}
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
+interface FiscalCountry {
+  country: string;
+  countryCode: string;
+  budgetBalance: number;
+  taxRevenue: number;
+  govtSpending: number;
+  debtToGdp: number;
+  fiscalStatus: string;
+  spending: {
+    defense: number;
+    healthcare: number;
+    education: number;
+    socialSecurity: number;
+    infrastructure: number;
+    interest: number;
+  };
+  revenue: {
+    incomeTax: number;
+    corporateTax: number;
+    vat: number;
+    socialContributions: number;
+  };
+  quarterlyTrend: number[];
 }
 
 // ── Main Panel ──
 
 export function FiscalPolicyPanel() {
   const t = useT();
-  const { data, isLoading, refetch } = useFiscalPolicy();
+  const { data, isLoading, error, refetch } = useFiscalPolicy();
+  const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
 
-  const fiscalData = data as FiscalPolicyData | undefined;
+  const summary = data?.summary as FiscalSummary | undefined;
+  const countries = data?.countries as FiscalCountry[] | undefined;
+
+  const selectedCountry = countries?.find((c) => c.country === hoveredCountry) ?? countries?.[0];
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-cyan-400/30 shrink-0">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-emerald-400/30 shrink-0">
         <div className="flex items-center gap-2">
-          <Landmark className="w-4 h-4 text-cyan-400" />
-          <span className="text-[9px] font-black font-mono uppercase tracking-wider text-cyan-400">
-            {tr(t, 'fpTitle', 'Fiscal Policy Monitor')}
+          <div className="w-1.5 h-1.5 bg-emerald-400" />
+          <span className="text-[9px] font-black font-mono uppercase tracking-wider text-emerald-400">
+            {tr(t, 'panelFiscalPolicy', 'Fiscal Policy Monitor')}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          {fiscalData?.summary && (
-            <span className="text-[8px] font-mono font-black tabular-nums text-cyan-400">
-              G7 {fiscalData.summary.avgG7DebtToGdp.toFixed(0)}%
+        <button
+          onClick={() => refetch()}
+          className="p-1 text-neutral-500 hover:text-emerald-400 transition-colors"
+        >
+          <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-auto no-scrollbar">
+        {isLoading && !data && (
+          <div className="text-center py-8 text-emerald-400 text-[9px] font-mono uppercase animate-pulse">
+            LOADING FISCAL DATA...
+          </div>
+        )}
+
+        {error && !data && (
+          <div className="text-center py-8 text-red-400 text-[9px] font-mono uppercase">
+            ERROR LOADING FISCAL DATA
+          </div>
+        )}
+
+        {!data && !isLoading && !error && (
+          <div className="text-center py-8 text-neutral-500 text-[9px] font-mono uppercase">
+            No data available
+          </div>
+        )}
+
+        {data && (
+          <>
+            {summary && <SummaryBar summary={summary} />}
+            {countries && countries.length > 0 && (
+              <CountryTableSection
+                countries={countries}
+                hoveredCountry={hoveredCountry}
+                onHover={setHoveredCountry}
+              />
+            )}
+            {selectedCountry && (
+              <SpendingBreakdownSection country={selectedCountry} />
+            )}
+            {selectedCountry && (
+              <RevenueBreakdownSection country={selectedCountry} />
+            )}
+            {countries && countries.length > 0 && (
+              <QuarterlyTrendSection countries={countries} />
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Summary Bar ──
+
+function SummaryBar({ summary }: { summary: FiscalSummary }) {
+  return (
+    <div className="border-b border-emerald-400/30 bg-[#030303]">
+      <div className="flex items-center gap-0 divide-x divide-emerald-400/10">
+        <div className="flex-1 px-3 py-1.5 text-center">
+          <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+            Global Avg Deficit
+          </div>
+          <div className={`text-[10px] font-mono font-bold ${balanceColor(summary.globalAvgDeficit)}`}>
+            {fmtSignedPct(summary.globalAvgDeficit)}
+          </div>
+        </div>
+        <div className="flex-1 px-3 py-1.5 text-center">
+          <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+            Total Debt
+          </div>
+          <div className="text-[10px] font-mono font-bold text-white">
+            {fmtTrillions(summary.totalDebtLevels)}
+          </div>
+        </div>
+        <div className="flex-1 px-3 py-1.5 text-center">
+          <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+            Countries
+          </div>
+          <div className="text-[10px] font-mono font-bold text-emerald-400">
+            {summary.countriesTracked}
+          </div>
+        </div>
+        <div className="flex-1 px-3 py-1.5 text-center">
+          <div className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+            Avg Debt/GDP
+          </div>
+          <div className={`text-[10px] font-mono font-bold ${debtIntensityColor(summary.avgDebtToGdp)}`}>
+            {fmtPct(summary.avgDebtToGdp)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Country Table Section ──
+
+function CountryTableSection({
+  countries,
+  hoveredCountry,
+  onHover,
+}: {
+  countries: FiscalCountry[];
+  hoveredCountry: string | null;
+  onHover: (country: string | null) => void;
+}) {
+  return (
+    <div className="border-b border-emerald-400/30">
+      <div className="px-3 py-1 border-b border-emerald-400/10">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+          Country Fiscal Overview
+        </span>
+      </div>
+
+      {/* Table header */}
+      <div className="grid grid-cols-[1fr_56px_52px_52px_56px_64px] gap-0 px-2 py-0.5 border-b border-emerald-400/5 bg-[#030303]">
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+          Country
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          Budget %
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          Tax Rev
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          Spend
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right">
+          Debt/GDP
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-center pr-2">
+          Status
+        </span>
+      </div>
+
+      {/* Rows */}
+      {countries.map((c, i) => (
+        <div
+          key={`${c.country}-${i}`}
+          className={`grid grid-cols-[1fr_56px_52px_52px_56px_64px] gap-0 px-2 py-[3px] border-b border-emerald-400/5 hover:bg-emerald-400/[0.02] transition-colors items-center cursor-pointer ${
+            hoveredCountry === c.country ? 'bg-emerald-400/[0.04]' : ''
+          }`}
+          onMouseEnter={() => onHover(c.country)}
+          onMouseLeave={() => onHover(null)}
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-[7px] font-mono text-neutral-600">
+              {c.countryCode}
             </span>
-          )}
-          <button onClick={() => refetch()} className="p-1 text-neutral-600 hover:text-cyan-400 transition-colors">
-            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+            <span className="text-[8px] font-mono font-bold text-emerald-400 truncate">
+              {c.country}
+            </span>
+          </div>
+          <span className={`text-[8px] font-mono font-bold text-right ${balanceColor(c.budgetBalance)}`}>
+            {fmtSignedPct(c.budgetBalance)}
+          </span>
+          <span className="text-[8px] font-mono text-neutral-300 text-right">
+            {fmtPct(c.taxRevenue)}
+          </span>
+          <span className="text-[8px] font-mono text-neutral-300 text-right">
+            {fmtPct(c.govtSpending)}
+          </span>
+          <span className={`text-[8px] font-mono font-bold text-right ${debtIntensityColor(c.debtToGdp)}`}>
+            <span className={`inline-block px-1 py-0.5 ${debtIntensityBg(c.debtToGdp)}`}>
+              {fmtPct(c.debtToGdp)}
+            </span>
+          </span>
+          <span className="flex items-center justify-center pr-2">
+            <span
+              className={`px-1 py-0.5 text-[6px] font-mono font-bold uppercase tracking-wider ${fiscalStatusColor(c.fiscalStatus)} ${fiscalStatusBg(c.fiscalStatus)}`}
+            >
+              {c.fiscalStatus}
+            </span>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Spending Breakdown Mini Bar Chart ──
+
+function SpendingBreakdownSection({ country }: { country: FiscalCountry }) {
+  const spending = country.spending;
+  const entries = Object.entries(spending) as [string, number][];
+  const maxVal = Math.max(...entries.map(([, v]) => v), 1);
+
+  return (
+    <div className="border-b border-emerald-400/30">
+      <div className="px-3 py-1 border-b border-emerald-400/10">
+        <div className="flex items-center justify-between">
+          <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+            Spending Breakdown
+          </span>
+          <span className="text-[7px] font-mono text-emerald-400">
+            {country.country}
+          </span>
         </div>
       </div>
 
-      {/* Loading */}
-      {isLoading && !fiscalData && (
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-[9px] font-mono text-cyan-400 uppercase tracking-wider animate-pulse">
-            LOADING...
-          </span>
+      <div className="px-3 py-2">
+        <div className="flex items-end gap-1 h-12">
+          {entries.map(([key, value]) => {
+            const height = maxVal > 0 ? (value / maxVal) * 100 : 0;
+            const color = SPENDING_COLORS[key] || '#6b7280';
+            return (
+              <div key={key} className="flex-1 flex flex-col items-center gap-0.5">
+                <span className="text-[6px] font-mono text-neutral-500">
+                  {fmtPct(value)}
+                </span>
+                <div className="w-full relative" style={{ height: '32px' }}>
+                  <div
+                    className="absolute bottom-0 left-0 right-0"
+                    style={{
+                      height: `${height}%`,
+                      backgroundColor: color,
+                      minHeight: value > 0 ? '2px' : '0px',
+                    }}
+                  />
+                </div>
+                <span className="text-[6px] font-mono text-neutral-600 uppercase tracking-wider">
+                  {SPENDING_LABELS[key] || key.slice(0, 4).toUpperCase()}
+                </span>
+              </div>
+            );
+          })}
         </div>
-      )}
-
-      {/* No data */}
-      {!fiscalData && !isLoading && (
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-[9px] font-mono text-neutral-600 uppercase">
-            {tr(t, 'noData', 'No data')}
-          </span>
-        </div>
-      )}
-
-      {/* Scrollable content */}
-      {fiscalData && (
-        <div className="flex-1 overflow-auto no-scrollbar">
-          {/* Summary bar */}
-          {fiscalData.summary && (
-            <SummaryBar summary={fiscalData.summary} t={t} />
-          )}
-
-          {/* Country Fiscal Data */}
-          {fiscalData.countries && fiscalData.countries.length > 0 && (
-            <>
-              <SectionHeader title={tr(t, 'fpCountryData', 'Country Fiscal Data')} />
-              <CountryFiscalTable countries={fiscalData.countries} />
-            </>
-          )}
-
-          {/* Fiscal Events */}
-          {fiscalData.events && fiscalData.events.length > 0 && (
-            <>
-              <SectionHeader title={tr(t, 'fpEvents', 'Fiscal Events')} />
-              <FiscalEventsTable events={fiscalData.events} />
-            </>
-          )}
-
-          {/* Debt Sustainability */}
-          {fiscalData.debtSustainability && fiscalData.debtSustainability.length > 0 && (
-            <>
-              <SectionHeader title={tr(t, 'fpDebtSustainability', 'Debt Sustainability')} />
-              <DebtSustainabilityTable entries={fiscalData.debtSustainability} />
-            </>
-          )}
-
-          {/* Bottom padding */}
-          <div className="h-2" />
-        </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+// ── Revenue Breakdown Section ──
+
+function RevenueBreakdownSection({ country }: { country: FiscalCountry }) {
+  const revenue = country.revenue;
+  const entries: [string, string, number][] = [
+    ['incomeTax', 'Income Tax', revenue.incomeTax],
+    ['corporateTax', 'Corporate Tax', revenue.corporateTax],
+    ['vat', 'VAT / Sales Tax', revenue.vat],
+    ['socialContributions', 'Social Contrib.', revenue.socialContributions],
+  ];
+  const total = entries.reduce((sum, [, , v]) => sum + v, 0);
+
+  return (
+    <div className="border-b border-emerald-400/30">
+      <div className="px-3 py-1 border-b border-emerald-400/10">
+        <div className="flex items-center justify-between">
+          <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+            Revenue Breakdown
+          </span>
+          <span className="text-[7px] font-mono text-emerald-400">
+            {country.country}
+          </span>
+        </div>
+      </div>
+
+      {entries.map(([key, label, value]) => {
+        const barWidth = total > 0 ? Math.min((value / total) * 100, 100) : 0;
+        return (
+          <div
+            key={key}
+            className="px-3 py-[3px] border-b border-emerald-400/5 hover:bg-emerald-400/[0.02] transition-colors"
+          >
+            <div className="flex items-center justify-between mb-0.5">
+              <span className="text-[7px] font-mono text-neutral-400 uppercase tracking-wider">
+                {label}
+              </span>
+              <span className="text-[8px] font-mono font-bold text-white">
+                {fmtPct(value)}
+              </span>
+            </div>
+            <div className="w-full h-1 bg-neutral-800 relative">
+              <div
+                className="absolute top-0 left-0 h-full bg-emerald-400"
+                style={{ width: `${barWidth}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Quarterly Trend Section ──
+
+function QuarterlyTrendSection({ countries }: { countries: FiscalCountry[] }) {
+  return (
+    <div>
+      <div className="px-3 py-1 border-b border-emerald-400/10">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+          Quarterly Budget Balance Trend
+        </span>
+      </div>
+
+      {/* Table header */}
+      <div className="grid grid-cols-[1fr_120px_40px] gap-0 px-2 py-0.5 border-b border-emerald-400/5 bg-[#030303]">
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider">
+          Country
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-center">
+          Trend (4Q)
+        </span>
+        <span className="text-[7px] font-mono text-neutral-600 uppercase tracking-wider text-right pr-2">
+          Dir
+        </span>
+      </div>
+
+      {countries.map((c, i) => {
+        const trend = c.quarterlyTrend || [];
+        const lastVal = trend.length > 0 ? trend[trend.length - 1] : 0;
+        const firstVal = trend.length > 0 ? trend[0] : 0;
+        const direction = lastVal - firstVal;
+
+        return (
+          <div
+            key={`trend-${c.country}-${i}`}
+            className="grid grid-cols-[1fr_120px_40px] gap-0 px-2 py-[3px] border-b border-emerald-400/5 hover:bg-emerald-400/[0.02] transition-colors items-center"
+          >
+            <span className="text-[8px] font-mono font-bold text-emerald-400 truncate">
+              {c.country}
+            </span>
+            <div className="flex items-center justify-center">
+              <MiniSparkline data={trend} />
+            </div>
+            <span className={`text-[8px] font-mono font-bold text-right pr-2 ${changeColor(direction)}`}>
+              {trendArrow(direction)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Mini Sparkline SVG ──
+
+function MiniSparkline({ data }: { data: number[] }) {
+  if (!data || data.length === 0) {
+    return (
+      <span className="text-[7px] font-mono text-neutral-600">--</span>
+    );
+  }
+
+  const width = 100;
+  const height = 16;
+  const padding = 1;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  const points = data.map((v, i) => {
+    const x = padding + (i / Math.max(data.length - 1, 1)) * (width - padding * 2);
+    const y = padding + (1 - (v - min) / range) * (height - padding * 2);
+    return `${x},${y}`;
+  });
+
+  const zeroY = padding + (1 - (0 - min) / range) * (height - padding * 2);
+  const clampedZeroY = Math.max(padding, Math.min(height - padding, zeroY));
+
+  const lastVal = data[data.length - 1];
+  const lineColor = lastVal >= 0 ? '#34d399' : '#f87171';
+
+  return (
+    <svg width={width} height={height} className="block">
+      {/* Zero line */}
+      <line
+        x1={padding}
+        y1={clampedZeroY}
+        x2={width - padding}
+        y2={clampedZeroY}
+        stroke="rgba(255,255,255,0.08)"
+        strokeWidth={0.5}
+        strokeDasharray="2,2"
+      />
+      {/* Sparkline */}
+      <polyline
+        points={points.join(' ')}
+        fill="none"
+        stroke={lineColor}
+        strokeWidth={1}
+        strokeLinejoin="round"
+      />
+      {/* End dot */}
+      {points.length > 0 && (
+        <circle
+          cx={parseFloat(points[points.length - 1].split(',')[0])}
+          cy={parseFloat(points[points.length - 1].split(',')[1])}
+          r={1.5}
+          fill={lineColor}
+        />
+      )}
+    </svg>
   );
 }

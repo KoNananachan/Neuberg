@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../client';
 
-export function useFiscalPolicy() {
+export function useSemiconductor() {
   return useQuery({
-    queryKey: ['fiscal-policy'],
-    queryFn: () => api.get<any>('/fiscal-policy'),
+    queryKey: ['semiconductor'],
+    queryFn: () => api.get<any>('/semiconductor'),
     refetchInterval: 5 * 60 * 1000,
     staleTime: 3 * 60 * 1000,
   });
