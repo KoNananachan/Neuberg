@@ -397,6 +397,9 @@ import leagueTablesRouter from './routes/league-tables.js';
 import gdpNowcastRouter from './routes/gdp-nowcast.js';
 import recessionProbabilityRouter from './routes/recession-probability.js';
 import financialConditionsRouter from './routes/financial-conditions.js';
+import commodityFundamentalsRouter from './routes/commodity-fundamentals.js';
+import wageGrowthRouter from './routes/wage-growth.js';
+import fiscalDeficitRouter from './routes/fiscal-deficit.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -895,6 +898,9 @@ export function createApp() {
   app.use('/api/gdp-nowcast', gdpNowcastRouter);
   app.use('/api/recession-probability', recessionProbabilityRouter);
   app.use('/api/financial-conditions', financialConditionsRouter);
+  app.use('/api/commodity-fundamentals', commodityFundamentalsRouter);
+  app.use('/api/wage-growth', wageGrowthRouter);
+  app.use('/api/fiscal-deficit', fiscalDeficitRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

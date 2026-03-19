@@ -404,6 +404,9 @@ const LeagueTablesPanel = lazy(() => import('../panels/league-tables-panel').the
 const GDPNowcastPanel = lazy(() => import('../panels/gdp-nowcast-panel').then(m => ({ default: m.GDPNowcastPanel })));
 const RecessionProbabilityPanel = lazy(() => import('../panels/recession-probability-panel').then(m => ({ default: m.RecessionProbabilityPanel })));
 const FinancialConditionsPanel = lazy(() => import('../panels/financial-conditions-panel').then(m => ({ default: m.FinancialConditionsPanel })));
+const CommodityFundamentalsPanel = lazy(() => import('../panels/commodity-fundamentals-panel').then(m => ({ default: m.CommodityFundamentalsPanel })));
+const WageGrowthPanel = lazy(() => import('../panels/wage-growth-panel').then(m => ({ default: m.WageGrowthPanel })));
+const FiscalDeficitPanel = lazy(() => import('../panels/fiscal-deficit-panel').then(m => ({ default: m.FiscalDeficitPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -818,6 +821,9 @@ export const PANEL_IDS = {
   GDP_NOWCAST: 'gdp-nowcast',
   RECESSION_PROBABILITY: 'recession-probability',
   FINANCIAL_CONDITIONS: 'financial-conditions',
+  COMMODITY_FUNDAMENTALS: 'commodity-fundamentals',
+  WAGE_GROWTH: 'wage-growth',
+  FISCAL_DEFICIT: 'fiscal-deficit',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1216,6 +1222,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.GDP_NOWCAST]: 'GDP NOWCAST',
   [PANEL_IDS.RECESSION_PROBABILITY]: 'RECESSION PROBABILITY',
   [PANEL_IDS.FINANCIAL_CONDITIONS]: 'FINANCIAL CONDITIONS INDEX',
+  [PANEL_IDS.COMMODITY_FUNDAMENTALS]: 'COMMODITY FUNDAMENTALS',
+  [PANEL_IDS.WAGE_GROWTH]: 'WAGE GROWTH TRACKER',
+  [PANEL_IDS.FISCAL_DEFICIT]: 'FISCAL DEFICIT MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1615,6 +1624,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.GDP_NOWCAST]: 'panelGDPNowcast',
   [PANEL_IDS.RECESSION_PROBABILITY]: 'panelRecessionProbability',
   [PANEL_IDS.FINANCIAL_CONDITIONS]: 'panelFinancialConditions',
+  [PANEL_IDS.COMMODITY_FUNDAMENTALS]: 'panelCommodityFundamentals',
+  [PANEL_IDS.WAGE_GROWTH]: 'panelWageGrowth',
+  [PANEL_IDS.FISCAL_DEFICIT]: 'panelFiscalDeficit',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2310,6 +2322,9 @@ export function DockLayout() {
       case PANEL_IDS.GDP_NOWCAST: content = <LazyWrap><GDPNowcastPanel /></LazyWrap>; break;
       case PANEL_IDS.RECESSION_PROBABILITY: content = <LazyWrap><RecessionProbabilityPanel /></LazyWrap>; break;
       case PANEL_IDS.FINANCIAL_CONDITIONS: content = <LazyWrap><FinancialConditionsPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_FUNDAMENTALS: content = <LazyWrap><CommodityFundamentalsPanel /></LazyWrap>; break;
+      case PANEL_IDS.WAGE_GROWTH: content = <LazyWrap><WageGrowthPanel /></LazyWrap>; break;
+      case PANEL_IDS.FISCAL_DEFICIT: content = <LazyWrap><FiscalDeficitPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
