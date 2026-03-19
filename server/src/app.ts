@@ -384,6 +384,7 @@ import sovereignYieldRouter from './routes/sovereign-yield.js';
 import tradeBalanceRouter from './routes/trade-balance.js';
 import semiconductorRouter from './routes/semiconductor.js';
 import infrastructureInvestmentRouter from './routes/infrastructure-investment.js';
+import insuranceMarketRouter from './routes/insurance-market.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -869,6 +870,7 @@ export function createApp() {
   app.use('/api/trade-balance', tradeBalanceRouter);
   app.use('/api/semiconductor', semiconductorRouter);
   app.use('/api/infrastructure-investment', infrastructureInvestmentRouter);
+  app.use('/api/insurance-market', insuranceMarketRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

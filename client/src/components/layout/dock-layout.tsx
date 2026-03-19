@@ -391,6 +391,7 @@ const SovereignYieldPanel = lazy(() => import('../panels/sovereign-yield-panel')
 const TradeBalancePanel = lazy(() => import('../panels/trade-balance-panel').then(m => ({ default: m.TradeBalancePanel })));
 const SemiconductorPanel = lazy(() => import('../panels/semiconductor-panel').then(m => ({ default: m.SemiconductorPanel })));
 const InfrastructureInvestmentPanel = lazy(() => import('../panels/infrastructure-investment-panel').then(m => ({ default: m.InfrastructureInvestmentPanel })));
+const InsuranceMarketPanel = lazy(() => import('../panels/insurance-market-panel').then(m => ({ default: m.InsuranceMarketPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -792,6 +793,7 @@ export const PANEL_IDS = {
   TRADE_BALANCE: 'trade-balance',
   SEMICONDUCTOR: 'semiconductor',
   INFRASTRUCTURE_INVESTMENT: 'infrastructure-investment',
+  INSURANCE_MARKET: 'insurance-market',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1177,6 +1179,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.TRADE_BALANCE]: 'TRADE BALANCE',
   [PANEL_IDS.SEMICONDUCTOR]: 'SEMICONDUCTOR',
   [PANEL_IDS.INFRASTRUCTURE_INVESTMENT]: 'INFRASTRUCTURE INVESTMENT',
+  [PANEL_IDS.INSURANCE_MARKET]: 'INSURANCE MARKET',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1563,6 +1566,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.TRADE_BALANCE]: 'panelTradeBalance',
   [PANEL_IDS.SEMICONDUCTOR]: 'panelSemiconductor',
   [PANEL_IDS.INFRASTRUCTURE_INVESTMENT]: 'panelInfrastructureInvestment',
+  [PANEL_IDS.INSURANCE_MARKET]: 'panelInsuranceMarket',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2245,6 +2249,7 @@ export function DockLayout() {
       case PANEL_IDS.TRADE_BALANCE: content = <LazyWrap><TradeBalancePanel /></LazyWrap>; break;
       case PANEL_IDS.SEMICONDUCTOR: content = <LazyWrap><SemiconductorPanel /></LazyWrap>; break;
       case PANEL_IDS.INFRASTRUCTURE_INVESTMENT: content = <LazyWrap><InfrastructureInvestmentPanel /></LazyWrap>; break;
+      case PANEL_IDS.INSURANCE_MARKET: content = <LazyWrap><InsuranceMarketPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
