@@ -504,6 +504,9 @@ const PrivateCreditDashboardPanel = lazy(() => import('../panels/private-credit-
 const SovereignCdsMonitorPanel = lazy(() => import('../panels/sovereign-cds-monitor-panel').then(m => ({ default: m.SovereignCdsMonitorPanel })));
 const EquityDividendForecastPanel = lazy(() => import('../panels/equity-dividend-forecast-panel').then(m => ({ default: m.EquityDividendForecastPanel })));
 const CloTrancheAnalyticsPanel = lazy(() => import('../panels/clo-tranche-analytics-panel').then(m => ({ default: m.CloTrancheAnalyticsPanel })));
+const EquityPairsTradingPanel = lazy(() => import('../panels/equity-pairs-trading-panel').then(m => ({ default: m.EquityPairsTradingPanel })));
+const TreasuryFuturesBasisPanel = lazy(() => import('../panels/treasury-futures-basis-panel').then(m => ({ default: m.TreasuryFuturesBasisPanel })));
+const CreditIndexTranchesPanel = lazy(() => import('../panels/credit-index-tranches-panel').then(m => ({ default: m.CreditIndexTranchesPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1018,6 +1021,9 @@ export const PANEL_IDS = {
   SOVEREIGN_CDS_MONITOR: 'sovereign-cds-monitor',
   EQUITY_DIVIDEND_FORECAST: 'equity-dividend-forecast',
   CLO_TRANCHE_ANALYTICS: 'clo-tranche-analytics',
+  EQUITY_PAIRS_TRADING: 'equity-pairs-trading',
+  TREASURY_FUTURES_BASIS: 'treasury-futures-basis',
+  CREDIT_INDEX_TRANCHES: 'credit-index-tranches',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1516,6 +1522,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SOVEREIGN_CDS_MONITOR]: 'SOVEREIGN CDS MONITOR',
   [PANEL_IDS.EQUITY_DIVIDEND_FORECAST]: 'EQUITY DIVIDEND FORECAST',
   [PANEL_IDS.CLO_TRANCHE_ANALYTICS]: 'CLO TRANCHE ANALYTICS',
+  [PANEL_IDS.EQUITY_PAIRS_TRADING]: 'EQUITY PAIRS TRADING',
+  [PANEL_IDS.TREASURY_FUTURES_BASIS]: 'TREASURY FUTURES BASIS',
+  [PANEL_IDS.CREDIT_INDEX_TRANCHES]: 'CREDIT INDEX TRANCHES',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -2015,6 +2024,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SOVEREIGN_CDS_MONITOR]: 'panelSovereignCdsMonitor',
   [PANEL_IDS.EQUITY_DIVIDEND_FORECAST]: 'panelEquityDividendForecast',
   [PANEL_IDS.CLO_TRANCHE_ANALYTICS]: 'panelCloTrancheAnalytics',
+  [PANEL_IDS.EQUITY_PAIRS_TRADING]: 'panelEquityPairsTrading',
+  [PANEL_IDS.TREASURY_FUTURES_BASIS]: 'panelTreasuryFuturesBasis',
+  [PANEL_IDS.CREDIT_INDEX_TRANCHES]: 'panelCreditIndexTranches',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2810,6 +2822,9 @@ export function DockLayout() {
       case PANEL_IDS.SOVEREIGN_CDS_MONITOR: content = <LazyWrap><SovereignCdsMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.EQUITY_DIVIDEND_FORECAST: content = <LazyWrap><EquityDividendForecastPanel /></LazyWrap>; break;
       case PANEL_IDS.CLO_TRANCHE_ANALYTICS: content = <LazyWrap><CloTrancheAnalyticsPanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_PAIRS_TRADING: content = <LazyWrap><EquityPairsTradingPanel /></LazyWrap>; break;
+      case PANEL_IDS.TREASURY_FUTURES_BASIS: content = <LazyWrap><TreasuryFuturesBasisPanel /></LazyWrap>; break;
+      case PANEL_IDS.CREDIT_INDEX_TRANCHES: content = <LazyWrap><CreditIndexTranchesPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

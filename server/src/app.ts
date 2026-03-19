@@ -498,6 +498,9 @@ import privateCreditDashboardRouter from './routes/private-credit-dashboard.js';
 import sovereignCdsMonitorRouter from './routes/sovereign-cds-monitor.js';
 import equityDividendForecastRouter from './routes/equity-dividend-forecast.js';
 import cloTrancheAnalyticsRouter from './routes/clo-tranche-analytics.js';
+import equityPairsTradingRouter from './routes/equity-pairs-trading.js';
+import treasuryFuturesBasisRouter from './routes/treasury-futures-basis.js';
+import creditIndexTranchesRouter from './routes/credit-index-tranches.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1097,6 +1100,9 @@ export function createApp() {
   app.use('/api/sovereign-cds-monitor', sovereignCdsMonitorRouter);
   app.use('/api/equity-dividend-forecast', equityDividendForecastRouter);
   app.use('/api/clo-tranche-analytics', cloTrancheAnalyticsRouter);
+  app.use('/api/equity-pairs-trading', equityPairsTradingRouter);
+  app.use('/api/treasury-futures-basis', treasuryFuturesBasisRouter);
+  app.use('/api/credit-index-tranches', creditIndexTranchesRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
