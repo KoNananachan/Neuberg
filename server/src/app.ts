@@ -522,6 +522,9 @@ import privateEquitySecondariesRouter from './routes/private-equity-secondaries.
 import sukukMonitorRouter from './routes/sukuk-monitor.js';
 import frontierMarketDebtRouter from './routes/frontier-market-debt.js';
 import aircraftFinanceRouter from './routes/aircraft-finance.js';
+import rareEarthBatteryMetalsRouter from './routes/rare-earth-battery-metals.js';
+import dataCenterInfrastructureRouter from './routes/data-center-infrastructure.js';
+import sportsMediaRightsRouter from './routes/sports-media-rights.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1145,6 +1148,9 @@ export function createApp() {
   app.use('/api/sukuk-monitor', sukukMonitorRouter);
   app.use('/api/frontier-market-debt', frontierMarketDebtRouter);
   app.use('/api/aircraft-finance', aircraftFinanceRouter);
+  app.use('/api/rare-earth-battery-metals', rareEarthBatteryMetalsRouter);
+  app.use('/api/data-center-infrastructure', dataCenterInfrastructureRouter);
+  app.use('/api/sports-media-rights', sportsMediaRightsRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

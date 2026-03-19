@@ -528,6 +528,9 @@ const PrivateEquitySecondariesPanel = lazy(() => import('../panels/private-equit
 const SukukMonitorPanel = lazy(() => import('../panels/sukuk-monitor-panel').then(m => ({ default: m.SukukMonitorPanel })));
 const FrontierMarketDebtPanel = lazy(() => import('../panels/frontier-market-debt-panel').then(m => ({ default: m.FrontierMarketDebtPanel })));
 const AircraftFinancePanel = lazy(() => import('../panels/aircraft-finance-panel').then(m => ({ default: m.AircraftFinancePanel })));
+const RareEarthBatteryMetalsPanel = lazy(() => import('../panels/rare-earth-battery-metals-panel').then(m => ({ default: m.RareEarthBatteryMetalsPanel })));
+const DataCenterInfrastructurePanel = lazy(() => import('../panels/data-center-infrastructure-panel').then(m => ({ default: m.DataCenterInfrastructurePanel })));
+const SportsMediaRightsPanel = lazy(() => import('../panels/sports-media-rights-panel').then(m => ({ default: m.SportsMediaRightsPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1066,6 +1069,9 @@ export const PANEL_IDS = {
   SUKUK_MONITOR: 'sukuk-monitor',
   FRONTIER_MARKET_DEBT: 'frontier-market-debt',
   AIRCRAFT_FINANCE: 'aircraft-finance',
+  RARE_EARTH_BATTERY_METALS: 'rare-earth-battery-metals',
+  DATA_CENTER_INFRASTRUCTURE: 'data-center-infrastructure',
+  SPORTS_MEDIA_RIGHTS: 'sports-media-rights',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1588,6 +1594,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SUKUK_MONITOR]: 'SUKUK MONITOR',
   [PANEL_IDS.FRONTIER_MARKET_DEBT]: 'FRONTIER MARKET DEBT',
   [PANEL_IDS.AIRCRAFT_FINANCE]: 'AIRCRAFT FINANCE',
+  [PANEL_IDS.RARE_EARTH_BATTERY_METALS]: 'RARE EARTH & BATTERY METALS',
+  [PANEL_IDS.DATA_CENTER_INFRASTRUCTURE]: 'DATA CENTER INFRASTRUCTURE',
+  [PANEL_IDS.SPORTS_MEDIA_RIGHTS]: 'SPORTS & MEDIA RIGHTS',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -2111,6 +2120,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SUKUK_MONITOR]: 'panelSukukMonitor',
   [PANEL_IDS.FRONTIER_MARKET_DEBT]: 'panelFrontierMarketDebt',
   [PANEL_IDS.AIRCRAFT_FINANCE]: 'panelAircraftFinance',
+  [PANEL_IDS.RARE_EARTH_BATTERY_METALS]: 'panelRareEarthBatteryMetals',
+  [PANEL_IDS.DATA_CENTER_INFRASTRUCTURE]: 'panelDataCenterInfrastructure',
+  [PANEL_IDS.SPORTS_MEDIA_RIGHTS]: 'panelSportsMediaRights',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2930,6 +2942,9 @@ export function DockLayout() {
       case PANEL_IDS.SUKUK_MONITOR: content = <LazyWrap><SukukMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.FRONTIER_MARKET_DEBT: content = <LazyWrap><FrontierMarketDebtPanel /></LazyWrap>; break;
       case PANEL_IDS.AIRCRAFT_FINANCE: content = <LazyWrap><AircraftFinancePanel /></LazyWrap>; break;
+      case PANEL_IDS.RARE_EARTH_BATTERY_METALS: content = <LazyWrap><RareEarthBatteryMetalsPanel /></LazyWrap>; break;
+      case PANEL_IDS.DATA_CENTER_INFRASTRUCTURE: content = <LazyWrap><DataCenterInfrastructurePanel /></LazyWrap>; break;
+      case PANEL_IDS.SPORTS_MEDIA_RIGHTS: content = <LazyWrap><SportsMediaRightsPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
