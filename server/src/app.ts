@@ -388,6 +388,8 @@ import insuranceMarketRouter from './routes/insurance-market.js';
 import shippingIndexRouter from './routes/shipping-index.js';
 import electricityMarketRouter from './routes/electricity-market.js';
 import ventureCapitalRouter from './routes/venture-capital.js';
+import municipalBondRouter from './routes/municipal-bond.js';
+import commodityCurveRouter from './routes/commodity-curve.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -877,6 +879,8 @@ export function createApp() {
   app.use('/api/shipping-index', shippingIndexRouter);
   app.use('/api/electricity-market', electricityMarketRouter);
   app.use('/api/venture-capital', ventureCapitalRouter);
+  app.use('/api/municipal-bond', municipalBondRouter);
+  app.use('/api/commodity-curve', commodityCurveRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

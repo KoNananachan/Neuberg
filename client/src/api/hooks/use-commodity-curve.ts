@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../client';
 
-export function useDistressedDebt() {
+export function useCommodityCurve() {
   return useQuery({
-    queryKey: ['distressed-debt'],
-    queryFn: () => api.get<any>('/distressed-debt'),
+    queryKey: ['commodity-curve'],
+    queryFn: () => api.get<any>('/commodity-curve'),
     refetchInterval: 5 * 60 * 1000,
     staleTime: 3 * 60 * 1000,
   });

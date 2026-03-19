@@ -1,214 +1,553 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useDistressedDebt } from '../../api/hooks/use-distressed-debt';
+import { useT } from '../../i18n';
+import { RefreshCw } from 'lucide-react';
 
-const ACCENT = '#f87171'; // red-400
-const ACCENT_DIM = 'rgba(248,113,113,0.08)';
+// ── i18n fallback helper ──
 
-type Tab = 'issuers' | 'recovery' | 'sectors' | 'ratings';
+const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
+  try {
+    return (t as (k: string) => string)(key) || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+// ── Formatting helpers ──
+
+function fmtBps(n: number | null | undefined): string {
+  if (n == null) return '--';
+  return n.toFixed(0) + ' bps';
+}
+
+function fmtPct(n: number | null | undefined): string {
+  if (n == null) return '--';
+  return n.toFixed(1) + '%';
+}
+
+function fmtPrice(n: number | null | undefined): string {
+  if (n == null) return '--';
+  return n.toFixed(2);
+}
+
+function fmtYield(n: number | null | undefined): string {
+  if (n == null) return '--';
+  return n.toFixed(2) + '%';
+}
+
+function fmtDollar(n: number | null | undefined): string {
+  if (n == null) return '--';
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(0) + 'M';
+  return '$' + n.toFixed(0);
+}
+
+function fmtSpread(n: number | null | undefined): string {
+  if (n == null) return '--';
+  return n.toFixed(0);
+}
+
+// ── Color helpers ──
+
+function priceColor(price: number): string {
+  if (price > 70) return 'text-green-400';
+  if (price >= 40) return 'text-yellow-400';
+  return 'text-red-400';
+}
+
+function ratingColor(rating: string): string {
+  if (rating.startsWith('BB')) return 'text-orange-400';
+  if (rating.startsWith('CCC') || rating.startsWith('CC') || rating.startsWith('C') || rating === 'D') return 'text-red-500';
+  if (rating.startsWith('B')) return 'text-red-400';
+  return 'text-yellow-400';
+}
+
+function ratingBg(rating: string): string {
+  if (rating.startsWith('BB')) return 'bg-orange-400/10 border border-orange-400/30';
+  if (rating.startsWith('CCC') || rating.startsWith('CC') || rating.startsWith('C') || rating === 'D') return 'bg-red-500/10 border border-red-500/30';
+  if (rating.startsWith('B')) return 'bg-red-400/10 border border-red-400/30';
+  return 'bg-yellow-400/10 border border-yellow-400/30';
+}
+
+function distressReasonBg(_reason: string): string {
+  return 'bg-red-400/10 border border-red-400/30 text-red-400';
+}
+
+function defaultTypeBadge(type: string): { color: string; bg: string } {
+  switch (type?.toUpperCase()) {
+    case 'MISSED PAYMENT':
+    case 'MISSED_PAYMENT':
+      return { color: 'text-red-400', bg: 'bg-red-400/10 border border-red-400/30' };
+    case 'BANKRUPTCY':
+      return { color: 'text-red-500', bg: 'bg-red-500/10 border border-red-500/30' };
+    case 'RESTRUCTURING':
+      return { color: 'text-orange-400', bg: 'bg-orange-400/10 border border-orange-400/30' };
+    case 'DISTRESSED EXCHANGE':
+    case 'DISTRESSED_EXCHANGE':
+      return { color: 'text-yellow-400', bg: 'bg-yellow-400/10 border border-yellow-400/30' };
+    default:
+      return { color: 'text-neutral-400', bg: 'bg-neutral-400/10 border border-neutral-400/30' };
+  }
+}
+
+function loanTypeBadge(type: string): string {
+  switch (type?.toUpperCase()) {
+    case 'TERM LOAN B':
+    case 'TLB':
+      return 'text-blue-400 bg-blue-400/10 border border-blue-400/30';
+    case 'REVOLVER':
+    case 'RCF':
+      return 'text-green-400 bg-green-400/10 border border-green-400/30';
+    case 'SECOND LIEN':
+    case '2ND LIEN':
+      return 'text-orange-400 bg-orange-400/10 border border-orange-400/30';
+    default:
+      return 'text-neutral-400 bg-neutral-400/10 border border-neutral-400/30';
+  }
+}
+
+// ── Main Panel ──
 
 export function DistressedDebtPanel() {
-  const { data, isLoading, error } = useDistressedDebt();
-  const [tab, setTab] = useState<Tab>('issuers');
-  const [sortCol, setSortCol] = useState<string>('price');
-  const [sortAsc, setSortAsc] = useState(true);
-
-  const issuersSorted = useMemo(() => {
-    if (!data?.issuers) return [];
-    const arr = [...data.issuers];
-    arr.sort((a: any, b: any) => {
-      const va = a[sortCol] ?? 0; const vb = b[sortCol] ?? 0;
-      if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-      return sortAsc ? va - vb : vb - va;
-    });
-    return arr;
-  }, [data, sortCol, sortAsc]);
-
-  const handleSort = (col: string) => {
-    if (sortCol === col) setSortAsc(!sortAsc);
-    else { setSortCol(col); setSortAsc(true); }
-  };
-
-  if (isLoading) return <div className="h-full flex items-center justify-center bg-black"><div className="text-[9px] font-mono text-neutral/40 uppercase tracking-widest animate-pulse">Loading distressed debt data...</div></div>;
-  if (error || !data) return <div className="h-full flex items-center justify-center bg-black"><div className="text-[9px] font-mono text-bearish/60 uppercase tracking-widest">Failed to load data</div></div>;
-
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'issuers', label: 'ISSUERS' },
-    { key: 'recovery', label: 'RECOVERY' },
-    { key: 'sectors', label: 'SECTORS' },
-    { key: 'ratings', label: 'RATINGS' },
-  ];
-
-  const SortHeader = ({ col, label, right }: { col: string; label: string; right?: boolean }) => (
-    <th className={`px-2 py-1.5 font-bold cursor-pointer hover:text-white/80 transition-colors whitespace-nowrap ${right ? 'text-right' : 'text-left'}`} onClick={() => handleSort(col)}>
-      {label}{sortCol === col ? (sortAsc ? ' ▲' : ' ▼') : ''}
-    </th>
-  );
-
-  const StatusTag = ({ status }: { status: string }) => (
-    <span className={`text-[7px] font-bold px-1 py-0 ${status === 'Chapter 11' ? 'bg-bearish/20 text-bearish' : status === 'Defaulted' ? 'bg-bearish/15 text-red-300' : status === 'Deeply Distressed' ? 'bg-orange-500/15 text-orange-400' : status === 'Distressed' ? 'bg-yellow-500/15 text-yellow-400' : 'bg-white/10 text-white/50'}`}>
-      {status}
-    </span>
-  );
+  const t = useT();
+  const { data, isLoading, error, refetch } = useDistressedDebt();
 
   return (
-    <div className="h-full flex flex-col bg-black text-white overflow-hidden">
-      {/* Summary bar */}
-      <div className="grid grid-cols-5 gap-0 border-b border-border/10 px-3 py-2 shrink-0">
-        <div>
-          <div className="text-[7px] font-mono text-neutral/40 uppercase">Issuers</div>
-          <div className="text-[11px] font-mono font-black" style={{ color: ACCENT }}>{data.summary?.totalIssuers}</div>
+    <div className="h-full flex flex-col bg-black overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/30 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 bg-red-400" />
+          <span className="text-[9px] font-black font-mono uppercase tracking-tighter text-red-400">
+            {tr(t, 'panelDistressedDebt', 'DISTRESSED DEBT')}
+          </span>
         </div>
-        <div>
-          <div className="text-[7px] font-mono text-neutral/40 uppercase">Face Value</div>
-          <div className="text-[11px] font-mono font-black text-white/80">${data.summary?.totalFaceValue}B</div>
-        </div>
-        <div>
-          <div className="text-[7px] font-mono text-neutral/40 uppercase">Avg Price</div>
-          <div className="text-[11px] font-mono font-black" style={{ color: ACCENT }}>{data.summary?.avgPrice}</div>
-        </div>
-        <div>
-          <div className="text-[7px] font-mono text-neutral/40 uppercase">Defaulted</div>
-          <div className="text-[11px] font-mono font-black text-bearish">{data.summary?.defaultedCount}</div>
-        </div>
-        <div>
-          <div className="text-[7px] font-mono text-neutral/40 uppercase">Avg Recovery</div>
-          <div className="text-[11px] font-mono font-black text-white/60">{data.summary?.avgRecovery}%</div>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-0 border-b border-border/20 shrink-0">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} className="px-3 py-2 text-[9px] font-mono font-bold uppercase tracking-wider transition-colors" style={{ color: tab === t.key ? ACCENT : 'rgba(255,255,255,0.35)', borderBottom: tab === t.key ? `1px solid ${ACCENT}` : '1px solid transparent', background: tab === t.key ? ACCENT_DIM : 'transparent' }}>
-            {t.label}
-          </button>
-        ))}
+        <button
+          onClick={() => refetch()}
+          className="p-1 text-neutral-500 hover:text-red-400 transition-colors"
+        >
+          <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       <div className="flex-1 overflow-auto no-scrollbar">
-        {tab === 'issuers' && (
-          <table className="w-full text-[9px] font-mono">
-            <thead className="sticky top-0 bg-black/95 text-neutral/50 uppercase tracking-wider border-b border-border/10">
-              <tr>
-                <SortHeader col="name" label="Issuer" />
-                <SortHeader col="rating" label="Rating" />
-                <SortHeader col="price" label="Price" right />
-                <SortHeader col="change1d" label="1D" right />
-                <SortHeader col="ytw" label="YTW" right />
-                <SortHeader col="spread" label="Spread" right />
-                <SortHeader col="recoveryEst" label="Recovery" right />
-                <th className="px-2 py-1.5 text-right font-bold">Status</th>
+        {isLoading && !data && (
+          <div className="text-center py-8 text-red-400 text-[9px] font-mono uppercase animate-pulse">
+            LOADING DISTRESSED DEBT DATA...
+          </div>
+        )}
+
+        {error && !data && (
+          <div className="text-center py-8 text-red-400 text-[9px] font-mono uppercase">
+            ERROR LOADING DATA
+          </div>
+        )}
+
+        {!data && !isLoading && !error && (
+          <div className="text-center py-8 text-neutral-500 text-[9px] font-mono uppercase">
+            No data available
+          </div>
+        )}
+
+        {data && (
+          <>
+            <IndexBanner data={data} />
+            <DistressedIssuersTable data={data} t={t} />
+            <SectorBreakdown data={data} t={t} />
+            <LeveragedLoansTable data={data} t={t} />
+            <DefaultTracker data={data} t={t} />
+            <HySpreadChart data={data} t={t} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Index Banner ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function IndexBanner({ data }: { data: any }) {
+  const metrics = [
+    { label: 'HY OAS', value: fmtBps(data?.hyOas ?? data?.hyOAS), key: 'hyOas' },
+    { label: 'CCC SPREAD', value: fmtBps(data?.cccSpread), key: 'cccSpread' },
+    { label: 'DISTRESSED RATIO', value: fmtPct(data?.distressedRatio), key: 'distressedRatio' },
+    { label: 'DEFAULT RATE', value: fmtPct(data?.defaultRate), key: 'defaultRate' },
+    { label: 'RECOVERY RATE', value: fmtPct(data?.recoveryRate), key: 'recoveryRate' },
+  ];
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="grid grid-cols-5 gap-px bg-border/10">
+        {metrics.map((m) => (
+          <div key={m.key} className="px-2 py-1.5 bg-black">
+            <div className="text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500">
+              {m.label}
+            </div>
+            <div className="text-[10px] font-mono font-bold text-white mt-0.5">
+              {m.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Distressed Issuers Table ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function DistressedIssuersTable({ data, t }: { data: any; t: ReturnType<typeof useT> }) {
+  const issuers = data?.distressedIssuers ?? data?.issuers ?? [];
+  if (!Array.isArray(issuers) || issuers.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-3 py-1 border-b border-border/10">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+          {tr(t, 'ddDistressedIssuers', 'Distressed Issuers')}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[9px] font-mono">
+          <thead className="sticky top-0 bg-[#080808] z-10">
+            <tr className="border-b border-border/20">
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Name</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Sector</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Coupon</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Maturity</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Price</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Yield</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Spread</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Rating</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {issuers.map((issuer: any, idx: number) => (
+              <tr key={issuer.name ?? idx} className="border-b border-border/10 hover:bg-red-400/[0.02] transition-colors">
+                <td className="px-1.5 py-1 whitespace-nowrap text-white font-bold">{issuer.name ?? '--'}</td>
+                <td className="px-1.5 py-1 whitespace-nowrap text-neutral-400">{issuer.sector ?? '--'}</td>
+                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">{fmtPct(issuer.coupon)}</td>
+                <td className="px-1.5 py-1 whitespace-nowrap text-neutral-400">{issuer.maturity ?? '--'}</td>
+                <td className={`px-1.5 py-1 whitespace-nowrap text-right font-bold ${priceColor(issuer.price ?? 0)}`}>
+                  {fmtPrice(issuer.price)}
+                </td>
+                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">{fmtYield(issuer.yield)}</td>
+                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">{fmtSpread(issuer.spread)}</td>
+                <td className="px-1.5 py-1 whitespace-nowrap">
+                  <span className={`text-[7px] font-bold px-1 py-0.5 ${ratingColor(issuer.rating ?? '')} ${ratingBg(issuer.rating ?? '')}`}>
+                    {issuer.rating ?? '--'}
+                  </span>
+                </td>
+                <td className="px-1.5 py-1 whitespace-nowrap">
+                  {issuer.distressReason && (
+                    <span className={`text-[7px] font-bold px-1 py-0.5 ${distressReasonBg(issuer.distressReason)}`}>
+                      {issuer.distressReason}
+                    </span>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {issuersSorted.map((iss: any) => (
-                <tr key={iss.name} className={`border-b border-border/5 hover:bg-white/[0.02] ${iss.chapter11 ? 'bg-bearish/5' : ''}`}>
-                  <td className="px-2 py-1.5">
-                    <span className="font-bold" style={{ color: iss.price < 20 ? '#f87171' : ACCENT }}>{iss.name}</span>
-                    <span className="text-neutral/30 ml-1.5 text-[8px]">{iss.sector}</span>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Sector Breakdown ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function SectorBreakdown({ data, t }: { data: any; t: ReturnType<typeof useT> }) {
+  const sectors = data?.sectorBreakdown ?? data?.sectors ?? [];
+  if (!Array.isArray(sectors) || sectors.length === 0) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const maxSpread = useMemo(() => Math.max(...sectors.map((s: any) => s.avgSpread ?? 0), 1), [sectors]);
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-3 py-1 border-b border-border/10">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+          {tr(t, 'ddSectorBreakdown', 'Sector Breakdown')}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[9px] font-mono">
+          <thead className="sticky top-0 bg-[#080808] z-10">
+            <tr className="border-b border-border/20">
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Sector</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Distressed</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Avg Spread</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Default Rate</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Recovery</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {sectors.map((sector: any, idx: number) => {
+              const barPct = ((sector.avgSpread ?? 0) / maxSpread) * 100;
+              return (
+                <tr key={sector.sector ?? idx} className="border-b border-border/10 hover:bg-red-400/[0.02] transition-colors">
+                  <td className="px-1.5 py-1 whitespace-nowrap text-white font-bold uppercase">{sector.sector ?? '--'}</td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right text-red-400 font-bold">{sector.distressedCount ?? sector.count ?? '--'}</td>
+                  <td className="px-1.5 py-1 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-16 h-2 bg-neutral-900 relative">
+                        <div
+                          className="absolute top-0 left-0 h-full bg-red-400/40"
+                          style={{ width: `${Math.min(100, barPct)}%` }}
+                        />
+                      </div>
+                      <span className="text-neutral-300">{fmtSpread(sector.avgSpread)}</span>
+                    </div>
                   </td>
-                  <td className="px-2 py-1.5">
-                    <span className={`text-[7px] font-bold px-1 py-0 ${iss.rating === 'D' ? 'bg-bearish/20 text-bearish' : iss.rating.startsWith('CC') && !iss.rating.startsWith('CCC') ? 'bg-red-400/15 text-red-300' : 'bg-orange-500/15 text-orange-400'}`}>
-                      {iss.rating}
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">{fmtPct(sector.defaultRate)}</td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">{fmtPct(sector.recoveryRate)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Leveraged Loans Table ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function LeveragedLoansTable({ data, t }: { data: any; t: ReturnType<typeof useT> }) {
+  const loans = data?.leveragedLoans ?? data?.loans ?? [];
+  if (!Array.isArray(loans) || loans.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-3 py-1 border-b border-border/10">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+          {tr(t, 'ddLeveragedLoans', 'Leveraged Loans')}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[9px] font-mono">
+          <thead className="sticky top-0 bg-[#080808] z-10">
+            <tr className="border-b border-border/20">
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Borrower</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Spread (SOFR+)</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Price</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Facility Size</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Maturity</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Rating</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {loans.map((loan: any, idx: number) => (
+              <tr key={loan.borrower ?? idx} className="border-b border-border/10 hover:bg-red-400/[0.02] transition-colors">
+                <td className="px-1.5 py-1 whitespace-nowrap text-white font-bold">{loan.borrower ?? '--'}</td>
+                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">{fmtSpread(loan.spread)}</td>
+                <td className={`px-1.5 py-1 whitespace-nowrap text-right font-bold ${priceColor(loan.price ?? 100)}`}>
+                  {fmtPrice(loan.price)}
+                </td>
+                <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">{fmtDollar(loan.facilitySize ?? loan.size)}</td>
+                <td className="px-1.5 py-1 whitespace-nowrap text-neutral-400">{loan.maturity ?? '--'}</td>
+                <td className="px-1.5 py-1 whitespace-nowrap">
+                  <span className={`text-[7px] font-bold px-1 py-0.5 ${ratingColor(loan.rating ?? '')} ${ratingBg(loan.rating ?? '')}`}>
+                    {loan.rating ?? '--'}
+                  </span>
+                </td>
+                <td className="px-1.5 py-1 whitespace-nowrap">
+                  <span className={`text-[7px] font-bold px-1 py-0.5 ${loanTypeBadge(loan.type ?? '')}`}>
+                    {loan.type ?? '--'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Default Tracker ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function DefaultTracker({ data, t }: { data: any; t: ReturnType<typeof useT> }) {
+  const defaults = data?.defaultTracker ?? data?.defaults ?? [];
+  if (!Array.isArray(defaults) || defaults.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-3 py-1 border-b border-border/10">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+          {tr(t, 'ddDefaultTracker', 'Default Tracker')}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[9px] font-mono">
+          <thead className="sticky top-0 bg-[#080808] z-10">
+            <tr className="border-b border-border/20">
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Company</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Sector</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Debt Amount</th>
+              <th className="px-1.5 py-1 text-left text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Default Type</th>
+              <th className="px-1.5 py-1 text-right text-[7px] font-mono font-bold uppercase tracking-wider text-neutral-500 whitespace-nowrap">Exp. Recovery</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {defaults.map((d: any, idx: number) => {
+              const badge = defaultTypeBadge(d.defaultType ?? d.type ?? '');
+              return (
+                <tr key={d.company ?? idx} className="border-b border-border/10 hover:bg-red-400/[0.02] transition-colors">
+                  <td className="px-1.5 py-1 whitespace-nowrap text-white font-bold">{d.company ?? '--'}</td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-neutral-400">{d.sector ?? '--'}</td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">{fmtDollar(d.debtAmount ?? d.amount)}</td>
+                  <td className="px-1.5 py-1 whitespace-nowrap">
+                    <span className={`text-[7px] font-bold px-1 py-0.5 ${badge.color} ${badge.bg}`}>
+                      {(d.defaultType ?? d.type ?? '--').toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-2 py-1.5 text-right font-bold" style={{ color: iss.price < 20 ? '#f87171' : iss.price < 50 ? '#fbbf24' : 'rgba(255,255,255,0.8)' }}>{iss.price}</td>
-                  <td className={`px-2 py-1.5 text-right ${iss.change1d >= 0 ? 'text-bullish' : 'text-bearish'}`}>
-                    {iss.change1d >= 0 ? '+' : ''}{iss.change1d}
-                  </td>
-                  <td className="px-2 py-1.5 text-right text-white/60">{iss.ytw}%</td>
-                  <td className="px-2 py-1.5 text-right" style={{ color: ACCENT }}>{iss.spread}bp</td>
-                  <td className="px-2 py-1.5 text-right text-white/50">{iss.recoveryEst}%</td>
-                  <td className="px-2 py-1.5 text-right"><StatusTag status={iss.status} /></td>
+                  <td className="px-1.5 py-1 whitespace-nowrap text-right text-neutral-300">{fmtPct(d.expectedRecovery ?? d.recovery)}</td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
-        {tab === 'recovery' && (
-          <div className="p-3 space-y-4">
-            <div className="text-[8px] font-mono text-neutral/40 uppercase mb-2">Recovery Rate Distribution</div>
-            {data.recoveryBands?.map((b: any) => (
-              <div key={b.band} className="flex items-center gap-3">
-                <span className="text-[9px] font-mono w-16 text-right" style={{ color: ACCENT }}>{b.band}</span>
-                <div className="flex-1 h-4 bg-white/5 overflow-hidden relative">
-                  <div style={{ width: `${(b.count / data.summary.totalIssuers) * 100}%`, height: '100%', background: ACCENT, opacity: 0.35 }} />
-                  <span className="absolute right-1 top-0.5 text-[7px] text-white/50">{b.count} issuers</span>
-                </div>
-                <span className="text-[8px] font-mono text-white/40 w-16 text-right">${b.totalFace}M</span>
-              </div>
-            ))}
+// ── HY Spread Monthly Trend Chart (SVG) ──
 
-            <div className="mt-4 text-[8px] font-mono text-neutral/40 uppercase mb-2">Price vs Recovery Estimate</div>
-            {data.issuers?.sort((a: any, b: any) => a.price - b.price).map((iss: any) => (
-              <div key={iss.name} className="flex items-center gap-2 py-0.5">
-                <span className="text-[7px] font-mono w-24 text-right truncate" style={{ color: iss.price < 20 ? '#f87171' : ACCENT }}>{iss.name}</span>
-                <div className="flex-1 h-3 bg-white/5 overflow-hidden relative">
-                  <div style={{ width: `${iss.price}%`, height: '100%', background: '#fbbf24', opacity: 0.3 }} />
-                  <div style={{ position: 'absolute', left: `${iss.recoveryEst}%`, top: 0, width: '2px', height: '100%', background: '#22c55e' }} />
-                </div>
-                <span className="text-[7px] font-mono text-white/50 w-6 text-right">{iss.price}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-4 text-[7px] font-mono text-neutral/30 mt-1">
-              <span className="flex items-center gap-1"><span className="w-3 h-1.5 bg-yellow-500/30" /> Price</span>
-              <span className="flex items-center gap-1"><span className="w-0.5 h-3 bg-green-500" /> Recovery Est</span>
-            </div>
-          </div>
-        )}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function HySpreadChart({ data, t }: { data: any; t: ReturnType<typeof useT> }) {
+  const history = data?.hySpreadHistory ?? data?.spreadHistory ?? [];
+  if (!Array.isArray(history) || history.length < 2) return null;
 
-        {tab === 'sectors' && (
-          <div className="p-3 space-y-3">
-            {data.sectors?.map((s: any) => (
-              <div key={s.sector} className="border border-border/10 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-mono font-black" style={{ color: ACCENT }}>{s.sector}</span>
-                  <span className="text-[8px] font-mono text-neutral/40">{s.count} issuers</span>
-                </div>
-                <div className="grid grid-cols-3 gap-3 text-[8px] font-mono">
-                  <div>
-                    <div className="text-neutral/40">Avg Price</div>
-                    <div className="text-white/80 font-bold">{s.avgPrice}</div>
-                  </div>
-                  <div>
-                    <div className="text-neutral/40">Outstanding</div>
-                    <div className="text-white/60">${s.totalOutstanding}M</div>
-                  </div>
-                  <div>
-                    <div className="text-neutral/40">Defaulted</div>
-                    <div className={s.defaulted > 0 ? 'text-bearish font-bold' : 'text-white/40'}>{s.defaulted}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+  const W = 320;
+  const H = 100;
+  const PAD_X = 30;
+  const PAD_Y = 14;
+  const PAD_BOTTOM = 20;
 
-        {tab === 'ratings' && (
-          <div className="p-3 space-y-4">
-            <div className="text-[8px] font-mono text-neutral/40 uppercase mb-2">Rating Distribution</div>
-            {data.ratingDist?.map((r: any) => (
-              <div key={r.rating} className="flex items-center gap-3">
-                <span className={`text-[9px] font-mono w-10 text-right font-bold ${r.rating === 'D' ? 'text-bearish' : r.rating === 'CC' ? 'text-red-300' : 'text-orange-400'}`}>{r.rating}</span>
-                <div className="flex-1 h-5 bg-white/5 overflow-hidden relative">
-                  <div style={{ width: `${(r.count / data.summary.totalIssuers) * 100}%`, height: '100%', background: r.rating === 'D' ? '#f87171' : r.rating === 'CC' ? '#fca5a5' : '#fb923c', opacity: 0.35 }} />
-                  <span className="absolute left-2 top-0.5 text-[8px] font-mono text-white/70">{r.count} issuers — avg price {r.avgPrice}</span>
-                </div>
-              </div>
-            ))}
+  const chartData = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const values = history.map((h: any) => h.value ?? h.spread ?? 0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const labels = history.map((h: any) => h.month ?? h.label ?? h.date ?? '');
+    const minV = Math.min(...values) * 0.95;
+    const maxV = Math.max(...values) * 1.05;
+    const rangeV = maxV - minV || 1;
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="border border-border/10 p-3 text-center">
-                <div className="text-[8px] font-mono text-neutral/40 uppercase mb-1">Total Face Value</div>
-                <div className="text-[14px] font-mono font-black" style={{ color: ACCENT }}>${data.summary?.totalFaceValue}B</div>
-              </div>
-              <div className="border border-border/10 p-3 text-center">
-                <div className="text-[8px] font-mono text-neutral/40 uppercase mb-1">Avg Recovery</div>
-                <div className="text-[14px] font-mono font-black text-white/80">{data.summary?.avgRecovery}%</div>
-              </div>
-            </div>
-          </div>
-        )}
+    const scaleX = (i: number) => PAD_X + (i / (values.length - 1)) * (W - PAD_X * 2);
+    const scaleY = (v: number) => PAD_Y + ((maxV - v) / rangeV) * (H - PAD_Y - PAD_BOTTOM);
+
+    const linePath = values
+      .map((v: number, i: number) => `${i === 0 ? 'M' : 'L'} ${scaleX(i).toFixed(1)},${scaleY(v).toFixed(1)}`)
+      .join(' ');
+
+    const fillPath = `${linePath} L ${scaleX(values.length - 1).toFixed(1)},${H - PAD_BOTTOM} L ${scaleX(0).toFixed(1)},${H - PAD_BOTTOM} Z`;
+
+    const points = values.map((v: number, i: number) => ({
+      x: scaleX(i),
+      y: scaleY(v),
+      value: v,
+      label: labels[i],
+    }));
+
+    const gridLines: { y: number; label: string }[] = [];
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+      const v = minV + (rangeV / steps) * i;
+      gridLines.push({ y: scaleY(v), label: v.toFixed(0) });
+    }
+
+    return { linePath, fillPath, points, gridLines, lastPoint: points[points.length - 1] };
+  }, [history]);
+
+  return (
+    <div className="border-b border-border/20">
+      <div className="px-3 py-1 border-b border-border/10">
+        <span className="text-[8px] font-black font-mono uppercase tracking-wider text-neutral-500">
+          {tr(t, 'ddHySpreadTrend', 'HY Spread Monthly Trend (12M)')}
+        </span>
+      </div>
+      <div className="px-3 py-2">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 120 }}>
+          {/* Grid lines */}
+          {chartData.gridLines.map((g, i) => (
+            <g key={i}>
+              <line
+                x1={PAD_X}
+                y1={g.y}
+                x2={W - PAD_X}
+                y2={g.y}
+                stroke="rgba(255,255,255,0.04)"
+                strokeDasharray="2,3"
+              />
+              <text
+                x={PAD_X - 4}
+                y={g.y + 3}
+                textAnchor="end"
+                fill="rgba(255,255,255,0.25)"
+                fontSize={6}
+                fontFamily="monospace"
+              >
+                {g.label}
+              </text>
+            </g>
+          ))}
+
+          {/* Fill area */}
+          <path d={chartData.fillPath} fill="rgba(248,113,113,0.08)" />
+
+          {/* Line */}
+          <path d={chartData.linePath} fill="none" stroke="#f87171" strokeWidth={1.5} />
+
+          {/* Data points */}
+          {chartData.points.map((p, i) => (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r={2} fill="#f87171" />
+              {/* Show label for every other month to avoid crowding */}
+              {i % 2 === 0 && (
+                <text
+                  x={p.x}
+                  y={H - PAD_BOTTOM + 10}
+                  textAnchor="middle"
+                  fill="rgba(255,255,255,0.25)"
+                  fontSize={6}
+                  fontFamily="monospace"
+                >
+                  {p.label}
+                </text>
+              )}
+            </g>
+          ))}
+
+          {/* Last point highlight */}
+          {chartData.lastPoint && (
+            <>
+              <circle cx={chartData.lastPoint.x} cy={chartData.lastPoint.y} r={3.5} fill="none" stroke="#f87171" strokeWidth={1} />
+              <text
+                x={chartData.lastPoint.x}
+                y={chartData.lastPoint.y - 6}
+                textAnchor="middle"
+                fill="white"
+                fontSize={7}
+                fontFamily="monospace"
+                fontWeight="bold"
+              >
+                {chartData.lastPoint.value.toFixed(0)}
+              </text>
+            </>
+          )}
+        </svg>
       </div>
     </div>
   );

@@ -395,6 +395,8 @@ const InsuranceMarketPanel = lazy(() => import('../panels/insurance-market-panel
 const ShippingIndexPanel = lazy(() => import('../panels/shipping-index-panel').then(m => ({ default: m.ShippingIndexPanel })));
 const ElectricityMarketPanel = lazy(() => import('../panels/electricity-market-panel').then(m => ({ default: m.ElectricityMarketPanel })));
 const VentureCapitalPanel = lazy(() => import('../panels/venture-capital-panel').then(m => ({ default: m.VentureCapitalPanel })));
+const MunicipalBondPanel = lazy(() => import('../panels/municipal-bond-panel').then(m => ({ default: m.MunicipalBondPanel })));
+const CommodityCurvePanel = lazy(() => import('../panels/commodity-curve-panel').then(m => ({ default: m.CommodityCurvePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -800,6 +802,8 @@ export const PANEL_IDS = {
   SHIPPING_INDEX: 'shipping-index',
   ELECTRICITY_MARKET: 'electricity-market',
   VENTURE_CAPITAL: 'venture-capital',
+  MUNICIPAL_BOND: 'municipal-bond',
+  COMMODITY_CURVE: 'commodity-curve',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1189,6 +1193,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SHIPPING_INDEX]: 'SHIPPING INDEX',
   [PANEL_IDS.ELECTRICITY_MARKET]: 'ELECTRICITY MARKET',
   [PANEL_IDS.VENTURE_CAPITAL]: 'VENTURE CAPITAL',
+  [PANEL_IDS.MUNICIPAL_BOND]: 'MUNICIPAL BONDS',
+  [PANEL_IDS.COMMODITY_CURVE]: 'COMMODITY CURVES',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1579,6 +1585,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SHIPPING_INDEX]: 'panelShippingIndex',
   [PANEL_IDS.ELECTRICITY_MARKET]: 'panelElectricityMarket',
   [PANEL_IDS.VENTURE_CAPITAL]: 'panelVentureCapital',
+  [PANEL_IDS.MUNICIPAL_BOND]: 'panelMunicipalBond',
+  [PANEL_IDS.COMMODITY_CURVE]: 'panelCommodityCurve',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2265,6 +2273,8 @@ export function DockLayout() {
       case PANEL_IDS.SHIPPING_INDEX: content = <LazyWrap><ShippingIndexPanel /></LazyWrap>; break;
       case PANEL_IDS.ELECTRICITY_MARKET: content = <LazyWrap><ElectricityMarketPanel /></LazyWrap>; break;
       case PANEL_IDS.VENTURE_CAPITAL: content = <LazyWrap><VentureCapitalPanel /></LazyWrap>; break;
+      case PANEL_IDS.MUNICIPAL_BOND: content = <LazyWrap><MunicipalBondPanel /></LazyWrap>; break;
+      case PANEL_IDS.COMMODITY_CURVE: content = <LazyWrap><CommodityCurvePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
