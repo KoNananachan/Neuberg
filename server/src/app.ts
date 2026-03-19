@@ -400,6 +400,9 @@ import financialConditionsRouter from './routes/financial-conditions.js';
 import commodityFundamentalsRouter from './routes/commodity-fundamentals.js';
 import wageGrowthRouter from './routes/wage-growth.js';
 import fiscalDeficitRouter from './routes/fiscal-deficit.js';
+import centralClearingRouter from './routes/central-clearing.js';
+import moneyVelocityRouter from './routes/money-velocity.js';
+import productivityMonitorRouter from './routes/productivity-monitor.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -901,6 +904,9 @@ export function createApp() {
   app.use('/api/commodity-fundamentals', commodityFundamentalsRouter);
   app.use('/api/wage-growth', wageGrowthRouter);
   app.use('/api/fiscal-deficit', fiscalDeficitRouter);
+  app.use('/api/central-clearing', centralClearingRouter);
+  app.use('/api/money-velocity', moneyVelocityRouter);
+  app.use('/api/productivity-monitor', productivityMonitorRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

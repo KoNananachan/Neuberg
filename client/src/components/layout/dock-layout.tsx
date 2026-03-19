@@ -407,6 +407,9 @@ const FinancialConditionsPanel = lazy(() => import('../panels/financial-conditio
 const CommodityFundamentalsPanel = lazy(() => import('../panels/commodity-fundamentals-panel').then(m => ({ default: m.CommodityFundamentalsPanel })));
 const WageGrowthPanel = lazy(() => import('../panels/wage-growth-panel').then(m => ({ default: m.WageGrowthPanel })));
 const FiscalDeficitPanel = lazy(() => import('../panels/fiscal-deficit-panel').then(m => ({ default: m.FiscalDeficitPanel })));
+const CentralClearingPanel = lazy(() => import('../panels/central-clearing-panel').then(m => ({ default: m.CentralClearingPanel })));
+const MoneyVelocityPanel = lazy(() => import('../panels/money-velocity-panel').then(m => ({ default: m.MoneyVelocityPanel })));
+const ProductivityMonitorPanel = lazy(() => import('../panels/productivity-monitor-panel').then(m => ({ default: m.ProductivityMonitorPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -824,6 +827,9 @@ export const PANEL_IDS = {
   COMMODITY_FUNDAMENTALS: 'commodity-fundamentals',
   WAGE_GROWTH: 'wage-growth',
   FISCAL_DEFICIT: 'fiscal-deficit',
+  CENTRAL_CLEARING: 'central-clearing',
+  MONEY_VELOCITY: 'money-velocity',
+  PRODUCTIVITY_MONITOR: 'productivity-monitor',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1225,6 +1231,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.COMMODITY_FUNDAMENTALS]: 'COMMODITY FUNDAMENTALS',
   [PANEL_IDS.WAGE_GROWTH]: 'WAGE GROWTH TRACKER',
   [PANEL_IDS.FISCAL_DEFICIT]: 'FISCAL DEFICIT MONITOR',
+  [PANEL_IDS.CENTRAL_CLEARING]: 'CENTRAL CLEARING STATS',
+  [PANEL_IDS.MONEY_VELOCITY]: 'MONEY VELOCITY & SUPPLY',
+  [PANEL_IDS.PRODUCTIVITY_MONITOR]: 'PRODUCTIVITY MONITOR',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1627,6 +1636,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.COMMODITY_FUNDAMENTALS]: 'panelCommodityFundamentals',
   [PANEL_IDS.WAGE_GROWTH]: 'panelWageGrowth',
   [PANEL_IDS.FISCAL_DEFICIT]: 'panelFiscalDeficit',
+  [PANEL_IDS.CENTRAL_CLEARING]: 'panelCentralClearing',
+  [PANEL_IDS.MONEY_VELOCITY]: 'panelMoneyVelocity',
+  [PANEL_IDS.PRODUCTIVITY_MONITOR]: 'panelProductivityMonitor',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2325,6 +2337,9 @@ export function DockLayout() {
       case PANEL_IDS.COMMODITY_FUNDAMENTALS: content = <LazyWrap><CommodityFundamentalsPanel /></LazyWrap>; break;
       case PANEL_IDS.WAGE_GROWTH: content = <LazyWrap><WageGrowthPanel /></LazyWrap>; break;
       case PANEL_IDS.FISCAL_DEFICIT: content = <LazyWrap><FiscalDeficitPanel /></LazyWrap>; break;
+      case PANEL_IDS.CENTRAL_CLEARING: content = <LazyWrap><CentralClearingPanel /></LazyWrap>; break;
+      case PANEL_IDS.MONEY_VELOCITY: content = <LazyWrap><MoneyVelocityPanel /></LazyWrap>; break;
+      case PANEL_IDS.PRODUCTIVITY_MONITOR: content = <LazyWrap><ProductivityMonitorPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
