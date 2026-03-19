@@ -510,6 +510,9 @@ import freightRateMonitorRouter from './routes/freight-rate-monitor.js';
 import powerMarketRouter from './routes/power-market.js';
 import specialSituationsRouter from './routes/special-situations.js';
 import industrialMetalsRouter from './routes/industrial-metals.js';
+import securitizationPipelineRouter from './routes/securitization-pipeline.js';
+import equityAnalystRevisionsRouter from './routes/equity-analyst-revisions.js';
+import naturalGasStorageRouter from './routes/natural-gas-storage.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1121,6 +1124,9 @@ export function createApp() {
   app.use('/api/power-market', powerMarketRouter);
   app.use('/api/special-situations', specialSituationsRouter);
   app.use('/api/industrial-metals', industrialMetalsRouter);
+  app.use('/api/securitization-pipeline', securitizationPipelineRouter);
+  app.use('/api/equity-analyst-revisions', equityAnalystRevisionsRouter);
+  app.use('/api/natural-gas-storage', naturalGasStorageRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
