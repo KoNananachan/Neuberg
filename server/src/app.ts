@@ -376,6 +376,9 @@ import agriculturalCommoditiesRouter from './routes/agricultural-commodities.js'
 import energyTransitionRouter from './routes/energy-transition.js';
 import geopoliticalRiskRouter from './routes/geopolitical-risk.js';
 import laborMarketRouter from './routes/labor-market.js';
+import housingMarketRouter from './routes/housing-market.js';
+import supplyChainStressRouter from './routes/supply-chain-stress.js';
+import creditImpulseRouter from './routes/credit-impulse.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -853,6 +856,9 @@ export function createApp() {
   app.use('/api/energy-transition', energyTransitionRouter);
   app.use('/api/geopolitical-risk', geopoliticalRiskRouter);
   app.use('/api/labor-market', laborMarketRouter);
+  app.use('/api/housing-market', housingMarketRouter);
+  app.use('/api/supply-chain-stress', supplyChainStressRouter);
+  app.use('/api/credit-impulse', creditImpulseRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
