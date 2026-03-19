@@ -498,6 +498,9 @@ const ConvertibleBondAnalyzerPanel = lazy(() => import('../panels/convertible-bo
 const CommoditiesForwardCurvePanel = lazy(() => import('../panels/commodities-forward-curve-panel').then(m => ({ default: m.CommoditiesForwardCurvePanel })));
 const VarianceSwapMonitorPanel = lazy(() => import('../panels/variance-swap-monitor-panel').then(m => ({ default: m.VarianceSwapMonitorPanel })));
 const SecuritiesLendingRevenuePanel = lazy(() => import('../panels/securities-lending-revenue-panel').then(m => ({ default: m.SecuritiesLendingRevenuePanel })));
+const EquityMarketMicrostructurePanel = lazy(() => import('../panels/equity-market-microstructure-panel').then(m => ({ default: m.EquityMarketMicrostructurePanel })));
+const FxCarryTradeMonitorPanel = lazy(() => import('../panels/fx-carry-trade-monitor-panel').then(m => ({ default: m.FxCarryTradeMonitorPanel })));
+const PrivateCreditDashboardPanel = lazy(() => import('../panels/private-credit-dashboard-panel').then(m => ({ default: m.PrivateCreditDashboardPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1006,6 +1009,9 @@ export const PANEL_IDS = {
   COMMODITIES_FORWARD_CURVE: 'commodities-forward-curve',
   VARIANCE_SWAP_MONITOR: 'variance-swap-monitor',
   SECURITIES_LENDING_REVENUE: 'securities-lending-revenue',
+  EQUITY_MARKET_MICROSTRUCTURE: 'equity-market-microstructure',
+  FX_CARRY_TRADE_MONITOR: 'fx-carry-trade-monitor',
+  PRIVATE_CREDIT_DASHBOARD: 'private-credit-dashboard',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1498,6 +1504,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.COMMODITIES_FORWARD_CURVE]: 'COMMODITIES FORWARD CURVE',
   [PANEL_IDS.VARIANCE_SWAP_MONITOR]: 'VARIANCE SWAP MONITOR',
   [PANEL_IDS.SECURITIES_LENDING_REVENUE]: 'SECURITIES LENDING REVENUE',
+  [PANEL_IDS.EQUITY_MARKET_MICROSTRUCTURE]: 'EQUITY MARKET MICROSTRUCTURE',
+  [PANEL_IDS.FX_CARRY_TRADE_MONITOR]: 'FX CARRY TRADE MONITOR',
+  [PANEL_IDS.PRIVATE_CREDIT_DASHBOARD]: 'PRIVATE CREDIT DASHBOARD',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1991,6 +2000,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.COMMODITIES_FORWARD_CURVE]: 'panelCommoditiesForwardCurve',
   [PANEL_IDS.VARIANCE_SWAP_MONITOR]: 'panelVarianceSwapMonitor',
   [PANEL_IDS.SECURITIES_LENDING_REVENUE]: 'panelSecuritiesLendingRevenue',
+  [PANEL_IDS.EQUITY_MARKET_MICROSTRUCTURE]: 'panelEquityMarketMicrostructure',
+  [PANEL_IDS.FX_CARRY_TRADE_MONITOR]: 'panelFxCarryTradeMonitor',
+  [PANEL_IDS.PRIVATE_CREDIT_DASHBOARD]: 'panelPrivateCreditDashboard',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2780,6 +2792,9 @@ export function DockLayout() {
       case PANEL_IDS.COMMODITIES_FORWARD_CURVE: content = <LazyWrap><CommoditiesForwardCurvePanel /></LazyWrap>; break;
       case PANEL_IDS.VARIANCE_SWAP_MONITOR: content = <LazyWrap><VarianceSwapMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.SECURITIES_LENDING_REVENUE: content = <LazyWrap><SecuritiesLendingRevenuePanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_MARKET_MICROSTRUCTURE: content = <LazyWrap><EquityMarketMicrostructurePanel /></LazyWrap>; break;
+      case PANEL_IDS.FX_CARRY_TRADE_MONITOR: content = <LazyWrap><FxCarryTradeMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.PRIVATE_CREDIT_DASHBOARD: content = <LazyWrap><PrivateCreditDashboardPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

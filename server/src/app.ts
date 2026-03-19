@@ -492,6 +492,9 @@ import convertibleBondAnalyzerRouter from './routes/convertible-bond-analyzer.js
 import commoditiesForwardCurveRouter from './routes/commodities-forward-curve.js';
 import varianceSwapMonitorRouter from './routes/variance-swap-monitor.js';
 import securitiesLendingRevenueRouter from './routes/securities-lending-revenue.js';
+import equityMarketMicrostructureRouter from './routes/equity-market-microstructure.js';
+import fxCarryTradeMonitorRouter from './routes/fx-carry-trade-monitor.js';
+import privateCreditDashboardRouter from './routes/private-credit-dashboard.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1085,6 +1088,9 @@ export function createApp() {
   app.use('/api/commodities-forward-curve', commoditiesForwardCurveRouter);
   app.use('/api/variance-swap-monitor', varianceSwapMonitorRouter);
   app.use('/api/securities-lending-revenue', securitiesLendingRevenueRouter);
+  app.use('/api/equity-market-microstructure', equityMarketMicrostructureRouter);
+  app.use('/api/fx-carry-trade-monitor', fxCarryTradeMonitorRouter);
+  app.use('/api/private-credit-dashboard', privateCreditDashboardRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
