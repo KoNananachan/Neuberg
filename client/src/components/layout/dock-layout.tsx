@@ -507,6 +507,9 @@ const CloTrancheAnalyticsPanel = lazy(() => import('../panels/clo-tranche-analyt
 const EquityPairsTradingPanel = lazy(() => import('../panels/equity-pairs-trading-panel').then(m => ({ default: m.EquityPairsTradingPanel })));
 const TreasuryFuturesBasisPanel = lazy(() => import('../panels/treasury-futures-basis-panel').then(m => ({ default: m.TreasuryFuturesBasisPanel })));
 const CreditIndexTranchesPanel = lazy(() => import('../panels/credit-index-tranches-panel').then(m => ({ default: m.CreditIndexTranchesPanel })));
+const MortgagePrepaymentPanel = lazy(() => import('../panels/mortgage-prepayment-panel').then(m => ({ default: m.MortgagePrepaymentPanel })));
+const OptionSkewSurfacePanel = lazy(() => import('../panels/option-skew-surface-panel').then(m => ({ default: m.OptionSkewSurfacePanel })));
+const EquityShortInterestPanel = lazy(() => import('../panels/equity-short-interest-panel').then(m => ({ default: m.EquityShortInterestPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1024,6 +1027,9 @@ export const PANEL_IDS = {
   EQUITY_PAIRS_TRADING: 'equity-pairs-trading',
   TREASURY_FUTURES_BASIS: 'treasury-futures-basis',
   CREDIT_INDEX_TRANCHES: 'credit-index-tranches',
+  MORTGAGE_PREPAYMENT: 'mortgage-prepayment',
+  OPTION_SKEW_SURFACE: 'option-skew-surface',
+  EQUITY_SHORT_INTEREST: 'equity-short-interest',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1525,6 +1531,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.EQUITY_PAIRS_TRADING]: 'EQUITY PAIRS TRADING',
   [PANEL_IDS.TREASURY_FUTURES_BASIS]: 'TREASURY FUTURES BASIS',
   [PANEL_IDS.CREDIT_INDEX_TRANCHES]: 'CREDIT INDEX TRANCHES',
+  [PANEL_IDS.MORTGAGE_PREPAYMENT]: 'MORTGAGE PREPAYMENT',
+  [PANEL_IDS.OPTION_SKEW_SURFACE]: 'OPTION SKEW SURFACE',
+  [PANEL_IDS.EQUITY_SHORT_INTEREST]: 'EQUITY SHORT INTEREST',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -2027,6 +2036,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.EQUITY_PAIRS_TRADING]: 'panelEquityPairsTrading',
   [PANEL_IDS.TREASURY_FUTURES_BASIS]: 'panelTreasuryFuturesBasis',
   [PANEL_IDS.CREDIT_INDEX_TRANCHES]: 'panelCreditIndexTranches',
+  [PANEL_IDS.MORTGAGE_PREPAYMENT]: 'panelMortgagePrepayment',
+  [PANEL_IDS.OPTION_SKEW_SURFACE]: 'panelOptionSkewSurface',
+  [PANEL_IDS.EQUITY_SHORT_INTEREST]: 'panelEquityShortInterest',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2825,6 +2837,9 @@ export function DockLayout() {
       case PANEL_IDS.EQUITY_PAIRS_TRADING: content = <LazyWrap><EquityPairsTradingPanel /></LazyWrap>; break;
       case PANEL_IDS.TREASURY_FUTURES_BASIS: content = <LazyWrap><TreasuryFuturesBasisPanel /></LazyWrap>; break;
       case PANEL_IDS.CREDIT_INDEX_TRANCHES: content = <LazyWrap><CreditIndexTranchesPanel /></LazyWrap>; break;
+      case PANEL_IDS.MORTGAGE_PREPAYMENT: content = <LazyWrap><MortgagePrepaymentPanel /></LazyWrap>; break;
+      case PANEL_IDS.OPTION_SKEW_SURFACE: content = <LazyWrap><OptionSkewSurfacePanel /></LazyWrap>; break;
+      case PANEL_IDS.EQUITY_SHORT_INTEREST: content = <LazyWrap><EquityShortInterestPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
