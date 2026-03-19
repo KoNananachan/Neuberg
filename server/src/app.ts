@@ -519,6 +519,9 @@ import sovereignDebtMaturityRouter from './routes/sovereign-debt-maturity.js';
 import agriculturalFuturesRouter from './routes/agricultural-futures.js';
 import bankEarningsRouter from './routes/bank-earnings.js';
 import privateEquitySecondariesRouter from './routes/private-equity-secondaries.js';
+import sukukMonitorRouter from './routes/sukuk-monitor.js';
+import frontierMarketDebtRouter from './routes/frontier-market-debt.js';
+import aircraftFinanceRouter from './routes/aircraft-finance.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -1139,6 +1142,9 @@ export function createApp() {
   app.use('/api/agricultural-futures', agriculturalFuturesRouter);
   app.use('/api/bank-earnings', bankEarningsRouter);
   app.use('/api/private-equity-secondaries', privateEquitySecondariesRouter);
+  app.use('/api/sukuk-monitor', sukukMonitorRouter);
+  app.use('/api/frontier-market-debt', frontierMarketDebtRouter);
+  app.use('/api/aircraft-finance', aircraftFinanceRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
