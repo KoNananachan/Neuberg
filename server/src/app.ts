@@ -444,6 +444,9 @@ import liquidityMonitorRouter from './routes/liquidity-monitor.js';
 import coveredBondRouter from './routes/covered-bond.js';
 import inflationLinkedBondRouter from './routes/inflation-linked-bond.js';
 import correlationRiskRouter from './routes/correlation-risk.js';
+import subordinatedDebtRouter from './routes/subordinated-debt.js';
+import smartBetaRouter from './routes/smart-beta.js';
+import factorRotationRouter from './routes/factor-rotation.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -989,6 +992,9 @@ export function createApp() {
   app.use('/api/covered-bond', coveredBondRouter);
   app.use('/api/inflation-linked-bond', inflationLinkedBondRouter);
   app.use('/api/correlation-risk', correlationRiskRouter);
+  app.use('/api/subordinated-debt', subordinatedDebtRouter);
+  app.use('/api/smart-beta', smartBetaRouter);
+  app.use('/api/factor-rotation', factorRotationRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

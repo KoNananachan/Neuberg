@@ -450,6 +450,9 @@ const LiquidityMonitorPanel = lazy(() => import('../panels/liquidity-monitor-pan
 const CoveredBondPanel = lazy(() => import('../panels/covered-bond-panel').then(m => ({ default: m.CoveredBondPanel })));
 const InflationLinkedBondPanel = lazy(() => import('../panels/inflation-linked-bond-panel').then(m => ({ default: m.InflationLinkedBondPanel })));
 const CorrelationRiskPanel = lazy(() => import('../panels/correlation-risk-panel').then(m => ({ default: m.CorrelationRiskPanel })));
+const SubordinatedDebtPanel = lazy(() => import('../panels/subordinated-debt-panel').then(m => ({ default: m.SubordinatedDebtPanel })));
+const SmartBetaPanel = lazy(() => import('../panels/smart-beta-panel').then(m => ({ default: m.SmartBetaPanel })));
+const FactorRotationPanel = lazy(() => import('../panels/factor-rotation-panel').then(m => ({ default: m.FactorRotationPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -910,6 +913,9 @@ export const PANEL_IDS = {
   COVERED_BOND: 'covered-bond',
   INFLATION_LINKED_BOND: 'inflation-linked-bond',
   CORRELATION_RISK: 'correlation-risk',
+  SUBORDINATED_DEBT: 'subordinated-debt',
+  SMART_BETA: 'smart-beta',
+  FACTOR_ROTATION: 'factor-rotation',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1354,6 +1360,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.COVERED_BOND]: 'COVERED BOND',
   [PANEL_IDS.INFLATION_LINKED_BOND]: 'INFLATION-LINKED BOND',
   [PANEL_IDS.CORRELATION_RISK]: 'CORRELATION RISK',
+  [PANEL_IDS.SUBORDINATED_DEBT]: 'SUBORDINATED DEBT',
+  [PANEL_IDS.SMART_BETA]: 'SMART BETA',
+  [PANEL_IDS.FACTOR_ROTATION]: 'FACTOR ROTATION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1799,6 +1808,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.COVERED_BOND]: 'panelCoveredBond',
   [PANEL_IDS.INFLATION_LINKED_BOND]: 'panelInflationLinkedBond',
   [PANEL_IDS.CORRELATION_RISK]: 'panelCorrelationRisk',
+  [PANEL_IDS.SUBORDINATED_DEBT]: 'panelSubordinatedDebt',
+  [PANEL_IDS.SMART_BETA]: 'panelSmartBeta',
+  [PANEL_IDS.FACTOR_ROTATION]: 'panelFactorRotation',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2540,6 +2552,9 @@ export function DockLayout() {
       case PANEL_IDS.COVERED_BOND: content = <LazyWrap><CoveredBondPanel /></LazyWrap>; break;
       case PANEL_IDS.INFLATION_LINKED_BOND: content = <LazyWrap><InflationLinkedBondPanel /></LazyWrap>; break;
       case PANEL_IDS.CORRELATION_RISK: content = <LazyWrap><CorrelationRiskPanel /></LazyWrap>; break;
+      case PANEL_IDS.SUBORDINATED_DEBT: content = <LazyWrap><SubordinatedDebtPanel /></LazyWrap>; break;
+      case PANEL_IDS.SMART_BETA: content = <LazyWrap><SmartBetaPanel /></LazyWrap>; break;
+      case PANEL_IDS.FACTOR_ROTATION: content = <LazyWrap><FactorRotationPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
