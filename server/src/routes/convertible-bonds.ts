@@ -2,87 +2,297 @@ import { Router } from 'express';
 
 const router = Router();
 
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-  return h >>> 0;
-}
-function mulberry32(seed: number) {
-  let s = seed | 0;
-  return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+function mulberry32(a: number) { return function () { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; return h >>> 0; }
+function seededRandom(tag: string) { const d = new Date().toISOString().slice(0, 10); return mulberry32(hashSeed(tag + d)); }
+
+// ── Interfaces ──────────────────────────────────────────────────────────────
+
+interface MarketOverview {
+  totalOutstandingBillions: number;
+  newIssuanceYTDBillions: number;
+  avgConversionPremiumPct: number;
+  avgDeltaPct: number;
+  avgCouponPct: number;
+  avgYieldToMaturity: number;
 }
 
-const CONVERTIBLES = [
-  { issuer: 'Tesla', ticker: 'TSLA', coupon: 2.0, stockBase: 245, convPrice: 280, size: 1800, maturity: 2027 },
-  { issuer: 'Airbnb', ticker: 'ABNB', coupon: 0.0, stockBase: 155, convPrice: 195, size: 2000, maturity: 2026 },
-  { issuer: 'Datadog', ticker: 'DDOG', coupon: 0.125, stockBase: 120, convPrice: 160, size: 750, maturity: 2028 },
-  { issuer: 'Uber', ticker: 'UBER', coupon: 0.875, stockBase: 72, convPrice: 85, size: 1500, maturity: 2028 },
-  { issuer: 'MicroStrategy', ticker: 'MSTR', coupon: 0.625, stockBase: 1600, convPrice: 2100, size: 1050, maturity: 2030 },
-  { issuer: 'Shopify', ticker: 'SHOP', coupon: 0.125, stockBase: 78, convPrice: 105, size: 920, maturity: 2027 },
-  { issuer: 'Zillow', ticker: 'ZG', coupon: 1.375, stockBase: 55, convPrice: 75, size: 600, maturity: 2026 },
-  { issuer: 'Lumentum', ticker: 'LITE', coupon: 0.5, stockBase: 52, convPrice: 68, size: 500, maturity: 2028 },
-  { issuer: 'ON Semi', ticker: 'ON', coupon: 0.0, stockBase: 75, convPrice: 95, size: 1200, maturity: 2029 },
-  { issuer: 'Palo Alto', ticker: 'PANW', coupon: 0.375, stockBase: 310, convPrice: 400, size: 1800, maturity: 2028 },
-  { issuer: 'CrowdStrike', ticker: 'CRWD', coupon: 0.0, stockBase: 340, convPrice: 450, size: 750, maturity: 2029 },
-  { issuer: 'Block', ticker: 'SQ', coupon: 0.125, stockBase: 78, convPrice: 100, size: 2000, maturity: 2027 },
-  { issuer: 'Snap', ticker: 'SNAP', coupon: 0.75, stockBase: 14, convPrice: 22, size: 1100, maturity: 2028 },
-  { issuer: 'Wayfair', ticker: 'W', coupon: 1.0, stockBase: 55, convPrice: 80, size: 800, maturity: 2027 },
-  { issuer: 'DraftKings', ticker: 'DKNG', coupon: 0.0, stockBase: 42, convPrice: 60, size: 1250, maturity: 2028 },
+interface ConvertibleGreeks {
+  delta: number;
+  gamma: number;
+  vega: number;
+  theta: number;
+  rho: number;
+}
+
+interface ActiveConvertible {
+  issuer: string;
+  ticker: string;
+  couponPct: number;
+  maturityDate: string;
+  conversionPrice: number;
+  currentStockPrice: number;
+  conversionRatio: number;
+  conversionPremiumPct: number;
+  parityPrice: number;
+  delta: number;
+  bondFloorPrice: number;
+  creditSpreadBps: number;
+  bondPrice: number;
+  callProtection: 'hard-call' | 'soft-call' | 'callable' | 'non-call';
+  region: 'US' | 'Europe' | 'Asia';
+  greeks: ConvertibleGreeks;
+}
+
+interface NewIssuance {
+  issuer: string;
+  sizeMillions: number;
+  couponPct: number;
+  conversionPremiumPct: number;
+  maturityDate: string;
+  bookRunner: string;
+  pricingDate: string;
+}
+
+interface SectorBreakdown {
+  sector: string;
+  count: number;
+  totalOutstandingBillions: number;
+  avgPremium: number;
+  avgDelta: number;
+  avgCoupon: number;
+}
+
+interface RecentConversion {
+  issuer: string;
+  sharesConverted: number;
+  valueMillions: number;
+  date: string;
+}
+
+interface ConversionActivity {
+  recentConversions: RecentConversion[];
+  totalConversionsYTD: number;
+  avgConversionDiscount: number;
+}
+
+interface ConvertibleBondData {
+  marketOverview: MarketOverview;
+  activeConvertibles: ActiveConvertible[];
+  newIssuancePipeline: NewIssuance[];
+  sectorBreakdown: SectorBreakdown[];
+  conversionActivity: ConversionActivity;
+  generatedAt: string;
+}
+
+// ── Static Data ─────────────────────────────────────────────────────────────
+
+const BOND_DEFS = [
+  { issuer: 'Tesla', ticker: 'TSLA', coupon: 2.0, maturity: '2028-08-15', convPrice: 280, stockBase: 248, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'hard-call' as const },
+  { issuer: 'Airbnb', ticker: 'ABNB', coupon: 0.0, maturity: '2026-03-15', convPrice: 195, stockBase: 156, parBase: 1000, sector: 'Consumer', region: 'US' as const, callProt: 'non-call' as const },
+  { issuer: 'MicroStrategy', ticker: 'MSTR', coupon: 0.625, maturity: '2028-09-15', convPrice: 2100, stockBase: 1620, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'hard-call' as const },
+  { issuer: 'Uber', ticker: 'UBER', coupon: 0.0, maturity: '2025-12-01', convPrice: 85, stockBase: 73, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'callable' as const },
+  { issuer: 'Shopify', ticker: 'SHOP', coupon: 0.125, maturity: '2027-11-01', convPrice: 105, stockBase: 79, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'soft-call' as const },
+  { issuer: 'Lam Research', ticker: 'LRCX', coupon: 1.5, maturity: '2029-06-15', convPrice: 820, stockBase: 710, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'hard-call' as const },
+  { issuer: 'ON Semiconductor', ticker: 'ON', coupon: 0.0, maturity: '2027-05-01', convPrice: 95, stockBase: 76, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'non-call' as const },
+  { issuer: 'Dexcom', ticker: 'DXCM', coupon: 0.375, maturity: '2028-11-15', convPrice: 145, stockBase: 112, parBase: 1000, sector: 'Healthcare', region: 'US' as const, callProt: 'soft-call' as const },
+  { issuer: 'Palo Alto Networks', ticker: 'PANW', coupon: 0.375, maturity: '2025-06-01', convPrice: 400, stockBase: 315, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'callable' as const },
+  { issuer: 'Western Digital', ticker: 'WDC', coupon: 3.0, maturity: '2028-11-15', convPrice: 58, stockBase: 48, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'hard-call' as const },
+  { issuer: 'Affirm', ticker: 'AFRM', coupon: 0.0, maturity: '2026-11-15', convPrice: 72, stockBase: 52, parBase: 1000, sector: 'Financials', region: 'US' as const, callProt: 'non-call' as const },
+  { issuer: 'Snap', ticker: 'SNAP', coupon: 0.75, maturity: '2028-08-01', convPrice: 22, stockBase: 14.5, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'soft-call' as const },
+  { issuer: 'Zillow', ticker: 'ZG', coupon: 2.75, maturity: '2025-05-15', convPrice: 75, stockBase: 56, parBase: 1000, sector: 'Consumer', region: 'US' as const, callProt: 'callable' as const },
+  { issuer: 'Block', ticker: 'SQ', coupon: 0.125, maturity: '2027-05-01', convPrice: 100, stockBase: 79, parBase: 1000, sector: 'Financials', region: 'US' as const, callProt: 'non-call' as const },
+  { issuer: 'Datadog', ticker: 'DDOG', coupon: 0.125, maturity: '2029-06-15', convPrice: 160, stockBase: 122, parBase: 1000, sector: 'Technology', region: 'US' as const, callProt: 'hard-call' as const },
 ];
 
-const CACHE_TTL = 5 * 60 * 1000;
-let cache: { data: unknown; ts: number } | null = null;
+const SECTORS = ['Technology', 'Healthcare', 'Energy', 'Consumer', 'Financials', 'Industrials'];
 
-function generate() {
-  const day = new Date().toISOString().slice(0, 10);
-  const rng = mulberry32(hashSeed(day + '-convertible-bonds'));
+const BOOK_RUNNERS = [
+  'Goldman Sachs', 'J.P. Morgan', 'Morgan Stanley', 'BofA Securities',
+  'Barclays', 'Citi', 'Deutsche Bank', 'Jefferies',
+];
+
+const PIPELINE_ISSUERS = [
+  'CrowdStrike', 'Rivian', 'DoorDash', 'Twilio', 'MongoDB',
+  'Cloudflare', 'Marvell Technology', 'Fortinet', 'Trade Desk', 'Palantir',
+];
+
+const CONVERSION_ISSUERS = [
+  'Tesla', 'Uber', 'Zillow', 'Palo Alto Networks', 'Airbnb',
+  'Snap', 'Block', 'Western Digital', 'Affirm', 'Shopify',
+];
+
+// ── Cache ───────────────────────────────────────────────────────────────────
+
+const CACHE_TTL = 5 * 60 * 1000;
+let cache: { data: ConvertibleBondData; ts: number } | null = null;
+
+// ── Generator ───────────────────────────────────────────────────────────────
+
+function generate(): ConvertibleBondData {
+  const rng = seededRandom('convertible-bonds');
   const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
 
-  const bonds = CONVERTIBLES.map(cb => {
-    const stockPrice = Math.round(jitter(cb.stockBase, 0.06) * 100) / 100;
-    const conversionPrice = cb.convPrice;
-    const conversionRatio = Math.round((1000 / conversionPrice) * 1000) / 1000;
-    const parity = Math.round((stockPrice * conversionRatio / 10) * 100) / 100;
-    const bondPrice = Math.round(Math.max(parity, 85 + rng() * 30) * 100) / 100;
-    const premium = Math.round((bondPrice / parity - 1) * 100 * 10) / 10;
-    const delta = Math.round(Math.min(1, Math.max(0, (stockPrice / conversionPrice) * 0.7 + (rng() - 0.5) * 0.2)) * 100) / 100;
-    const gamma = Math.round(Math.max(0, (1 - Math.abs(stockPrice / conversionPrice - 1)) * 0.05) * 10000) / 10000;
-    const impliedVol = Math.round((25 + rng() * 30) * 10) / 10;
-    const creditSpread = Math.round(150 + rng() * 400);
-    const ytm = Math.round((cb.coupon + (100 - bondPrice) / ((cb.maturity - 2026) || 1)) * 100) / 100;
-    const ytc = Math.round(ytm - 0.5 - rng() * 2 > 0 ? ytm - 0.5 - rng() * 2 : rng() * 2);
-    const change1d = Math.round((rng() - 0.5) * 2 * 100) / 100;
-    const stockChange1d = Math.round((rng() - 0.5) * 4 * 100) / 100;
+  // ── Active Convertibles ───────────────────────────────────────────────
 
-    const moneyness = stockPrice >= conversionPrice ? 'ITM' : stockPrice >= conversionPrice * 0.8 ? 'ATM' : 'OTM';
+  const activeConvertibles: ActiveConvertible[] = BOND_DEFS.map(def => {
+    const currentStockPrice = Math.round(jitter(def.stockBase, 0.08) * 100) / 100;
+    const conversionRatio = Math.round((def.parBase / def.convPrice) * 10000) / 10000;
+    const parityPrice = Math.round(currentStockPrice * conversionRatio * 100) / 100;
+    const moneyness = currentStockPrice / def.convPrice;
+
+    // Delta: deep OTM ~0.15, ATM ~0.50, deep ITM ~0.85
+    const rawDelta = 1 / (1 + Math.exp(-5 * (moneyness - 1)));
+    const delta = Math.round(Math.min(0.92, Math.max(0.08, rawDelta + (rng() - 0.5) * 0.08)) * 100) / 100;
+
+    // Gamma: peaks near ATM
+    const gamma = Math.round(Math.max(0.001, Math.exp(-12 * Math.pow(moneyness - 1, 2)) * 0.04 + rng() * 0.005) * 10000) / 10000;
+
+    // Vega: higher near ATM, typical 0.15–0.50 for convertibles
+    const vega = Math.round(Math.max(0.05, Math.exp(-8 * Math.pow(moneyness - 1, 2)) * 0.45 + (rng() - 0.5) * 0.08) * 100) / 100;
+
+    // Theta: negative, larger magnitude near ATM
+    const theta = -Math.round(Math.max(0.01, Math.exp(-6 * Math.pow(moneyness - 1, 2)) * 0.08 + rng() * 0.02) * 100) / 100;
+
+    // Rho: small positive for convertibles, typically 0.02–0.15
+    const rho = Math.round((0.02 + rng() * 0.12) * 100) / 100;
+
+    // Credit spread: 80-500 bps depending on credit quality
+    const creditSpreadBps = Math.round(80 + rng() * 420);
+
+    // Bond floor: present value of straight bond component
+    const yearsToMaturity = Math.max(0.5, (new Date(def.maturity).getTime() - Date.now()) / (365.25 * 24 * 3600 * 1000));
+    const discountRate = (4.5 + creditSpreadBps / 100) / 100;
+    const bondFloorPrice = Math.round(Math.max(60, (def.coupon / discountRate * (1 - Math.pow(1 + discountRate, -yearsToMaturity)) + 100 * Math.pow(1 + discountRate, -yearsToMaturity))) * 100) / 100;
+
+    // Bond price: max of parity and bond floor, plus option value
+    const optionValue = 2 + rng() * 8;
+    const bondPrice = Math.round(Math.max(parityPrice, bondFloorPrice + optionValue, 80) * 100) / 100;
+
+    const conversionPremiumPct = Math.round(((def.convPrice - currentStockPrice) / currentStockPrice) * 100 * 10) / 10;
 
     return {
-      issuer: cb.issuer, ticker: cb.ticker, coupon: cb.coupon,
-      maturity: cb.maturity, size: cb.size, stockPrice, conversionPrice,
-      conversionRatio, parity, bondPrice, premium, delta, gamma,
-      impliedVol, creditSpread, ytm, ytc: Math.round(ytc * 100) / 100,
-      change1d, stockChange1d, moneyness,
+      issuer: def.issuer,
+      ticker: def.ticker,
+      couponPct: def.coupon,
+      maturityDate: def.maturity,
+      conversionPrice: def.convPrice,
+      currentStockPrice,
+      conversionRatio,
+      conversionPremiumPct: Math.max(-30, conversionPremiumPct),
+      parityPrice,
+      delta,
+      bondFloorPrice,
+      creditSpreadBps,
+      bondPrice,
+      callProtection: def.callProt,
+      region: def.region,
+      greeks: { delta, gamma, vega, theta, rho },
     };
   });
 
-  const moneynessBreakdown = {
-    itm: bonds.filter(b => b.moneyness === 'ITM').length,
-    atm: bonds.filter(b => b.moneyness === 'ATM').length,
-    otm: bonds.filter(b => b.moneyness === 'OTM').length,
+  // ── Market Overview ───────────────────────────────────────────────────
+
+  const avgDeltaAll = activeConvertibles.reduce((s, b) => s + b.delta, 0) / activeConvertibles.length;
+  const avgCouponAll = activeConvertibles.reduce((s, b) => s + b.couponPct, 0) / activeConvertibles.length;
+  const avgPremAll = activeConvertibles.reduce((s, b) => s + b.conversionPremiumPct, 0) / activeConvertibles.length;
+
+  const marketOverview: MarketOverview = {
+    totalOutstandingBillions: Math.round(jitter(502, 0.03) * 10) / 10,
+    newIssuanceYTDBillions: Math.round(jitter(38, 0.10) * 10) / 10,
+    avgConversionPremiumPct: Math.round(Math.max(25, Math.min(35, avgPremAll + (rng() - 0.5) * 6)) * 10) / 10,
+    avgDeltaPct: Math.round(avgDeltaAll * 100 * 10) / 10,
+    avgCouponPct: Math.round(avgCouponAll * 100) / 100,
+    avgYieldToMaturity: Math.round(jitter(3.2, 0.15) * 100) / 100,
   };
 
-  const summary = {
-    totalBonds: bonds.length,
-    totalOutstanding: Math.round(bonds.reduce((a, b) => a + b.size, 0) / 1000 * 10) / 10,
-    avgPremium: Math.round(bonds.reduce((a, b) => a + b.premium, 0) / bonds.length * 10) / 10,
-    avgDelta: Math.round(bonds.reduce((a, b) => a + b.delta, 0) / bonds.length * 100) / 100,
-    avgImpliedVol: Math.round(bonds.reduce((a, b) => a + b.impliedVol, 0) / bonds.length * 10) / 10,
-    avgCreditSpread: Math.round(bonds.reduce((a, b) => a + b.creditSpread, 0) / bonds.length),
-    moneynessBreakdown,
+  // ── New Issuance Pipeline ─────────────────────────────────────────────
+
+  const newIssuancePipeline: NewIssuance[] = [];
+  const usedPipelineIdx = new Set<number>();
+  for (let i = 0; i < 5; i++) {
+    let idx = Math.floor(rng() * PIPELINE_ISSUERS.length);
+    while (usedPipelineIdx.has(idx)) idx = (idx + 1) % PIPELINE_ISSUERS.length;
+    usedPipelineIdx.add(idx);
+
+    const daysAgo = Math.floor(rng() * 30);
+    const pricingDate = new Date(Date.now() - daysAgo * 86400000).toISOString().slice(0, 10);
+    const matYears = 5 + Math.floor(rng() * 4);
+    const matYear = new Date().getFullYear() + matYears;
+    const matMonth = String(1 + Math.floor(rng() * 12)).padStart(2, '0');
+
+    newIssuancePipeline.push({
+      issuer: PIPELINE_ISSUERS[idx],
+      sizeMillions: Math.round((400 + rng() * 1600) / 25) * 25,
+      couponPct: Math.round((rng() * 2.5) * 8) / 8,
+      conversionPremiumPct: Math.round((25 + rng() * 20) * 10) / 10,
+      maturityDate: `${matYear}-${matMonth}-15`,
+      bookRunner: BOOK_RUNNERS[Math.floor(rng() * BOOK_RUNNERS.length)],
+      pricingDate,
+    });
+  }
+
+  // ── Sector Breakdown ──────────────────────────────────────────────────
+
+  const sectorBreakdown: SectorBreakdown[] = SECTORS.map(sector => {
+    const inSector = activeConvertibles.filter(b => {
+      const def = BOND_DEFS.find(d => d.ticker === b.ticker);
+      return def?.sector === sector;
+    });
+    const count = inSector.length > 0 ? inSector.length : Math.floor(1 + rng() * 4);
+    const outstanding = inSector.length > 0
+      ? Math.round(inSector.length * jitter(8, 0.3) * 10) / 10
+      : Math.round(jitter(12, 0.4) * 10) / 10;
+    const avgPremium = inSector.length > 0
+      ? Math.round(inSector.reduce((s, b) => s + b.conversionPremiumPct, 0) / inSector.length * 10) / 10
+      : Math.round(jitter(28, 0.2) * 10) / 10;
+    const avgDelta = inSector.length > 0
+      ? Math.round(inSector.reduce((s, b) => s + b.delta, 0) / inSector.length * 100) / 100
+      : Math.round(jitter(0.45, 0.25) * 100) / 100;
+    const avgCoupon = inSector.length > 0
+      ? Math.round(inSector.reduce((s, b) => s + b.couponPct, 0) / inSector.length * 100) / 100
+      : Math.round(jitter(0.8, 0.5) * 100) / 100;
+
+    return { sector, count, totalOutstandingBillions: outstanding, avgPremium, avgDelta, avgCoupon };
+  });
+
+  // ── Conversion Activity ───────────────────────────────────────────────
+
+  const recentConversions: RecentConversion[] = [];
+  const usedConvIdx = new Set<number>();
+  for (let i = 0; i < 5; i++) {
+    let idx = Math.floor(rng() * CONVERSION_ISSUERS.length);
+    while (usedConvIdx.has(idx)) idx = (idx + 1) % CONVERSION_ISSUERS.length;
+    usedConvIdx.add(idx);
+
+    const daysAgo = Math.floor(rng() * 60);
+    const date = new Date(Date.now() - daysAgo * 86400000).toISOString().slice(0, 10);
+
+    recentConversions.push({
+      issuer: CONVERSION_ISSUERS[idx],
+      sharesConverted: Math.round((50000 + rng() * 500000) / 1000) * 1000,
+      valueMillions: Math.round(jitter(25, 0.6) * 10) / 10,
+      date,
+    });
+  }
+
+  const conversionActivity: ConversionActivity = {
+    recentConversions,
+    totalConversionsYTD: Math.round(jitter(142, 0.15)),
+    avgConversionDiscount: Math.round(jitter(1.8, 0.3) * 100) / 100,
   };
 
-  return { bonds, summary, generatedAt: new Date().toISOString() };
+  return {
+    marketOverview,
+    activeConvertibles,
+    newIssuancePipeline,
+    sectorBreakdown,
+    conversionActivity,
+    generatedAt: new Date().toISOString(),
+  };
 }
+
+// ── Route ───────────────────────────────────────────────────────────────────
 
 router.get('/', (_req, res) => {
   try {
