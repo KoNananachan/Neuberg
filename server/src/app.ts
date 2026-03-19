@@ -368,6 +368,8 @@ import orderBookRouter from './routes/order-book.js';
 import fixedIncomeLadderRouter from './routes/fixed-income-ladder.js';
 import cdsMonitorRouter from './routes/cds-monitor.js';
 import repoRateMonitorRouter from './routes/repo-rate-monitor.js';
+import sovereignDebtMonitorRouter from './routes/sovereign-debt-monitor.js';
+import liquidityDashboardRouter from './routes/liquidity-dashboard.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -837,6 +839,8 @@ export function createApp() {
   app.use('/api/fixed-income-ladder', fixedIncomeLadderRouter);
   app.use('/api/cds-monitor', cdsMonitorRouter);
   app.use('/api/repo-rate-monitor', repoRateMonitorRouter);
+  app.use('/api/sovereign-debt-monitor', sovereignDebtMonitorRouter);
+  app.use('/api/liquidity-dashboard', liquidityDashboardRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });

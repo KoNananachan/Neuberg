@@ -375,6 +375,8 @@ const FixedIncomeLadderPanel = lazy(() => import('../panels/fixed-income-ladder-
 
 const CdsMonitorPanel = lazy(() => import('../panels/cds-monitor-panel').then(m => ({ default: m.CdsMonitorPanel })));
 const RepoRateMonitorPanel = lazy(() => import('../panels/repo-rate-monitor-panel').then(m => ({ default: m.RepoRateMonitorPanel })));
+const SovereignDebtMonitorPanel = lazy(() => import('../panels/sovereign-debt-monitor-panel').then(m => ({ default: m.SovereignDebtMonitorPanel })));
+const LiquidityDashboardPanel = lazy(() => import('../panels/liquidity-dashboard-panel').then(m => ({ default: m.LiquidityDashboardPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -760,6 +762,8 @@ export const PANEL_IDS = {
   FIXED_INCOME_LADDER: 'fixed-income-ladder',
   CDS_MONITOR: 'cds-monitor',
   REPO_RATE_MONITOR: 'repo-rate-monitor',
+  SOVEREIGN_DEBT_MONITOR: 'sovereign-debt-monitor',
+  LIQUIDITY_DASHBOARD: 'liquidity-dashboard',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1129,6 +1133,8 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.FIXED_INCOME_LADDER]: 'FIXED INCOME LADDER',
   [PANEL_IDS.CDS_MONITOR]: 'CDS MONITOR',
   [PANEL_IDS.REPO_RATE_MONITOR]: 'REPO RATE MONITOR',
+  [PANEL_IDS.SOVEREIGN_DEBT_MONITOR]: 'SOVEREIGN DEBT MONITOR',
+  [PANEL_IDS.LIQUIDITY_DASHBOARD]: 'LIQUIDITY DASHBOARD',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1499,6 +1505,8 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.FIXED_INCOME_LADDER]: 'panelFixedIncomeLadder',
   [PANEL_IDS.CDS_MONITOR]: 'panelCdsMonitor',
   [PANEL_IDS.REPO_RATE_MONITOR]: 'panelRepoRateMonitor',
+  [PANEL_IDS.SOVEREIGN_DEBT_MONITOR]: 'panelSovereignDebtMonitor',
+  [PANEL_IDS.LIQUIDITY_DASHBOARD]: 'panelLiquidityDashboard',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2165,6 +2173,8 @@ export function DockLayout() {
       case PANEL_IDS.FIXED_INCOME_LADDER: content = <LazyWrap><FixedIncomeLadderPanel /></LazyWrap>; break;
       case PANEL_IDS.CDS_MONITOR: content = <LazyWrap><CdsMonitorPanel /></LazyWrap>; break;
       case PANEL_IDS.REPO_RATE_MONITOR: content = <LazyWrap><RepoRateMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_DEBT_MONITOR: content = <LazyWrap><SovereignDebtMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.LIQUIDITY_DASHBOARD: content = <LazyWrap><LiquidityDashboardPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

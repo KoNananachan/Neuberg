@@ -1,53 +1,6 @@
 import { usePrivateEquity } from '../../api/hooks/use-private-equity';
 import { useT } from '../../i18n';
 
-// ── Types (mirroring server response) ──
-
-interface Deal {
-  sponsor: string;
-  target: string;
-  sector: string;
-  dealValue: number;
-  evEbitda: number;
-  debtEbitda: number;
-  equityCheck: number;
-  status: string;
-  date: string;
-}
-
-interface FundraisingEntry {
-  firm: string;
-  fundName: string;
-  vintage: number;
-  target: number;
-  closed: number;
-  strategy: string;
-  date: string;
-}
-
-interface DryPowderEntry {
-  strategy: string;
-  available: number;
-  deployed1Y: number;
-  ratio: number;
-}
-
-interface Summary {
-  totalDealVolume: number;
-  avgMultiple: number;
-  dryPowderTotal: number;
-  topSector: string;
-  ytdFundraising: number;
-  timestamp: string;
-}
-
-interface PrivateEquityResponse {
-  recentDeals: Deal[];
-  fundraising: FundraisingEntry[];
-  dryPowder: DryPowderEntry[];
-  summary: Summary;
-}
-
 // ── i18n fallback helper ──
 
 const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
@@ -61,38 +14,36 @@ const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string =
 // ── Formatting helpers ──
 
 function fmtB(n: number): string {
-  return n.toFixed(1);
+  return '$' + n.toFixed(1) + 'B';
+}
+
+function fmtM(n: number): string {
+  return '$' + n.toFixed(0) + 'M';
 }
 
 function fmtX(n: number): string {
   return n.toFixed(1) + 'x';
 }
 
-function fmtDate(iso: string): string {
-  return iso.slice(0, 10);
-}
-
 function fmtPct(n: number): string {
-  return (n * 100).toFixed(0) + '%';
+  return n.toFixed(1) + '%';
 }
 
-// ── Status color helper ──
+function fmtYr(n: number): string {
+  return n.toFixed(1) + 'y';
+}
 
-function statusColor(status: string): string {
-  switch (status.toLowerCase()) {
-    case 'closed':
-      return 'bg-green-500/15 text-green-400';
-    case 'signed':
-      return 'bg-fuchsia-500/15 text-fuchsia-400';
-    case 'announced':
-      return 'bg-yellow-500/15 text-yellow-400';
-    case 'rumored':
-      return 'bg-white/10 text-white/50';
-    case 'in progress':
-      return 'bg-blue-500/15 text-blue-400';
-    default:
-      return 'bg-white/10 text-white/40';
-  }
+// ── Section header ──
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1 border-b border-border/20 bg-[#030303]">
+      <div className="w-[2px] h-3 bg-purple-400" />
+      <span className="text-[8px] font-black font-mono uppercase tracking-wider text-purple-400">
+        {title}
+      </span>
+    </div>
+  );
 }
 
 // ── Main Panel ──
@@ -101,190 +52,218 @@ export function PrivateEquityPanel() {
   const t = useT();
   const { data, isLoading } = usePrivateEquity();
 
-  const pe = data as PrivateEquityResponse | undefined;
-
-  // Loading state
-  if (isLoading && !pe) {
+  if (isLoading && !data) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <span className="text-[9px] font-mono text-fuchsia-400/40 uppercase tracking-widest animate-pulse">
-          {tr(t, 'loading', 'LOADING...')}
+        <span className="text-[9px] font-mono text-purple-400/40 uppercase tracking-widest animate-pulse">
+          {tr(t, 'loading', 'Loading...')}
         </span>
       </div>
     );
   }
-
-  // Error / no data state
-  if (!pe?.recentDeals) {
-    return (
-      <div className="h-full flex items-center justify-center bg-black">
-        <span className="text-[9px] font-mono text-red-400/60 uppercase tracking-widest">
-          {tr(t, 'peNoData', 'NO DATA AVAILABLE')}
-        </span>
-      </div>
-    );
-  }
-
-  const summary = pe.summary;
 
   return (
-    <div className="h-full overflow-auto bg-black p-1 text-[9px] font-mono">
-      {/* ── Summary Bar ── */}
-      <div className="grid grid-cols-5 gap-px bg-fuchsia-400/[0.06] mb-1">
-        <div className="bg-black px-2 py-1.5">
-          <div className="text-[6px] text-white/20 uppercase tracking-wider">DEAL VOLUME</div>
-          <div className="text-[11px] font-black text-fuchsia-400">${fmtB(summary.totalDealVolume)}B</div>
-        </div>
-        <div className="bg-black px-2 py-1.5">
-          <div className="text-[6px] text-white/20 uppercase tracking-wider">AVG MULTIPLE</div>
-          <div className="text-[11px] font-black text-fuchsia-400">{fmtX(summary.avgMultiple)}</div>
-        </div>
-        <div className="bg-black px-2 py-1.5">
-          <div className="text-[6px] text-white/20 uppercase tracking-wider">DRY POWDER</div>
-          <div className="text-[11px] font-black text-white/60">${fmtB(summary.dryPowderTotal)}B</div>
-        </div>
-        <div className="bg-black px-2 py-1.5">
-          <div className="text-[6px] text-white/20 uppercase tracking-wider">TOP SECTOR</div>
-          <div className="text-[11px] font-black text-white/60 truncate">{summary.topSector}</div>
-        </div>
-        <div className="bg-black px-2 py-1.5">
-          <div className="text-[6px] text-white/20 uppercase tracking-wider">YTD FUNDRAISING</div>
-          <div className="text-[11px] font-black text-fuchsia-400">${fmtB(summary.ytdFundraising)}B</div>
-        </div>
+    <div className="h-full flex flex-col bg-black overflow-hidden font-mono text-[9px]">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-[#050505] border-b border-border/20 shrink-0">
+        <div className="w-[3px] h-4 bg-purple-400" />
+        <span className="text-[10px] font-black font-mono uppercase tracking-tighter text-purple-400">
+          {tr(t, 'peTitle', 'PRIVATE EQUITY')}
+        </span>
       </div>
 
-      {/* ── Recent Deals ── */}
-      <div className="mb-1">
-        <div className="px-1 py-1 border-b border-border/20">
-          <span className="text-[7px] text-fuchsia-400/60 uppercase tracking-wider font-bold">
-            RECENT DEALS
-          </span>
-        </div>
+      <div className="flex-1 overflow-y-auto">
+        {/* ── 1. Market Overview ── */}
+        <MarketOverviewSection data={data} />
 
-        {/* Header */}
-        <div className="flex items-center px-1 py-0.5 border-b border-border/20 text-[6px] text-white/20 uppercase tracking-wider">
-          <span className="w-[72px] shrink-0">SPONSOR</span>
-          <span className="w-[80px] shrink-0">TARGET</span>
-          <span className="w-[64px] shrink-0">SECTOR</span>
-          <span className="w-[48px] shrink-0 text-right">VAL $B</span>
-          <span className="w-[48px] shrink-0 text-right">EV/EBITDA</span>
-          <span className="w-[48px] shrink-0 text-right">D/EBITDA</span>
-          <span className="w-[48px] shrink-0 text-right">EQ CHK $B</span>
-          <span className="w-[52px] shrink-0 text-center">STATUS</span>
-          <span className="flex-1 text-right">DATE</span>
-        </div>
+        {/* ── 2. Top PE Firms ── */}
+        <TopFirmsSection firms={data?.topFirms} />
 
-        {/* Rows */}
-        {pe.recentDeals.map((d, i) => (
-          <div
-            key={`${d.sponsor}-${d.target}-${i}`}
-            className="flex items-center px-1 py-[2px] border-b border-white/[0.02] hover:bg-fuchsia-400/[0.02] transition-colors"
-          >
-            <span className="w-[72px] shrink-0 text-[8px] font-bold text-fuchsia-400 truncate">{d.sponsor}</span>
-            <span className="w-[80px] shrink-0 text-white/40 truncate">{d.target}</span>
-            <span className="w-[64px] shrink-0 text-white/30 truncate text-[7px]">{d.sector}</span>
-            <span className="w-[48px] shrink-0 text-right text-white/60">{fmtB(d.dealValue)}</span>
-            <span className="w-[48px] shrink-0 text-right text-fuchsia-400/80">{fmtX(d.evEbitda)}</span>
-            <span className="w-[48px] shrink-0 text-right text-white/50">{fmtX(d.debtEbitda)}</span>
-            <span className="w-[48px] shrink-0 text-right text-white/40">{fmtB(d.equityCheck)}</span>
-            <span className="w-[52px] shrink-0 text-center">
-              <span className={`text-[6px] font-bold px-1 py-0 ${statusColor(d.status)}`}>
-                {d.status.toUpperCase()}
-              </span>
-            </span>
-            <span className="flex-1 text-right text-white/30 text-[7px]">{fmtDate(d.date)}</span>
+        {/* ── 3. Exit Activity ── */}
+        <ExitActivitySection exits={data?.exitActivity} />
+
+        {/* ── 4. Sector Breakdown ── */}
+        <SectorBreakdownSection sectors={data?.sectorBreakdown} />
+      </div>
+    </div>
+  );
+}
+
+// ── 1. Market Overview ──
+
+function MarketOverviewSection({ data }: { data: any }) {
+  const stats = [
+    { label: 'DRY POWDER', value: data?.dryPowder != null ? fmtB(data.dryPowder) : '--', accent: true },
+    { label: 'DEAL VOLUME', value: data?.dealVolume != null ? fmtB(data.dealVolume) : '--', accent: true },
+    { label: 'AVG MULTIPLE', value: data?.avgMultiple != null ? fmtX(data.avgMultiple) : '--', accent: false },
+    { label: 'FUNDRAISING YTD', value: data?.fundraisingYtd != null ? fmtB(data.fundraisingYtd) : '--', accent: true },
+  ];
+
+  return (
+    <div className="border-b border-border/20">
+      <SectionHeader title="Market Overview" />
+      <div className="grid grid-cols-4 gap-px bg-purple-400/[0.06]">
+        {stats.map((s) => (
+          <div key={s.label} className="bg-black px-2 py-1.5">
+            <div className="text-[6px] text-white/20 uppercase tracking-wider">{s.label}</div>
+            <div className={`text-[11px] font-black ${s.accent ? 'text-purple-400' : 'text-white/60'}`}>
+              {s.value}
+            </div>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
-      {/* ── Fundraising ── */}
-      <div className="mb-1">
-        <div className="px-1 py-1 border-b border-border/20">
-          <span className="text-[7px] text-fuchsia-400/60 uppercase tracking-wider font-bold">
-            FUNDRAISING
-          </span>
-        </div>
+// ── 2. Top PE Firms ──
 
-        {/* Header */}
-        <div className="flex items-center px-1 py-0.5 border-b border-border/20 text-[6px] text-white/20 uppercase tracking-wider">
-          <span className="w-[72px] shrink-0">FIRM</span>
-          <span className="w-[96px] shrink-0">FUND NAME</span>
-          <span className="w-[36px] shrink-0 text-right">VNTG</span>
-          <span className="w-[48px] shrink-0 text-right">TGT $B</span>
-          <span className="w-[48px] shrink-0 text-right">CLS $B</span>
-          <span className="w-[64px] shrink-0 text-center">STRATEGY</span>
-          <span className="flex-1 text-right">DATE</span>
-        </div>
+function TopFirmsSection({ firms }: { firms: any[] | undefined }) {
+  if (!firms || firms.length === 0) return null;
 
-        {/* Rows */}
-        {pe.fundraising.map((f, i) => {
-          const closePct = f.target > 0 ? f.closed / f.target : 0;
-          return (
-            <div
-              key={`${f.firm}-${f.fundName}-${i}`}
-              className="flex items-center px-1 py-[2px] border-b border-white/[0.02] hover:bg-fuchsia-400/[0.02] transition-colors"
-            >
-              <span className="w-[72px] shrink-0 text-[8px] font-bold text-fuchsia-400 truncate">{f.firm}</span>
-              <span className="w-[96px] shrink-0 text-white/40 truncate">{f.fundName}</span>
-              <span className="w-[36px] shrink-0 text-right text-white/50">{f.vintage}</span>
-              <span className="w-[48px] shrink-0 text-right text-white/60">{fmtB(f.target)}</span>
-              <span className="w-[48px] shrink-0 text-right text-white/60">
-                {fmtB(f.closed)}
-                <span className="text-[6px] text-white/20 ml-0.5">{fmtPct(closePct)}</span>
-              </span>
-              <span className="w-[64px] shrink-0 text-center text-[7px] text-white/30">{f.strategy}</span>
-              <span className="flex-1 text-right text-white/30 text-[7px]">{fmtDate(f.date)}</span>
-            </div>
-          );
-        })}
+  return (
+    <div className="border-b border-border/20">
+      <SectionHeader title="Top PE Firms" />
+
+      {/* Table header */}
+      <div className="grid grid-cols-[1fr_56px_56px_36px_44px_44px_40px] gap-0 px-2 py-0.5 border-b border-border/20 bg-[#030303]">
+        <span className="text-[7px] text-white/20 uppercase tracking-wider">FIRM</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">AUM</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">DRY PWD</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">DEALS</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">IRR</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">TVPI</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">DPI</span>
       </div>
 
-      {/* ── Dry Powder ── */}
-      <div>
-        <div className="px-1 py-1 border-b border-border/20">
-          <span className="text-[7px] text-fuchsia-400/60 uppercase tracking-wider font-bold">
-            DRY POWDER BY STRATEGY
+      {/* Rows */}
+      {firms.map((f: any, i: number) => (
+        <div
+          key={f.firm ?? f.name ?? i}
+          className="grid grid-cols-[1fr_56px_56px_36px_44px_44px_40px] gap-0 px-2 py-[3px] border-b border-white/[0.02] hover:bg-purple-400/[0.02] transition-colors items-center"
+        >
+          <span className="text-[8px] font-bold text-purple-400 truncate">
+            {f.firm ?? f.name}
+          </span>
+          <span className="text-[8px] font-bold text-white/60 text-right">
+            {f.aum != null ? fmtB(f.aum) : '--'}
+          </span>
+          <span className="text-[8px] text-white/40 text-right">
+            {f.dryPowder != null ? fmtB(f.dryPowder) : '--'}
+          </span>
+          <span className="text-[8px] text-white/50 text-right">
+            {f.deals ?? '--'}
+          </span>
+          <span className={`text-[8px] font-bold text-right ${(f.irr ?? 0) >= 15 ? 'text-green-400' : (f.irr ?? 0) >= 10 ? 'text-yellow-400' : 'text-white/50'}`}>
+            {f.irr != null ? fmtPct(f.irr) : '--'}
+          </span>
+          <span className="text-[8px] text-white/50 text-right">
+            {f.tvpi != null ? fmtX(f.tvpi) : '--'}
+          </span>
+          <span className="text-[8px] text-white/40 text-right">
+            {f.dpi != null ? fmtX(f.dpi) : '--'}
           </span>
         </div>
+      ))}
+    </div>
+  );
+}
 
-        {/* Header */}
-        <div className="flex items-center px-1 py-0.5 border-b border-border/20 text-[6px] text-white/20 uppercase tracking-wider">
-          <span className="w-[88px] shrink-0">STRATEGY</span>
-          <span className="w-[56px] shrink-0 text-right">AVAIL $B</span>
-          <span className="w-[56px] shrink-0 text-right">DEPL 1Y $B</span>
-          <span className="flex-1 pl-3">RATIO</span>
-        </div>
+// ── 3. Exit Activity ──
 
-        {/* Rows */}
-        {pe.dryPowder.map((dp) => {
-          const barWidth = Math.min(dp.ratio * 100, 100);
-          const barColor =
-            dp.ratio >= 0.7
-              ? 'bg-fuchsia-400/60'
-              : dp.ratio >= 0.4
-                ? 'bg-yellow-400/60'
-                : 'bg-red-400/60';
-          return (
-            <div
-              key={dp.strategy}
-              className="flex items-center px-1 py-[2px] border-b border-white/[0.02] hover:bg-fuchsia-400/[0.02] transition-colors"
-            >
-              <span className="w-[88px] shrink-0 text-[8px] font-bold text-white/60 truncate">{dp.strategy}</span>
-              <span className="w-[56px] shrink-0 text-right text-fuchsia-400">{fmtB(dp.available)}</span>
-              <span className="w-[56px] shrink-0 text-right text-white/50">{fmtB(dp.deployed1Y)}</span>
-              <span className="flex-1 pl-3 flex items-center gap-1">
-                <span className="w-[60px] h-[4px] bg-white/[0.06] relative overflow-hidden">
-                  <span
-                    className={`absolute inset-y-0 left-0 ${barColor}`}
-                    style={{ width: `${barWidth}%` }}
-                  />
-                </span>
-                <span className="text-white/40 text-[7px] w-[28px]">{fmtPct(dp.ratio)}</span>
-              </span>
-            </div>
-          );
-        })}
+function ExitActivitySection({ exits }: { exits: any[] | undefined }) {
+  if (!exits || exits.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <SectionHeader title="Exit Activity" />
+
+      {/* Table header */}
+      <div className="grid grid-cols-[1fr_44px_56px_56px_44px] gap-0 px-2 py-0.5 border-b border-border/20 bg-[#030303]">
+        <span className="text-[7px] text-white/20 uppercase tracking-wider">TYPE</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">COUNT</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">VALUE</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">HOLD PER</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">MOIC</span>
       </div>
+
+      {/* Rows */}
+      {exits.map((e: any, i: number) => (
+        <div
+          key={e.type ?? e.exitType ?? i}
+          className="grid grid-cols-[1fr_44px_56px_56px_44px] gap-0 px-2 py-[3px] border-b border-white/[0.02] hover:bg-purple-400/[0.02] transition-colors items-center"
+        >
+          <span className="text-[8px] font-bold text-white truncate">
+            {e.type ?? e.exitType}
+          </span>
+          <span className="text-[8px] text-white/50 text-right">
+            {e.count ?? '--'}
+          </span>
+          <span className="text-[8px] font-bold text-purple-400 text-right">
+            {e.value != null ? fmtB(e.value) : e.totalValue != null ? fmtB(e.totalValue) : '--'}
+          </span>
+          <span className="text-[8px] text-white/40 text-right">
+            {e.holdingPeriod != null ? fmtYr(e.holdingPeriod) : '--'}
+          </span>
+          <span className={`text-[8px] font-bold text-right ${(e.moic ?? 0) >= 2.5 ? 'text-green-400' : (e.moic ?? 0) >= 1.5 ? 'text-yellow-400' : 'text-white/50'}`}>
+            {e.moic != null ? fmtX(e.moic) : '--'}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── 4. Sector Breakdown ──
+
+function SectorBreakdownSection({ sectors }: { sectors: any[] | undefined }) {
+  if (!sectors || sectors.length === 0) return null;
+
+  return (
+    <div className="border-b border-border/20">
+      <SectionHeader title="Sector Breakdown" />
+
+      {/* Table header */}
+      <div className="grid grid-cols-[1fr_44px_56px_48px] gap-0 px-2 py-0.5 border-b border-border/20 bg-[#030303]">
+        <span className="text-[7px] text-white/20 uppercase tracking-wider">SECTOR</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">DEALS</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">VALUE</span>
+        <span className="text-[7px] text-white/20 uppercase tracking-wider text-right">MULT</span>
+      </div>
+
+      {/* Rows */}
+      {sectors.map((s: any, i: number) => {
+        const maxValue = Math.max(...sectors.map((x: any) => x.value ?? x.totalValue ?? 0), 1);
+        const barWidth = Math.min(((s.value ?? s.totalValue ?? 0) / maxValue) * 100, 100);
+
+        return (
+          <div
+            key={s.sector ?? s.name ?? i}
+            className="grid grid-cols-[1fr_44px_56px_48px] gap-0 px-2 py-[3px] border-b border-white/[0.02] hover:bg-purple-400/[0.02] transition-colors items-center"
+          >
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-[8px] font-bold text-white truncate">
+                {s.sector ?? s.name}
+              </span>
+              <div className="w-full h-[2px] bg-white/[0.04]">
+                <div
+                  className="h-full bg-purple-400/40"
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+            </div>
+            <span className="text-[8px] text-white/50 text-right">
+              {s.deals ?? s.dealCount ?? '--'}
+            </span>
+            <span className="text-[8px] font-bold text-purple-400 text-right">
+              {s.value != null ? fmtB(s.value) : s.totalValue != null ? fmtB(s.totalValue) : '--'}
+            </span>
+            <span className="text-[8px] text-white/40 text-right">
+              {s.multiple != null ? fmtX(s.multiple) : s.avgMultiple != null ? fmtX(s.avgMultiple) : '--'}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

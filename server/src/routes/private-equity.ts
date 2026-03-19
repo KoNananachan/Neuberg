@@ -1,371 +1,221 @@
 import { Router } from 'express';
-
 const router = Router();
-
-// ── Seeded PRNG ──
-
-function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; } return h >>> 0; }
-function mulberry32(a: number) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-function seededRandom(tag: string) { const d = new Date().toISOString().slice(0, 10); return mulberry32(hashSeed(tag + d)); }
+function mulberry32(a: number) { return function(){let t=(a+=0x6d2b79f5);t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}; }
+function hashSeed(str: string): number { let hash=0;for(let i=0;i<str.length;i++){const char=str.charCodeAt(i);hash=((hash<<5)-hash)+char;hash|=0;}return Math.abs(hash); }
+let cache: { data: any; ts: number } | null = null;
+const TTL = 5 * 60 * 1000;
 
 // ── Types ──
 
-interface RecentDeal {
-  sponsor: string;
-  target: string;
-  sector: string;
-  dealValue: number;
-  evToEbitda: number;
-  debtToEbitda: number;
-  equityCheck: number;
-  status: 'ANNOUNCED' | 'CLOSED' | 'RUMORED';
-  date: string;
+interface MarketOverview {
+  totalDryPowder: number;
+  globalPEDealVolume: number;
+  avgBuyoutMultiple: number;
+  avgEntryMultiple: number;
+  medianFundSize: number;
+  fundraisingYTD: number;
 }
 
-interface Fundraising {
+interface PEFirm {
   firm: string;
-  fundName: string;
-  vintage: number;
-  targetSize: number;
-  closedSize: number;
-  strategy: 'BUYOUT' | 'GROWTH' | 'VENTURE' | 'DISTRESSED' | 'INFRA' | 'SECONDARY';
-  closingDate: string;
+  aum: number;
+  dryPowder: number;
+  dealsYTD: number;
+  avgDealSize: number;
+  flagshipFundVintage: number;
+  netIRR: number;
+  tvpi: number;
+  dpi: number;
 }
 
-interface DryPowder {
-  strategy: string;
-  available: number;
-  deployed1y: number;
-  ratio: number;
+interface ExitActivity {
+  type: string;
+  count: number;
+  totalValue: number;
+  avgHoldingPeriod: number;
+  avgMOIC: number;
 }
 
-interface Summary {
-  totalDealVolume: number;
+interface SectorBreakdown {
+  sector: string;
+  dealCount: number;
+  dealValue: number;
   avgMultiple: number;
-  dryPowderTotal: number;
-  topSector: string;
-  fundraisingYtd: number;
-  timestamp: string;
+  yoyChange: number;
+}
+
+interface FundraisingItem {
+  fundName: string;
+  firm: string;
+  target: number;
+  raised: number;
+  pctOfTarget: number;
+  strategy: string;
 }
 
 interface PrivateEquityResponse {
-  recentDeals: RecentDeal[];
-  fundraising: Fundraising[];
-  dryPowder: DryPowder[];
-  summary: Summary;
+  marketOverview: MarketOverview;
+  topFirms: PEFirm[];
+  exitActivity: ExitActivity[];
+  sectorBreakdown: SectorBreakdown[];
+  fundraising: FundraisingItem[];
+  generatedAt: string;
 }
 
-// ── Static data pools ──
+// ── Static data ──
 
-const SPONSORS = [
-  'Blackstone', 'KKR', 'Apollo', 'Carlyle', 'TPG', 'Warburg Pincus',
-  'Thoma Bravo', 'Vista Equity', 'Bain Capital', 'EQT', 'Advent', 'Hellman & Friedman',
+const FIRMS: { name: string; baseAUM: number; baseDry: number; baseDeals: number; baseDealSize: number; vintage: number; baseIRR: number; baseTVPI: number; baseDPI: number }[] = [
+  { name: 'Blackstone',          baseAUM: 1010, baseDry: 170, baseDeals: 28, baseDealSize: 2800, vintage: 2020, baseIRR: 18.5, baseTVPI: 1.72, baseDPI: 0.45 },
+  { name: 'KKR',                 baseAUM: 528,  baseDry: 110, baseDeals: 24, baseDealSize: 2200, vintage: 2021, baseIRR: 17.2, baseTVPI: 1.65, baseDPI: 0.38 },
+  { name: 'Apollo',              baseAUM: 617,  baseDry: 98,  baseDeals: 32, baseDealSize: 1900, vintage: 2022, baseIRR: 19.8, baseTVPI: 1.58, baseDPI: 0.28 },
+  { name: 'Carlyle',             baseAUM: 426,  baseDry: 82,  baseDeals: 22, baseDealSize: 1750, vintage: 2021, baseIRR: 16.4, baseTVPI: 1.55, baseDPI: 0.42 },
+  { name: 'TPG',                 baseAUM: 222,  baseDry: 52,  baseDeals: 18, baseDealSize: 1500, vintage: 2022, baseIRR: 15.8, baseTVPI: 1.48, baseDPI: 0.32 },
+  { name: 'Warburg Pincus',      baseAUM: 83,   baseDry: 22,  baseDeals: 15, baseDealSize: 680,  vintage: 2020, baseIRR: 16.9, baseTVPI: 1.62, baseDPI: 0.52 },
+  { name: 'Thoma Bravo',         baseAUM: 138,  baseDry: 35,  baseDeals: 20, baseDealSize: 1200, vintage: 2023, baseIRR: 21.3, baseTVPI: 1.45, baseDPI: 0.18 },
+  { name: 'Vista Equity',        baseAUM: 101,  baseDry: 28,  baseDeals: 16, baseDealSize: 950,  vintage: 2022, baseIRR: 20.1, baseTVPI: 1.52, baseDPI: 0.25 },
+  { name: 'Hellman & Friedman',  baseAUM: 95,   baseDry: 24,  baseDeals: 10, baseDealSize: 2400, vintage: 2021, baseIRR: 17.6, baseTVPI: 1.68, baseDPI: 0.48 },
+  { name: 'Bain Capital',        baseAUM: 185,  baseDry: 42,  baseDeals: 19, baseDealSize: 1350, vintage: 2022, baseIRR: 16.1, baseTVPI: 1.50, baseDPI: 0.35 },
+  { name: 'Advent Intl',         baseAUM: 91,   baseDry: 20,  baseDeals: 14, baseDealSize: 980,  vintage: 2021, baseIRR: 15.5, baseTVPI: 1.58, baseDPI: 0.44 },
+  { name: 'CVC Capital',         baseAUM: 186,  baseDry: 45,  baseDeals: 21, baseDealSize: 1600, vintage: 2023, baseIRR: 17.8, baseTVPI: 1.42, baseDPI: 0.20 },
 ];
 
-const SECTORS = ['Technology', 'Healthcare', 'Financial Services', 'Consumer', 'Industrials', 'Energy'];
+const EXIT_TYPES = ['IPO', 'Strategic Sale', 'Secondary', 'Recap'];
 
-const TARGETS_BY_SECTOR: Record<string, string[]> = {
-  Technology: [
-    'Informatica Corp.', 'Zendesk Inc.', 'Citrix Systems', 'Anaplan Inc.', 'Sailpoint Technologies',
-    'Coupa Software', 'Ping Identity', 'ForgeRock Inc.', 'Avalara Inc.', 'Cornerstone OnDemand',
-    'Proofpoint Inc.', 'Cloudera Inc.',
-  ],
-  Healthcare: [
-    'Athenahealth Inc.', 'Change Healthcare', 'Medline Industries', 'Inovalon Holdings',
-    'Cotiviti Holdings', 'Press Ganey Associates', 'Solera Health', 'Advarra Inc.',
-    'Netsmart Technologies', 'Signify Health', 'Agiliti Inc.', 'Parexel International',
-  ],
-  'Financial Services': [
-    'Dun & Bradstreet', 'Refinitiv Holdings', 'Worldpay Inc.', 'Paysafe Ltd.',
-    'Ipreo Holdings', 'Calypso Technology', 'SS&C Technologies', 'Finastra Ltd.',
-    'Ceridian HCM', 'Clearwater Analytics', 'Majesco Ltd.', 'Vertafore Inc.',
-  ],
-  Consumer: [
-    'Petco Health & Wellness', 'Refresco Group', 'Burt\'s Bees', 'Varsity Brands',
-    'Hilton Foods Group', 'Tropicana Brands', 'Whataburger Inc.', 'Shearer\'s Foods',
-    'Hearthside Food Solutions', 'BJ\'s Wholesale Club', 'Panera Bread Co.', 'Hostess Brands',
-  ],
-  Industrials: [
-    'Gates Industrial Corp.', 'Accudyne Industries', 'Roper Technologies', 'Gardner Denver',
-    'Cimpress plc', 'StandardAero Inc.', 'Kaman Aerospace', 'Jason Industries',
-    'Ply Gem Holdings', 'Quala Inc.', 'Covia Holdings', 'Arcosa Inc.',
-  ],
-  Energy: [
-    'Talen Energy Corp.', 'Enviva Partners', 'Calpine Corp.', 'Chesapeake Utilities',
-    'Liqid Energy', 'TerraForm Power', 'Targa Resources', 'Summit Midstream',
-    'Crestwood Equity Partners', 'NextEra Energy Partners', 'Archaea Energy', 'Sunnova Energy',
-  ],
-};
+const SECTORS = ['Technology', 'Healthcare', 'Financials', 'Industrials', 'Consumer', 'Energy'];
 
-const FUND_TEMPLATES: { firm: string; fundBaseName: string; strategy: Fundraising['strategy'] }[] = [
-  { firm: 'Blackstone', fundBaseName: 'Blackstone Capital Partners', strategy: 'BUYOUT' },
-  { firm: 'KKR', fundBaseName: 'KKR Americas Fund', strategy: 'BUYOUT' },
-  { firm: 'Apollo', fundBaseName: 'Apollo Investment Fund', strategy: 'DISTRESSED' },
-  { firm: 'Carlyle', fundBaseName: 'Carlyle Partners', strategy: 'BUYOUT' },
-  { firm: 'Thoma Bravo', fundBaseName: 'Thoma Bravo Fund', strategy: 'GROWTH' },
-  { firm: 'TPG', fundBaseName: 'TPG Partners', strategy: 'BUYOUT' },
-  { firm: 'EQT', fundBaseName: 'EQT Infrastructure', strategy: 'INFRA' },
-  { firm: 'Bain Capital', fundBaseName: 'Bain Capital Fund', strategy: 'BUYOUT' },
-  { firm: 'Vista Equity', fundBaseName: 'Vista Equity Fund', strategy: 'GROWTH' },
-  { firm: 'Warburg Pincus', fundBaseName: 'Warburg Pincus Global Growth', strategy: 'GROWTH' },
-  { firm: 'Advent', fundBaseName: 'Advent International GPE', strategy: 'BUYOUT' },
-  { firm: 'Hellman & Friedman', fundBaseName: 'Hellman & Friedman Capital Partners', strategy: 'BUYOUT' },
-];
-
-const DRY_POWDER_STRATEGIES = [
-  'Buyout', 'Growth', 'Venture', 'Distressed', 'Infrastructure', 'Secondaries', 'Real Estate',
+const FUND_TEMPLATES: { fundName: string; firm: string; baseTarget: number; strategy: string }[] = [
+  { fundName: 'Blackstone Capital Partners IX',    firm: 'Blackstone',         baseTarget: 26.0, strategy: 'Buyout' },
+  { fundName: 'KKR North America Fund XIV',       firm: 'KKR',                baseTarget: 19.5, strategy: 'Buyout' },
+  { fundName: 'Apollo Investment Fund XI',         firm: 'Apollo',             baseTarget: 22.0, strategy: 'Distressed' },
+  { fundName: 'Carlyle Partners VIII',             firm: 'Carlyle',            baseTarget: 14.5, strategy: 'Buyout' },
+  { fundName: 'TPG Partners IX',                   firm: 'TPG',                baseTarget: 11.0, strategy: 'Growth' },
+  { fundName: 'Thoma Bravo Fund XVI',              firm: 'Thoma Bravo',        baseTarget: 16.0, strategy: 'Buyout' },
+  { fundName: 'Vista Equity Fund VIII',            firm: 'Vista Equity',       baseTarget: 12.5, strategy: 'Growth' },
+  { fundName: 'Bain Capital Fund XIV',             firm: 'Bain Capital',       baseTarget: 10.0, strategy: 'Buyout' },
+  { fundName: 'Advent International GPE X',        firm: 'Advent Intl',        baseTarget: 8.5,  strategy: 'Buyout' },
+  { fundName: 'CVC Capital Partners IX',           firm: 'CVC Capital',        baseTarget: 15.0, strategy: 'Buyout' },
+  { fundName: 'Warburg Pincus Global Growth 15',   firm: 'Warburg Pincus',     baseTarget: 7.0,  strategy: 'Venture' },
+  { fundName: 'H&F Capital Partners XI',           firm: 'Hellman & Friedman', baseTarget: 18.0, strategy: 'Buyout' },
 ];
 
 // ── Helpers ──
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
+const round1 = (v: number) => Math.round(v * 10) / 10;
+const round2 = (v: number) => Math.round(v * 100) / 100;
 
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
-}
+// ── Generator ──
 
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
+function generate(): PrivateEquityResponse {
+  const day = new Date().toISOString().slice(0, 10);
+  const rng = mulberry32(hashSeed('private-equity-' + day));
+  const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
 
-function pick<T>(arr: T[], rng: () => number): T {
-  return arr[Math.floor(rng() * arr.length)];
-}
+  // 1. Top PE Firms
+  const topFirms: PEFirm[] = FIRMS.map(f => ({
+    firm: f.name,
+    aum: round1(jitter(f.baseAUM, 0.06)),
+    dryPowder: round1(jitter(f.baseDry, 0.10)),
+    dealsYTD: Math.round(jitter(f.baseDeals, 0.15)),
+    avgDealSize: Math.round(jitter(f.baseDealSize, 0.12)),
+    flagshipFundVintage: f.vintage,
+    netIRR: round1(jitter(f.baseIRR, 0.08)),
+    tvpi: round2(jitter(f.baseTVPI, 0.06)),
+    dpi: round2(jitter(f.baseDPI, 0.10)),
+  }));
 
-// ── Generation logic ──
+  // 2. Market Overview
+  const totalDryPowder = round1(topFirms.reduce((s, f) => s + f.dryPowder, 0) + jitter(580, 0.08));
+  const globalPEDealVolume = round1(jitter(820, 0.10));
+  const avgBuyoutMultiple = round1(jitter(11.8, 0.06));
+  const avgEntryMultiple = round1(jitter(13.2, 0.06));
+  const medianFundSize = Math.round(jitter(1250, 0.10));
+  const fundraisingYTD = round1(jitter(385, 0.08));
 
-function generateRecentDeals(rng: () => number): RecentDeal[] {
-  const deals: RecentDeal[] = [];
-  const today = new Date();
-  const usedSponsors = new Set<number>();
+  const marketOverview: MarketOverview = {
+    totalDryPowder,
+    globalPEDealVolume,
+    avgBuyoutMultiple,
+    avgEntryMultiple,
+    medianFundSize,
+    fundraisingYTD,
+  };
 
-  for (let i = 0; i < 12; i++) {
-    // Ensure each sponsor is used once (12 sponsors, 12 deals)
-    let sponsorIdx = Math.floor(rng() * SPONSORS.length);
-    while (usedSponsors.has(sponsorIdx)) {
-      sponsorIdx = (sponsorIdx + 1) % SPONSORS.length;
-    }
-    usedSponsors.add(sponsorIdx);
-    const sponsor = SPONSORS[sponsorIdx];
+  // 3. Exit Activity
+  const exitBaseData: { type: string; baseCount: number; baseValue: number; baseHold: number; baseMOIC: number }[] = [
+    { type: 'IPO',             baseCount: 42,  baseValue: 68,  baseHold: 4.8, baseMOIC: 3.2 },
+    { type: 'Strategic Sale',  baseCount: 128, baseValue: 195, baseHold: 5.2, baseMOIC: 2.6 },
+    { type: 'Secondary',       baseCount: 85,  baseValue: 112, baseHold: 4.1, baseMOIC: 2.1 },
+    { type: 'Recap',           baseCount: 58,  baseValue: 74,  baseHold: 3.5, baseMOIC: 1.8 },
+  ];
 
-    const sector = pick(SECTORS, rng);
-    const targets = TARGETS_BY_SECTOR[sector];
-    const target = targets[Math.floor(rng() * targets.length)];
+  const exitActivity: ExitActivity[] = exitBaseData.map(e => ({
+    type: e.type,
+    count: Math.round(jitter(e.baseCount, 0.12)),
+    totalValue: round1(jitter(e.baseValue, 0.10)),
+    avgHoldingPeriod: round1(jitter(e.baseHold, 0.08)),
+    avgMOIC: round1(jitter(e.baseMOIC, 0.10)),
+  }));
 
-    // Deal value: $1.2B - $18.5B (large-cap PE typical range)
-    const dealValue = round1(1.2 + rng() * 17.3);
+  // 4. Sector Breakdown
+  const sectorBaseData: { sector: string; baseDealCount: number; baseDealValue: number; baseMultiple: number; baseYoY: number }[] = [
+    { sector: 'Technology',   baseDealCount: 145, baseDealValue: 285, baseMultiple: 14.8, baseYoY: 12.5 },
+    { sector: 'Healthcare',   baseDealCount: 112, baseDealValue: 198, baseMultiple: 13.2, baseYoY: 8.3 },
+    { sector: 'Financials',   baseDealCount: 78,  baseDealValue: 142, baseMultiple: 10.5, baseYoY: -3.2 },
+    { sector: 'Industrials',  baseDealCount: 95,  baseDealValue: 128, baseMultiple: 9.8,  baseYoY: 5.1 },
+    { sector: 'Consumer',     baseDealCount: 68,  baseDealValue: 96,  baseMultiple: 11.2, baseYoY: -6.8 },
+    { sector: 'Energy',       baseDealCount: 52,  baseDealValue: 78,  baseMultiple: 8.5,  baseYoY: 15.2 },
+  ];
 
-    // EV/EBITDA multiples: 8x - 18x (varies by sector)
-    const sectorMultiplePremium = sector === 'Technology' ? 3.0
-      : sector === 'Healthcare' ? 2.0
-      : sector === 'Consumer' ? 0.5
-      : 0;
-    const evToEbitda = round1(8.0 + rng() * 7.0 + sectorMultiplePremium);
+  const sectorBreakdown: SectorBreakdown[] = sectorBaseData.map(s => ({
+    sector: s.sector,
+    dealCount: Math.round(jitter(s.baseDealCount, 0.10)),
+    dealValue: round1(jitter(s.baseDealValue, 0.10)),
+    avgMultiple: round1(jitter(s.baseMultiple, 0.06)),
+    yoyChange: round1(jitter(s.baseYoY, 0.15)),
+  }));
 
-    // Debt/EBITDA: 4.0x - 7.5x (leveraged buyout typical)
-    const debtToEbitda = round1(4.0 + rng() * 3.5);
-
-    // Equity check: typically 30-55% of deal value
-    const equityPct = 0.30 + rng() * 0.25;
-    const equityCheck = round1(dealValue * equityPct);
-
-    // Status weighted: 50% ANNOUNCED, 35% CLOSED, 15% RUMORED
-    const statusRoll = rng();
-    const status: RecentDeal['status'] = statusRoll < 0.50 ? 'ANNOUNCED'
-      : statusRoll < 0.85 ? 'CLOSED'
-      : 'RUMORED';
-
-    // Date within last 45 days
-    const daysBack = Math.floor(rng() * 45);
-    const dealDate = new Date(today);
-    dealDate.setDate(dealDate.getDate() - daysBack);
-    const date = formatDate(dealDate);
-
-    deals.push({
-      sponsor, target, sector, dealValue, evToEbitda,
-      debtToEbitda, equityCheck, status, date,
-    });
-  }
-
-  // Sort by date descending (most recent first)
-  deals.sort((a, b) => b.date.localeCompare(a.date));
-
-  return deals;
-}
-
-function generateFundraising(rng: () => number): Fundraising[] {
-  const funds: Fundraising[] = [];
-  const today = new Date();
-
-  // Pick 8 unique fund templates
-  const indices = Array.from({ length: FUND_TEMPLATES.length }, (_, i) => i);
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
-  }
-  const selected = indices.slice(0, 8);
-
-  for (const idx of selected) {
-    const tmpl = FUND_TEMPLATES[idx];
-
-    // Fund number: Roman numeral suffix (VIII-XIV range)
-    const fundNum = 8 + Math.floor(rng() * 7);
-    const romanNumerals = ['VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV'];
-    const fundName = `${tmpl.fundBaseName} ${romanNumerals[fundNum - 8]}`;
-
-    // Vintage: current year or last year
-    const vintage = rng() > 0.4
-      ? new Date().getFullYear()
-      : new Date().getFullYear() - 1;
-
-    // Target size: $5B - $28B (mega funds)
-    const targetSize = round1(5.0 + rng() * 23.0);
-
-    // Closed size: 70-115% of target (some exceed targets)
-    const closedPct = 0.70 + rng() * 0.45;
-    const closedSize = round1(targetSize * closedPct);
-
-    // Closing date within last 90 days
-    const daysBack = Math.floor(rng() * 90);
-    const closeDate = new Date(today);
-    closeDate.setDate(closeDate.getDate() - daysBack);
-    const closingDate = formatDate(closeDate);
-
-    funds.push({
-      firm: tmpl.firm,
-      fundName,
-      vintage,
-      targetSize,
-      closedSize,
-      strategy: tmpl.strategy,
-      closingDate,
-    });
-  }
-
-  // Sort by closing date descending
-  funds.sort((a, b) => b.closingDate.localeCompare(a.closingDate));
-
-  return funds;
-}
-
-function generateDryPowder(rng: () => number): DryPowder[] {
-  return DRY_POWDER_STRATEGIES.map((strategy) => {
-    // Available dry powder by strategy (in $B)
-    // Buyout has the most, Venture/Secondaries the least
-    const baseAvailable = strategy === 'Buyout' ? 320
-      : strategy === 'Growth' ? 180
-      : strategy === 'Venture' ? 250
-      : strategy === 'Distressed' ? 90
-      : strategy === 'Infrastructure' ? 150
-      : strategy === 'Secondaries' ? 110
-      : 130; // Real Estate
-
-    const available = round1(baseAvailable * (0.85 + rng() * 0.30));
-
-    // Deployed in last year: 30-70% of available (deployment pace varies)
-    const deployedPct = 0.30 + rng() * 0.40;
-    const deployed1y = round1(available * deployedPct);
-
-    // Ratio: available / deployed
-    const ratio = round2(available / deployed1y);
-
-    return { strategy, available, deployed1y, ratio };
+  // 5. Fundraising
+  const fundraising: FundraisingItem[] = FUND_TEMPLATES.map(ft => {
+    const target = round1(jitter(ft.baseTarget, 0.08));
+    const raisedPct = 0.55 + rng() * 0.55; // 55% to 110% of target
+    const raised = round1(target * raisedPct);
+    const pctOfTarget = Math.round((raised / target) * 100);
+    return {
+      fundName: ft.fundName,
+      firm: ft.firm,
+      target,
+      raised,
+      pctOfTarget,
+      strategy: ft.strategy,
+    };
   });
-}
-
-function generateSummary(
-  deals: RecentDeal[],
-  fundraising: Fundraising[],
-  dryPowder: DryPowder[],
-  rng: () => number,
-): Summary {
-  // Total deal volume: sum of all deal values
-  const totalDealVolume = round1(deals.reduce((sum, d) => sum + d.dealValue, 0));
-
-  // Average EV/EBITDA multiple across deals
-  const avgMultiple = round1(
-    deals.reduce((sum, d) => sum + d.evToEbitda, 0) / deals.length
-  );
-
-  // Total dry powder in $T
-  const dryPowderTotal = round2(
-    dryPowder.reduce((sum, dp) => sum + dp.available, 0) / 1000
-  );
-
-  // Top sector by deal volume
-  const sectorVolume: Record<string, number> = {};
-  for (const deal of deals) {
-    sectorVolume[deal.sector] = (sectorVolume[deal.sector] || 0) + deal.dealValue;
-  }
-  const topSector = Object.entries(sectorVolume)
-    .sort((a, b) => b[1] - a[1])[0][0];
-
-  // YTD fundraising: sum of closed sizes + additional market estimate
-  const closedTotal = fundraising.reduce((sum, f) => sum + f.closedSize, 0);
-  const fundraisingYtd = round1(closedTotal + 80 + rng() * 120);
 
   return {
-    totalDealVolume,
-    avgMultiple,
-    dryPowderTotal,
-    topSector,
-    fundraisingYtd,
-    timestamp: new Date().toISOString(),
+    marketOverview,
+    topFirms,
+    exitActivity,
+    sectorBreakdown,
+    fundraising,
+    generatedAt: new Date().toISOString(),
   };
 }
 
-function buildPrivateEquityData(): PrivateEquityResponse {
-  const rng = seededRandom('private-equity');
-
-  const recentDeals = generateRecentDeals(rng);
-  const fundraising = generateFundraising(rng);
-  const dryPowder = generateDryPowder(rng);
-  const summary = generateSummary(recentDeals, fundraising, dryPowder, rng);
-
-  return { recentDeals, fundraising, dryPowder, summary };
-}
-
-// ── Cache ──
-
-let cachedData: { data: PrivateEquityResponse; ts: number } | null = null;
-let staleData: PrivateEquityResponse | null = null;
-const CACHE_TTL = 5 * 60_000; // 5 minutes
-
 // ── Route ──
+
+let staleData: any = null;
 
 router.get('/', (_req, res) => {
   try {
     const now = Date.now();
-
-    // Return cached data if still fresh
-    if (cachedData && now - cachedData.ts < CACHE_TTL) {
-      res.json(cachedData.data);
-      return;
-    }
-
-    // Generate fresh data
-    const data = buildPrivateEquityData();
-
-    // Update cache
-    staleData = cachedData?.data ?? staleData;
-    cachedData = { data, ts: now };
-
+    if (cache && now - cache.ts < TTL) return res.json(cache.data);
+    const data = generate();
+    staleData = cache?.data ?? staleData;
+    cache = { data, ts: now };
     res.json(data);
   } catch (err) {
-    console.error('[PrivateEquity] Error:', err instanceof Error ? err.message : err);
-
-    // Stale fallback
-    if (staleData) {
-      res.json(staleData);
-      return;
-    }
-    if (cachedData) {
-      res.json(cachedData.data);
-      return;
-    }
-
+    console.error('[PrivateEquity] Error:', (err as Error).message);
+    if (staleData) return res.json(staleData);
+    if (cache) return res.json(cache.data);
     res.status(500).json({ error: 'Failed to generate private equity data' });
   }
 });
