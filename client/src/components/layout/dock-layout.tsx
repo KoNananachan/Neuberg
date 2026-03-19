@@ -453,6 +453,9 @@ const CorrelationRiskPanel = lazy(() => import('../panels/correlation-risk-panel
 const SubordinatedDebtPanel = lazy(() => import('../panels/subordinated-debt-panel').then(m => ({ default: m.SubordinatedDebtPanel })));
 const SmartBetaPanel = lazy(() => import('../panels/smart-beta-panel').then(m => ({ default: m.SmartBetaPanel })));
 const FactorRotationPanel = lazy(() => import('../panels/factor-rotation-panel').then(m => ({ default: m.FactorRotationPanel })));
+const EndowmentPanel = lazy(() => import('../panels/endowment-panel').then(m => ({ default: m.EndowmentPanel })));
+const FamilyOfficePanel = lazy(() => import('../panels/family-office-panel').then(m => ({ default: m.FamilyOfficePanel })));
+const HedgeFundReplicationPanel = lazy(() => import('../panels/hedge-fund-replication-panel').then(m => ({ default: m.HedgeFundReplicationPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -916,6 +919,9 @@ export const PANEL_IDS = {
   SUBORDINATED_DEBT: 'subordinated-debt',
   SMART_BETA: 'smart-beta',
   FACTOR_ROTATION: 'factor-rotation',
+  ENDOWMENT: 'endowment',
+  FAMILY_OFFICE: 'family-office',
+  HEDGE_FUND_REPLICATION: 'hedge-fund-replication',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1363,6 +1369,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.SUBORDINATED_DEBT]: 'SUBORDINATED DEBT',
   [PANEL_IDS.SMART_BETA]: 'SMART BETA',
   [PANEL_IDS.FACTOR_ROTATION]: 'FACTOR ROTATION',
+  [PANEL_IDS.ENDOWMENT]: 'ENDOWMENT',
+  [PANEL_IDS.FAMILY_OFFICE]: 'FAMILY OFFICE',
+  [PANEL_IDS.HEDGE_FUND_REPLICATION]: 'HEDGE FUND REPLICATION',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1811,6 +1820,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.SUBORDINATED_DEBT]: 'panelSubordinatedDebt',
   [PANEL_IDS.SMART_BETA]: 'panelSmartBeta',
   [PANEL_IDS.FACTOR_ROTATION]: 'panelFactorRotation',
+  [PANEL_IDS.ENDOWMENT]: 'panelEndowment',
+  [PANEL_IDS.FAMILY_OFFICE]: 'panelFamilyOffice',
+  [PANEL_IDS.HEDGE_FUND_REPLICATION]: 'panelHedgeFundReplication',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2555,6 +2567,9 @@ export function DockLayout() {
       case PANEL_IDS.SUBORDINATED_DEBT: content = <LazyWrap><SubordinatedDebtPanel /></LazyWrap>; break;
       case PANEL_IDS.SMART_BETA: content = <LazyWrap><SmartBetaPanel /></LazyWrap>; break;
       case PANEL_IDS.FACTOR_ROTATION: content = <LazyWrap><FactorRotationPanel /></LazyWrap>; break;
+      case PANEL_IDS.ENDOWMENT: content = <LazyWrap><EndowmentPanel /></LazyWrap>; break;
+      case PANEL_IDS.FAMILY_OFFICE: content = <LazyWrap><FamilyOfficePanel /></LazyWrap>; break;
+      case PANEL_IDS.HEDGE_FUND_REPLICATION: content = <LazyWrap><HedgeFundReplicationPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
