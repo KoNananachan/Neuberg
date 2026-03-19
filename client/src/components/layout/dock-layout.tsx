@@ -456,6 +456,9 @@ const FactorRotationPanel = lazy(() => import('../panels/factor-rotation-panel')
 const EndowmentPanel = lazy(() => import('../panels/endowment-panel').then(m => ({ default: m.EndowmentPanel })));
 const FamilyOfficePanel = lazy(() => import('../panels/family-office-panel').then(m => ({ default: m.FamilyOfficePanel })));
 const HedgeFundReplicationPanel = lazy(() => import('../panels/hedge-fund-replication-panel').then(m => ({ default: m.HedgeFundReplicationPanel })));
+const InfrastructureDebtPanel = lazy(() => import('../panels/infrastructure-debt-panel').then(m => ({ default: m.InfrastructureDebtPanel })));
+const CarbonCreditPanel = lazy(() => import('../panels/carbon-credit-panel').then(m => ({ default: m.CarbonCreditPanel })));
+const SupplyChainFinancePanel = lazy(() => import('../panels/supply-chain-finance-panel').then(m => ({ default: m.SupplyChainFinancePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -922,6 +925,9 @@ export const PANEL_IDS = {
   ENDOWMENT: 'endowment',
   FAMILY_OFFICE: 'family-office',
   HEDGE_FUND_REPLICATION: 'hedge-fund-replication',
+  INFRASTRUCTURE_DEBT: 'infrastructure-debt',
+  CARBON_CREDIT: 'carbon-credit',
+  SUPPLY_CHAIN_FINANCE: 'supply-chain-finance',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1372,6 +1378,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.ENDOWMENT]: 'ENDOWMENT',
   [PANEL_IDS.FAMILY_OFFICE]: 'FAMILY OFFICE',
   [PANEL_IDS.HEDGE_FUND_REPLICATION]: 'HEDGE FUND REPLICATION',
+  [PANEL_IDS.INFRASTRUCTURE_DEBT]: 'INFRASTRUCTURE DEBT',
+  [PANEL_IDS.CARBON_CREDIT]: 'CARBON CREDIT',
+  [PANEL_IDS.SUPPLY_CHAIN_FINANCE]: 'SUPPLY CHAIN FINANCE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1823,6 +1832,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.ENDOWMENT]: 'panelEndowment',
   [PANEL_IDS.FAMILY_OFFICE]: 'panelFamilyOffice',
   [PANEL_IDS.HEDGE_FUND_REPLICATION]: 'panelHedgeFundReplication',
+  [PANEL_IDS.INFRASTRUCTURE_DEBT]: 'panelInfrastructureDebt',
+  [PANEL_IDS.CARBON_CREDIT]: 'panelCarbonCredit',
+  [PANEL_IDS.SUPPLY_CHAIN_FINANCE]: 'panelSupplyChainFinance',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2570,6 +2582,9 @@ export function DockLayout() {
       case PANEL_IDS.ENDOWMENT: content = <LazyWrap><EndowmentPanel /></LazyWrap>; break;
       case PANEL_IDS.FAMILY_OFFICE: content = <LazyWrap><FamilyOfficePanel /></LazyWrap>; break;
       case PANEL_IDS.HEDGE_FUND_REPLICATION: content = <LazyWrap><HedgeFundReplicationPanel /></LazyWrap>; break;
+      case PANEL_IDS.INFRASTRUCTURE_DEBT: content = <LazyWrap><InfrastructureDebtPanel /></LazyWrap>; break;
+      case PANEL_IDS.CARBON_CREDIT: content = <LazyWrap><CarbonCreditPanel /></LazyWrap>; break;
+      case PANEL_IDS.SUPPLY_CHAIN_FINANCE: content = <LazyWrap><SupplyChainFinancePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
