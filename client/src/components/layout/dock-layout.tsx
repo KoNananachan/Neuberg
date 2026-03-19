@@ -413,6 +413,9 @@ const ProductivityMonitorPanel = lazy(() => import('../panels/productivity-monit
 const BalanceOfPaymentsPanel = lazy(() => import('../panels/balance-of-payments-panel').then(m => ({ default: m.BalanceOfPaymentsPanel })));
 const GlobalTaxRatesPanel = lazy(() => import('../panels/global-tax-rates-panel').then(m => ({ default: m.GlobalTaxRatesPanel })));
 const SanctionsMonitorPanel = lazy(() => import('../panels/sanctions-monitor-panel').then(m => ({ default: m.SanctionsMonitorPanel })));
+const ClimateRiskPanel = lazy(() => import('../panels/climate-risk-panel').then(m => ({ default: m.ClimateRiskPanel })));
+const SovereignDefaultPanel = lazy(() => import('../panels/sovereign-default-panel').then(m => ({ default: m.SovereignDefaultPanel })));
+const BankStressTestPanel = lazy(() => import('../panels/bank-stress-test-panel').then(m => ({ default: m.BankStressTestPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -836,6 +839,9 @@ export const PANEL_IDS = {
   BALANCE_OF_PAYMENTS: 'balance-of-payments',
   GLOBAL_TAX_RATES: 'global-tax-rates',
   SANCTIONS_MONITOR: 'sanctions-monitor',
+  CLIMATE_RISK: 'climate-risk',
+  SOVEREIGN_DEFAULT: 'sovereign-default',
+  BANK_STRESS_TEST: 'bank-stress-test',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1243,6 +1249,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.BALANCE_OF_PAYMENTS]: 'BALANCE OF PAYMENTS',
   [PANEL_IDS.GLOBAL_TAX_RATES]: 'GLOBAL TAX RATES',
   [PANEL_IDS.SANCTIONS_MONITOR]: 'SANCTIONS MONITOR',
+  [PANEL_IDS.CLIMATE_RISK]: 'CLIMATE RISK',
+  [PANEL_IDS.SOVEREIGN_DEFAULT]: 'SOVEREIGN DEFAULT',
+  [PANEL_IDS.BANK_STRESS_TEST]: 'BANK STRESS TEST',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1651,6 +1660,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.BALANCE_OF_PAYMENTS]: 'panelBalanceOfPayments',
   [PANEL_IDS.GLOBAL_TAX_RATES]: 'panelGlobalTaxRates',
   [PANEL_IDS.SANCTIONS_MONITOR]: 'panelSanctionsMonitor',
+  [PANEL_IDS.CLIMATE_RISK]: 'panelClimateRisk',
+  [PANEL_IDS.SOVEREIGN_DEFAULT]: 'panelSovereignDefault',
+  [PANEL_IDS.BANK_STRESS_TEST]: 'panelBankStressTest',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2355,6 +2367,9 @@ export function DockLayout() {
       case PANEL_IDS.BALANCE_OF_PAYMENTS: content = <LazyWrap><BalanceOfPaymentsPanel /></LazyWrap>; break;
       case PANEL_IDS.GLOBAL_TAX_RATES: content = <LazyWrap><GlobalTaxRatesPanel /></LazyWrap>; break;
       case PANEL_IDS.SANCTIONS_MONITOR: content = <LazyWrap><SanctionsMonitorPanel /></LazyWrap>; break;
+      case PANEL_IDS.CLIMATE_RISK: content = <LazyWrap><ClimateRiskPanel /></LazyWrap>; break;
+      case PANEL_IDS.SOVEREIGN_DEFAULT: content = <LazyWrap><SovereignDefaultPanel /></LazyWrap>; break;
+      case PANEL_IDS.BANK_STRESS_TEST: content = <LazyWrap><BankStressTestPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
