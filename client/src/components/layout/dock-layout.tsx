@@ -427,6 +427,9 @@ const CriticalMineralsPanel = lazy(() => import('../panels/critical-minerals-pan
 const NuclearEnergyPanel = lazy(() => import('../panels/nuclear-energy-panel').then(m => ({ default: m.NuclearEnergyPanel })));
 const WaterMarketPanel = lazy(() => import('../panels/water-market-panel').then(m => ({ default: m.WaterMarketPanel })));
 const SpaceEconomyPanel = lazy(() => import('../panels/space-economy-panel').then(m => ({ default: m.SpaceEconomyPanel })));
+const CybersecurityPanel = lazy(() => import('../panels/cybersecurity-panel').then(m => ({ default: m.CybersecurityPanel })));
+const GlobalFoodPricePanel = lazy(() => import('../panels/global-food-price-panel').then(m => ({ default: m.GlobalFoodPricePanel })));
+const PharmaPipelinePanel = lazy(() => import('../panels/pharma-pipeline-panel').then(m => ({ default: m.PharmaPipelinePanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -864,6 +867,9 @@ export const PANEL_IDS = {
   NUCLEAR_ENERGY: 'nuclear-energy',
   WATER_MARKET: 'water-market',
   SPACE_ECONOMY: 'space-economy',
+  CYBERSECURITY: 'cybersecurity',
+  GLOBAL_FOOD_PRICE: 'global-food-price',
+  PHARMA_PIPELINE: 'pharma-pipeline',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1285,6 +1291,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.NUCLEAR_ENERGY]: 'NUCLEAR ENERGY',
   [PANEL_IDS.WATER_MARKET]: 'WATER MARKET',
   [PANEL_IDS.SPACE_ECONOMY]: 'SPACE ECONOMY',
+  [PANEL_IDS.CYBERSECURITY]: 'CYBERSECURITY',
+  [PANEL_IDS.GLOBAL_FOOD_PRICE]: 'GLOBAL FOOD PRICE',
+  [PANEL_IDS.PHARMA_PIPELINE]: 'PHARMA PIPELINE',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1707,6 +1716,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.NUCLEAR_ENERGY]: 'panelNuclearEnergy',
   [PANEL_IDS.WATER_MARKET]: 'panelWaterMarket',
   [PANEL_IDS.SPACE_ECONOMY]: 'panelSpaceEconomy',
+  [PANEL_IDS.CYBERSECURITY]: 'panelCybersecurity',
+  [PANEL_IDS.GLOBAL_FOOD_PRICE]: 'panelGlobalFoodPrice',
+  [PANEL_IDS.PHARMA_PIPELINE]: 'panelPharmaPipeline',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2425,6 +2437,9 @@ export function DockLayout() {
       case PANEL_IDS.NUCLEAR_ENERGY: content = <LazyWrap><NuclearEnergyPanel /></LazyWrap>; break;
       case PANEL_IDS.WATER_MARKET: content = <LazyWrap><WaterMarketPanel /></LazyWrap>; break;
       case PANEL_IDS.SPACE_ECONOMY: content = <LazyWrap><SpaceEconomyPanel /></LazyWrap>; break;
+      case PANEL_IDS.CYBERSECURITY: content = <LazyWrap><CybersecurityPanel /></LazyWrap>; break;
+      case PANEL_IDS.GLOBAL_FOOD_PRICE: content = <LazyWrap><GlobalFoodPricePanel /></LazyWrap>; break;
+      case PANEL_IDS.PHARMA_PIPELINE: content = <LazyWrap><PharmaPipelinePanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
