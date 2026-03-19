@@ -492,6 +492,7 @@ const EquitySwapPricingPanel = lazy(() => import('../panels/equity-swap-pricing-
 const CreditValuationAdjustmentPanel = lazy(() => import('../panels/credit-valuation-adjustment-panel').then(m => ({ default: m.CreditValuationAdjustmentPanel })));
 const InterestRateVolSurfacePanel = lazy(() => import('../panels/interest-rate-vol-surface-panel').then(m => ({ default: m.InterestRateVolSurfacePanel })));
 const MunicipalCreditAnalysisPanel = lazy(() => import('../panels/municipal-credit-analysis-panel').then(m => ({ default: m.MunicipalCreditAnalysisPanel })));
+const StructuredProductsAnalyzerPanel = lazy(() => import('../panels/structured-products-analyzer-panel').then(m => ({ default: m.StructuredProductsAnalyzerPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -994,6 +995,7 @@ export const PANEL_IDS = {
   CREDIT_VALUATION_ADJUSTMENT: 'credit-valuation-adjustment',
   INTEREST_RATE_VOL_SURFACE: 'interest-rate-vol-surface',
   MUNICIPAL_CREDIT_ANALYSIS: 'municipal-credit-analysis',
+  STRUCTURED_PRODUCTS_ANALYZER: 'structured-products-analyzer',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1480,6 +1482,7 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.CREDIT_VALUATION_ADJUSTMENT]: 'CREDIT VALUATION ADJUSTMENT',
   [PANEL_IDS.INTEREST_RATE_VOL_SURFACE]: 'INTEREST RATE VOL SURFACE',
   [PANEL_IDS.MUNICIPAL_CREDIT_ANALYSIS]: 'MUNICIPAL CREDIT ANALYSIS',
+  [PANEL_IDS.STRUCTURED_PRODUCTS_ANALYZER]: 'STRUCTURED PRODUCTS ANALYZER',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1967,6 +1970,7 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.CREDIT_VALUATION_ADJUSTMENT]: 'panelCreditValuationAdjustment',
   [PANEL_IDS.INTEREST_RATE_VOL_SURFACE]: 'panelInterestRateVolSurface',
   [PANEL_IDS.MUNICIPAL_CREDIT_ANALYSIS]: 'panelMunicipalCreditAnalysis',
+  [PANEL_IDS.STRUCTURED_PRODUCTS_ANALYZER]: 'panelStructuredProductsAnalyzer',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2750,6 +2754,7 @@ export function DockLayout() {
       case PANEL_IDS.CREDIT_VALUATION_ADJUSTMENT: content = <LazyWrap><CreditValuationAdjustmentPanel /></LazyWrap>; break;
       case PANEL_IDS.INTEREST_RATE_VOL_SURFACE: content = <LazyWrap><InterestRateVolSurfacePanel /></LazyWrap>; break;
       case PANEL_IDS.MUNICIPAL_CREDIT_ANALYSIS: content = <LazyWrap><MunicipalCreditAnalysisPanel /></LazyWrap>; break;
+      case PANEL_IDS.STRUCTURED_PRODUCTS_ANALYZER: content = <LazyWrap><StructuredProductsAnalyzerPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

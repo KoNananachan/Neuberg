@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../client';
 
-export function useRepoRateMonitor() {
+export function useStructuredProductsAnalyzer() {
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['repo-rate-monitor'],
-    queryFn: () => api.get<any>('/repo-rate-monitor'),
+    queryKey: ['structured-products-analyzer'],
+    queryFn: () => api.get<any>('/structured-products-analyzer'),
     refetchInterval: 5 * 60 * 1000,
     staleTime: 3 * 60 * 1000,
   });

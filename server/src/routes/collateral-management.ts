@@ -4,95 +4,87 @@ const router = Router();
 
 // ── Deterministic seeded RNG ──
 
-function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; } return h >>> 0; }
-function mulberry32(a: number) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function mulberry32(a: number) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hashSeed(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) { h = Math.imul(31, h) + s.charCodeAt(i) | 0; } return h; }
 function seededRandom(tag: string) { const d = new Date().toISOString().slice(0, 10); return mulberry32(hashSeed(tag + d)); }
 
 // ── Types ──
 
-interface CollateralPoolEntry {
-  type: string;
-  totalAvailable: number;
+interface CollateralPoolSummary {
+  totalEligible: number;
+  totalPledged: number;
+  excessCollateral: number;
+  haircutAdjustedValue: number;
+}
+
+interface AssetClassBreakdown {
+  assetClass: string;
+  marketValue: number;
   pledged: number;
-  free: number;
+  available: number;
   haircutPct: number;
+  haircutAdjustedValue: number;
+  pctOfPool: number;
 }
 
-interface MarginRequirement {
-  product: string;
-  initialMargin: number;
-  variationMargin: number;
-  currentExposure: number;
-  threshold: number;
-  excessDeficit: number;
-}
-
-interface HaircutScheduleEntry {
-  collateralType: string;
-  ratingAAA: number;
-  ratingAA: number;
-  ratingA: number;
-  ratingBBB: number;
-  ratingBelow: number;
-}
-
-interface ConcentrationLimit {
-  dimension: string;
-  name: string;
-  limit: number;
-  currentUtilization: number;
-  utilizationPct: number;
-  status: 'OK' | 'WARNING' | 'BREACH';
-}
-
-interface SubstitutionRequest {
-  id: string;
-  requestDate: string;
+interface CounterpartyExposure {
   counterparty: string;
-  outCollateral: string;
-  inCollateral: string;
-  notional: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SETTLED';
+  totalExposure: number;
+  collateralReceived: number;
+  collateralPosted: number;
+  netExposure: number;
+  marginCallsPending: number;
+  marginCallsAmount: number;
+  disputeCount: number;
+  disputeAmount: number;
+  rating: string;
 }
 
-interface TripartyBalance {
-  agent: string;
-  totalBalance: number;
-  allocated: number;
-  unallocated: number;
-  utilizationPct: number;
-  eligibleIssuers: number;
+interface OptimizationMetric {
+  strategy: string;
+  description: string;
+  currentCostBps: number;
+  optimizedCostBps: number;
+  savingsBps: number;
+  feasibility: 'HIGH' | 'MEDIUM' | 'LOW';
+  estimatedFreedCollateral: number;
+}
+
+interface MarginCallEntry {
+  id: string;
+  counterparty: string;
+  direction: 'ISSUED' | 'RECEIVED';
+  amount: number;
+  currency: string;
+  callDate: string;
+  responseDeadline: string;
+  status: 'PENDING' | 'AGREED' | 'DISPUTED' | 'SETTLED' | 'PARTIALLY_SETTLED';
+  collateralType: string;
 }
 
 interface RegulatoryMetrics {
-  umrCompliant: boolean;
-  umrThreshold: number;
-  umrCurrentAANA: number;
-  simmInitialMargin: number;
+  initialMarginTotal: number;
+  variationMarginTotal: number;
+  simmMargin: number;
   simmModelVersion: string;
   gridScheduleMargin: number;
-  excessOverMinTransfer: number;
-  minTransferAmount: number;
-}
-
-interface CollateralOptimizationEntry {
-  strategy: string;
-  description: string;
-  currentCost: number;
-  optimizedCost: number;
-  savingsBps: number;
-  feasibility: 'HIGH' | 'MEDIUM' | 'LOW';
+  simmVsGridSavings: number;
+  umrCompliant: boolean;
+  umrPhase: number;
+  umrThresholdEur: number;
+  currentAANA: number;
+  minimumTransferAmount: number;
+  independentAmount: number;
+  threshold: number;
 }
 
 interface CollateralManagementResponse {
-  collateralPool: CollateralPoolEntry[];
-  marginRequirements: MarginRequirement[];
-  haircutSchedule: HaircutScheduleEntry[];
-  concentrationLimits: ConcentrationLimit[];
-  substitutionRequests: SubstitutionRequest[];
-  tripartyBalances: TripartyBalance[];
+  poolSummary: CollateralPoolSummary;
+  assetClassBreakdown: AssetClassBreakdown[];
+  counterpartyExposures: CounterpartyExposure[];
+  optimizationMetrics: OptimizationMetric[];
+  marginCallTimeline: MarginCallEntry[];
   regulatoryMetrics: RegulatoryMetrics;
-  collateralOptimization: CollateralOptimizationEntry[];
   timestamp: string;
 }
 
@@ -104,119 +96,49 @@ let cache: { data: CollateralManagementResponse | null; expiresAt: number } = {
 };
 const CACHE_TTL = 5 * 60_000; // 5 minutes
 
-// ── Collateral pool configuration ──
+// ── Asset class configuration ──
 
-interface CollateralPoolConfig {
-  type: string;
-  baseTotal: number;
+interface AssetClassConfig {
+  assetClass: string;
+  baseMarketValue: number;
   basePledgedPct: number;
-  baseHaircut: number;
+  baseHaircutPct: number;
   volatility: number;
 }
 
-const POOL_CONFIGS: CollateralPoolConfig[] = [
-  { type: 'US Treasuries', baseTotal: 42500, basePledgedPct: 0.68, baseHaircut: 2.0, volatility: 0.05 },
-  { type: 'Agency MBS', baseTotal: 18200, basePledgedPct: 0.72, baseHaircut: 5.0, volatility: 0.08 },
-  { type: 'Investment-Grade Corporate', baseTotal: 12800, basePledgedPct: 0.55, baseHaircut: 8.0, volatility: 0.10 },
-  { type: 'Equities', baseTotal: 8600, basePledgedPct: 0.45, baseHaircut: 15.0, volatility: 0.12 },
-  { type: 'Gold', baseTotal: 3400, basePledgedPct: 0.60, baseHaircut: 10.0, volatility: 0.06 },
+const ASSET_CLASS_CONFIGS: AssetClassConfig[] = [
+  { assetClass: 'Government Bonds', baseMarketValue: 42500, basePledgedPct: 0.72, baseHaircutPct: 2.0, volatility: 0.05 },
+  { assetClass: 'Corporate Bonds', baseMarketValue: 18200, basePledgedPct: 0.58, baseHaircutPct: 8.0, volatility: 0.08 },
+  { assetClass: 'Equities', baseMarketValue: 12800, basePledgedPct: 0.42, baseHaircutPct: 15.0, volatility: 0.12 },
+  { assetClass: 'Cash', baseMarketValue: 15600, basePledgedPct: 0.85, baseHaircutPct: 0.0, volatility: 0.03 },
+  { assetClass: 'MBS', baseMarketValue: 9400, basePledgedPct: 0.65, baseHaircutPct: 5.0, volatility: 0.07 },
+  { assetClass: 'ABS', baseMarketValue: 4800, basePledgedPct: 0.50, baseHaircutPct: 10.0, volatility: 0.10 },
 ];
 
-// ── Margin requirement configuration ──
+// ── Counterparty configuration ──
 
-interface MarginConfig {
-  product: string;
-  baseIM: number;
-  baseVM: number;
-  baseExposure: number;
-  baseThreshold: number;
-  volatility: number;
-}
-
-const MARGIN_CONFIGS: MarginConfig[] = [
-  { product: 'IRS', baseIM: 4250, baseVM: 1820, baseExposure: 5400, baseThreshold: 6500, volatility: 0.08 },
-  { product: 'CDS', baseIM: 2800, baseVM: 950, baseExposure: 3200, baseThreshold: 4000, volatility: 0.10 },
-  { product: 'Futures', baseIM: 1950, baseVM: 620, baseExposure: 2100, baseThreshold: 2800, volatility: 0.06 },
-  { product: 'Options', baseIM: 1600, baseVM: 480, baseExposure: 1850, baseThreshold: 2200, volatility: 0.12 },
-  { product: 'Repo', baseIM: 850, baseVM: 180, baseExposure: 920, baseThreshold: 1200, volatility: 0.05 },
-];
-
-// ── Haircut schedule configuration ──
-
-interface HaircutConfig {
-  collateralType: string;
-  baseAAA: number;
-  baseAA: number;
-  baseA: number;
-  baseBBB: number;
-  baseBelow: number;
-}
-
-const HAIRCUT_CONFIGS: HaircutConfig[] = [
-  { collateralType: 'Sovereign Bonds', baseAAA: 1.0, baseAA: 2.0, baseA: 4.0, baseBBB: 8.0, baseBelow: 15.0 },
-  { collateralType: 'Agency Bonds', baseAAA: 2.0, baseAA: 3.0, baseA: 5.0, baseBBB: 10.0, baseBelow: 18.0 },
-  { collateralType: 'Corporate Bonds', baseAAA: 3.0, baseAA: 5.0, baseA: 8.0, baseBBB: 12.0, baseBelow: 25.0 },
-  { collateralType: 'Covered Bonds', baseAAA: 2.5, baseAA: 4.0, baseA: 6.0, baseBBB: 10.0, baseBelow: 20.0 },
-  { collateralType: 'Equities (Main Index)', baseAAA: 15.0, baseAA: 15.0, baseA: 18.0, baseBBB: 22.0, baseBelow: 35.0 },
-  { collateralType: 'Gold', baseAAA: 10.0, baseAA: 10.0, baseA: 10.0, baseBBB: 12.0, baseBelow: 15.0 },
-];
-
-// ── Concentration limit configuration ──
-
-interface ConcentrationConfig {
-  dimension: string;
+interface CounterpartyConfig {
   name: string;
-  baseLimit: number;
-  baseUtilization: number;
+  baseExposure: number;
+  baseReceivedPct: number;
+  basePostedPct: number;
+  baseMarginCalls: number;
+  baseDisputeRate: number;
+  rating: string;
   volatility: number;
 }
 
-const CONCENTRATION_CONFIGS: ConcentrationConfig[] = [
-  { dimension: 'Issuer', name: 'US Treasury', baseLimit: 35.0, baseUtilization: 28.5, volatility: 3.0 },
-  { dimension: 'Issuer', name: 'FNMA', baseLimit: 10.0, baseUtilization: 7.2, volatility: 1.5 },
-  { dimension: 'Issuer', name: 'FHLMC', baseLimit: 10.0, baseUtilization: 6.8, volatility: 1.5 },
-  { dimension: 'Issuer', name: 'JPMorgan Chase', baseLimit: 5.0, baseUtilization: 3.9, volatility: 0.8 },
-  { dimension: 'Sector', name: 'Financials', baseLimit: 20.0, baseUtilization: 14.5, volatility: 2.0 },
-  { dimension: 'Sector', name: 'Technology', baseLimit: 15.0, baseUtilization: 8.3, volatility: 2.0 },
-  { dimension: 'Sector', name: 'Energy', baseLimit: 10.0, baseUtilization: 5.1, volatility: 1.5 },
-  { dimension: 'Country', name: 'United States', baseLimit: 60.0, baseUtilization: 52.4, volatility: 3.0 },
-  { dimension: 'Country', name: 'United Kingdom', baseLimit: 15.0, baseUtilization: 8.7, volatility: 1.5 },
-  { dimension: 'Country', name: 'Germany', baseLimit: 15.0, baseUtilization: 7.2, volatility: 1.5 },
-];
-
-// ── Substitution request configuration ──
-
-interface SubstitutionConfig {
-  counterparty: string;
-  outCollateral: string;
-  inCollateral: string;
-  baseNotional: number;
-  statusWeights: [number, number, number, number]; // PENDING, APPROVED, REJECTED, SETTLED
-}
-
-const SUBSTITUTION_CONFIGS: SubstitutionConfig[] = [
-  { counterparty: 'Goldman Sachs', outCollateral: 'UST 10Y', inCollateral: 'Agency MBS 5.5', baseNotional: 250, statusWeights: [0.4, 0.3, 0.1, 0.2] },
-  { counterparty: 'Morgan Stanley', outCollateral: 'IG Corp Bond', inCollateral: 'UST 5Y', baseNotional: 180, statusWeights: [0.3, 0.25, 0.15, 0.3] },
-  { counterparty: 'Citadel', outCollateral: 'Equities (SPY)', inCollateral: 'UST 2Y', baseNotional: 320, statusWeights: [0.5, 0.2, 0.1, 0.2] },
-  { counterparty: 'JP Morgan', outCollateral: 'Gold', inCollateral: 'Agency MBS 6.0', baseNotional: 150, statusWeights: [0.35, 0.3, 0.15, 0.2] },
-  { counterparty: 'Barclays', outCollateral: 'Agency MBS 5.0', inCollateral: 'UST 30Y', baseNotional: 210, statusWeights: [0.45, 0.25, 0.1, 0.2] },
-  { counterparty: 'Deutsche Bank', outCollateral: 'IG Corp Bond', inCollateral: 'UST 7Y', baseNotional: 195, statusWeights: [0.3, 0.35, 0.15, 0.2] },
-];
-
-// ── Triparty agent configuration ──
-
-interface TripartyConfig {
-  agent: string;
-  baseBalance: number;
-  baseAllocatedPct: number;
-  baseEligibleIssuers: number;
-  volatility: number;
-}
-
-const TRIPARTY_CONFIGS: TripartyConfig[] = [
-  { agent: 'BNY Mellon', baseBalance: 28500, baseAllocatedPct: 0.82, baseEligibleIssuers: 1450, volatility: 0.05 },
-  { agent: 'JP Morgan', baseBalance: 22800, baseAllocatedPct: 0.78, baseEligibleIssuers: 1280, volatility: 0.06 },
-  { agent: 'Euroclear', baseBalance: 18400, baseAllocatedPct: 0.75, baseEligibleIssuers: 2100, volatility: 0.04 },
+const COUNTERPARTY_CONFIGS: CounterpartyConfig[] = [
+  { name: 'Goldman Sachs', baseExposure: 8500, baseReceivedPct: 0.62, basePostedPct: 0.38, baseMarginCalls: 3, baseDisputeRate: 0.08, rating: 'A+', volatility: 0.10 },
+  { name: 'JP Morgan', baseExposure: 9200, baseReceivedPct: 0.58, basePostedPct: 0.42, baseMarginCalls: 2, baseDisputeRate: 0.05, rating: 'AA-', volatility: 0.08 },
+  { name: 'Morgan Stanley', baseExposure: 7100, baseReceivedPct: 0.60, basePostedPct: 0.40, baseMarginCalls: 4, baseDisputeRate: 0.10, rating: 'A+', volatility: 0.09 },
+  { name: 'Citadel Securities', baseExposure: 5800, baseReceivedPct: 0.55, basePostedPct: 0.45, baseMarginCalls: 5, baseDisputeRate: 0.12, rating: 'A', volatility: 0.12 },
+  { name: 'Barclays', baseExposure: 6400, baseReceivedPct: 0.64, basePostedPct: 0.36, baseMarginCalls: 2, baseDisputeRate: 0.06, rating: 'A', volatility: 0.09 },
+  { name: 'Deutsche Bank', baseExposure: 5200, baseReceivedPct: 0.57, basePostedPct: 0.43, baseMarginCalls: 3, baseDisputeRate: 0.11, rating: 'A-', volatility: 0.11 },
+  { name: 'BNP Paribas', baseExposure: 4900, baseReceivedPct: 0.61, basePostedPct: 0.39, baseMarginCalls: 2, baseDisputeRate: 0.07, rating: 'A+', volatility: 0.08 },
+  { name: 'UBS', baseExposure: 4600, baseReceivedPct: 0.59, basePostedPct: 0.41, baseMarginCalls: 3, baseDisputeRate: 0.09, rating: 'A+', volatility: 0.10 },
+  { name: 'HSBC', baseExposure: 4100, baseReceivedPct: 0.63, basePostedPct: 0.37, baseMarginCalls: 1, baseDisputeRate: 0.04, rating: 'AA-', volatility: 0.07 },
+  { name: 'Societe Generale', baseExposure: 3800, baseReceivedPct: 0.56, basePostedPct: 0.44, baseMarginCalls: 4, baseDisputeRate: 0.13, rating: 'A', volatility: 0.11 },
 ];
 
 // ── Optimization strategy configuration ──
@@ -224,252 +146,280 @@ const TRIPARTY_CONFIGS: TripartyConfig[] = [
 interface OptimizationConfig {
   strategy: string;
   description: string;
-  baseCurrent: number;
-  baseOptimized: number;
-  volatility: number;
+  baseCostBps: number;
+  baseOptimizedBps: number;
   feasibility: 'HIGH' | 'MEDIUM' | 'LOW';
+  baseFreedCollateral: number;
+  volatility: number;
 }
 
 const OPTIMIZATION_CONFIGS: OptimizationConfig[] = [
-  { strategy: 'Cheapest-to-Deliver', description: 'Replace high-haircut collateral with lower-haircut UST', baseCurrent: 42.5, baseOptimized: 28.3, volatility: 3.0, feasibility: 'HIGH' },
-  { strategy: 'Collateral Upgrade Trade', description: 'Swap IG corporate for UST via repo to reduce haircut drag', baseCurrent: 38.2, baseOptimized: 22.1, volatility: 4.0, feasibility: 'HIGH' },
-  { strategy: 'Collateral Downgrade Trade', description: 'Lend UST and receive equities plus fee income', baseCurrent: 15.8, baseOptimized: 11.2, volatility: 2.0, feasibility: 'MEDIUM' },
-  { strategy: 'Netting Optimization', description: 'Consolidate bilateral CSAs to reduce gross margin', baseCurrent: 56.4, baseOptimized: 41.8, volatility: 5.0, feasibility: 'MEDIUM' },
-  { strategy: 'CCP Migration', description: 'Move eligible bilateral trades to CCP for margin offset', baseCurrent: 24.6, baseOptimized: 16.9, volatility: 3.5, feasibility: 'HIGH' },
-  { strategy: 'Cross-Currency Optimization', description: 'Substitute EUR-denominated collateral with USD equiv via FX swap', baseCurrent: 18.9, baseOptimized: 14.5, volatility: 2.5, feasibility: 'LOW' },
+  { strategy: 'Cheapest-to-Deliver Substitution', description: 'Replace high-haircut corporates with government bonds to reduce margin drag', baseCostBps: 42.5, baseOptimizedBps: 28.3, feasibility: 'HIGH', baseFreedCollateral: 1250, volatility: 3.0 },
+  { strategy: 'Collateral Upgrade Trade', description: 'Swap IG corporates for UST via repo to reduce haircut from 8% to 2%', baseCostBps: 38.2, baseOptimizedBps: 22.1, feasibility: 'HIGH', baseFreedCollateral: 980, volatility: 4.0 },
+  { strategy: 'Cross-Currency Optimization', description: 'Substitute EUR collateral with USD equivalent via FX swap to eliminate cross-currency add-on', baseCostBps: 18.9, baseOptimizedBps: 14.5, feasibility: 'LOW', baseFreedCollateral: 420, volatility: 2.5 },
+  { strategy: 'Netting Optimization', description: 'Consolidate bilateral CSAs to reduce gross margin requirements', baseCostBps: 56.4, baseOptimizedBps: 41.8, feasibility: 'MEDIUM', baseFreedCollateral: 1850, volatility: 5.0 },
+  { strategy: 'CCP Migration', description: 'Move eligible bilateral trades to CCP for portfolio margining benefits', baseCostBps: 24.6, baseOptimizedBps: 16.9, feasibility: 'HIGH', baseFreedCollateral: 760, volatility: 3.5 },
+  { strategy: 'Collateral Rehypothecation', description: 'Reinvest received collateral into higher-yielding securities within CSA constraints', baseCostBps: 12.4, baseOptimizedBps: 8.1, feasibility: 'MEDIUM', baseFreedCollateral: 340, volatility: 2.0 },
+];
+
+// ── Margin call configuration ──
+
+interface MarginCallConfig {
+  counterparty: string;
+  direction: 'ISSUED' | 'RECEIVED';
+  baseAmount: number;
+  currency: string;
+  collateralType: string;
+  statusWeights: [number, number, number, number, number]; // PENDING, AGREED, DISPUTED, SETTLED, PARTIALLY_SETTLED
+  daysAgoBase: number;
+  volatility: number;
+}
+
+const MARGIN_CALL_CONFIGS: MarginCallConfig[] = [
+  { counterparty: 'Goldman Sachs', direction: 'ISSUED', baseAmount: 185, currency: 'USD', collateralType: 'UST 10Y', statusWeights: [0.40, 0.20, 0.10, 0.20, 0.10], daysAgoBase: 0, volatility: 0.15 },
+  { counterparty: 'JP Morgan', direction: 'RECEIVED', baseAmount: 240, currency: 'USD', collateralType: 'Cash', statusWeights: [0.10, 0.15, 0.05, 0.60, 0.10], daysAgoBase: 2, volatility: 0.12 },
+  { counterparty: 'Morgan Stanley', direction: 'ISSUED', baseAmount: 125, currency: 'USD', collateralType: 'Agency MBS', statusWeights: [0.50, 0.15, 0.15, 0.10, 0.10], daysAgoBase: 0, volatility: 0.18 },
+  { counterparty: 'Citadel Securities', direction: 'RECEIVED', baseAmount: 310, currency: 'USD', collateralType: 'Cash', statusWeights: [0.05, 0.10, 0.05, 0.70, 0.10], daysAgoBase: 3, volatility: 0.10 },
+  { counterparty: 'Barclays', direction: 'ISSUED', baseAmount: 95, currency: 'EUR', collateralType: 'Bunds', statusWeights: [0.35, 0.25, 0.10, 0.20, 0.10], daysAgoBase: 1, volatility: 0.14 },
+  { counterparty: 'Deutsche Bank', direction: 'RECEIVED', baseAmount: 175, currency: 'EUR', collateralType: 'Cash', statusWeights: [0.15, 0.20, 0.10, 0.45, 0.10], daysAgoBase: 1, volatility: 0.13 },
+  { counterparty: 'BNP Paribas', direction: 'ISSUED', baseAmount: 210, currency: 'USD', collateralType: 'UST 5Y', statusWeights: [0.45, 0.15, 0.20, 0.10, 0.10], daysAgoBase: 0, volatility: 0.16 },
+  { counterparty: 'UBS', direction: 'RECEIVED', baseAmount: 155, currency: 'CHF', collateralType: 'Swiss Govt', statusWeights: [0.20, 0.25, 0.05, 0.40, 0.10], daysAgoBase: 2, volatility: 0.11 },
+  { counterparty: 'HSBC', direction: 'ISSUED', baseAmount: 88, currency: 'GBP', collateralType: 'Gilts', statusWeights: [0.30, 0.30, 0.05, 0.25, 0.10], daysAgoBase: 1, volatility: 0.12 },
+  { counterparty: 'Societe Generale', direction: 'RECEIVED', baseAmount: 145, currency: 'EUR', collateralType: 'OATs', statusWeights: [0.10, 0.15, 0.15, 0.50, 0.10], daysAgoBase: 4, volatility: 0.14 },
+  { counterparty: 'Goldman Sachs', direction: 'RECEIVED', baseAmount: 280, currency: 'USD', collateralType: 'Cash', statusWeights: [0.05, 0.10, 0.05, 0.70, 0.10], daysAgoBase: 5, volatility: 0.10 },
+  { counterparty: 'Morgan Stanley', direction: 'RECEIVED', baseAmount: 195, currency: 'USD', collateralType: 'UST 2Y', statusWeights: [0.08, 0.12, 0.05, 0.65, 0.10], daysAgoBase: 4, volatility: 0.11 },
 ];
 
 // ── Data generation ──
 
-function generateCollateralPool(rng: () => number): CollateralPoolEntry[] {
-  return POOL_CONFIGS.map((cfg) => {
-    const totalJitter = (rng() - 0.5) * cfg.baseTotal * cfg.volatility * 2;
-    const totalAvailable = Math.round(cfg.baseTotal + totalJitter);
+function generateAssetClassBreakdown(rng: () => number): AssetClassBreakdown[] {
+  const entries = ASSET_CLASS_CONFIGS.map((cfg) => {
+    const mvJitter = (rng() - 0.5) * cfg.baseMarketValue * cfg.volatility * 2;
+    const marketValue = Math.round(cfg.baseMarketValue + mvJitter);
 
     const pledgedPctJitter = (rng() - 0.5) * 0.10;
-    const pledgedPct = Math.max(0.30, Math.min(0.90, cfg.basePledgedPct + pledgedPctJitter));
-    const pledged = Math.round(totalAvailable * pledgedPct);
-    const free = totalAvailable - pledged;
+    const pledgedPct = Math.max(0.20, Math.min(0.95, cfg.basePledgedPct + pledgedPctJitter));
+    const pledged = Math.round(marketValue * pledgedPct);
+    const available = marketValue - pledged;
 
-    const haircutJitter = (rng() - 0.5) * cfg.baseHaircut * 0.15;
-    const haircutPct = Math.round((cfg.baseHaircut + haircutJitter) * 100) / 100;
+    const haircutJitter = cfg.baseHaircutPct > 0 ? (rng() - 0.5) * cfg.baseHaircutPct * 0.12 : 0;
+    const haircutPct = Math.round((cfg.baseHaircutPct + haircutJitter) * 100) / 100;
+
+    const haircutAdjustedValue = Math.round(marketValue * (1 - haircutPct / 100));
 
     return {
-      type: cfg.type,
-      totalAvailable,
+      assetClass: cfg.assetClass,
+      marketValue,
       pledged,
-      free,
+      available,
       haircutPct,
+      haircutAdjustedValue,
+      pctOfPool: 0, // computed after totals
     };
   });
+
+  const totalMV = entries.reduce((sum, e) => sum + e.marketValue, 0);
+  entries.forEach((e) => {
+    e.pctOfPool = Math.round((e.marketValue / totalMV) * 1000) / 10;
+  });
+
+  return entries;
 }
 
-function generateMarginRequirements(rng: () => number): MarginRequirement[] {
-  return MARGIN_CONFIGS.map((cfg) => {
-    const imJitter = (rng() - 0.5) * cfg.baseIM * cfg.volatility * 2;
-    const initialMargin = Math.round(cfg.baseIM + imJitter);
+function generatePoolSummary(breakdown: AssetClassBreakdown[]): CollateralPoolSummary {
+  const totalEligible = breakdown.reduce((sum, e) => sum + e.marketValue, 0);
+  const totalPledged = breakdown.reduce((sum, e) => sum + e.pledged, 0);
+  const excessCollateral = totalEligible - totalPledged;
+  const haircutAdjustedValue = breakdown.reduce((sum, e) => sum + e.haircutAdjustedValue, 0);
 
-    const vmJitter = (rng() - 0.5) * cfg.baseVM * cfg.volatility * 2;
-    const variationMargin = Math.round(cfg.baseVM + vmJitter);
+  return { totalEligible, totalPledged, excessCollateral, haircutAdjustedValue };
+}
 
+function generateCounterpartyExposures(rng: () => number): CounterpartyExposure[] {
+  return COUNTERPARTY_CONFIGS.map((cfg) => {
     const expJitter = (rng() - 0.5) * cfg.baseExposure * cfg.volatility * 2;
-    const currentExposure = Math.round(cfg.baseExposure + expJitter);
+    const totalExposure = Math.round(cfg.baseExposure + expJitter);
 
-    const threshJitter = (rng() - 0.5) * cfg.baseThreshold * 0.05;
-    const threshold = Math.round(cfg.baseThreshold + threshJitter);
+    const receivedPctJitter = (rng() - 0.5) * 0.08;
+    const receivedPct = Math.max(0.40, Math.min(0.80, cfg.baseReceivedPct + receivedPctJitter));
+    const collateralReceived = Math.round(totalExposure * receivedPct);
 
-    const excessDeficit = threshold - currentExposure;
+    const postedPctJitter = (rng() - 0.5) * 0.08;
+    const postedPct = Math.max(0.20, Math.min(0.60, cfg.basePostedPct + postedPctJitter));
+    const collateralPosted = Math.round(totalExposure * postedPct);
+
+    const netExposure = collateralReceived - collateralPosted;
+
+    // Margin calls pending: base +/- small jitter
+    const callJitter = Math.floor(rng() * 3) - 1;
+    const marginCallsPending = Math.max(0, cfg.baseMarginCalls + callJitter);
+    const marginCallsAmount = marginCallsPending > 0
+      ? Math.round(totalExposure * 0.02 * marginCallsPending * (0.8 + rng() * 0.4))
+      : 0;
+
+    // Disputes
+    const hasDispute = rng() < cfg.baseDisputeRate * 3;
+    const disputeCount = hasDispute ? Math.max(1, Math.floor(rng() * 3)) : 0;
+    const disputeAmount = disputeCount > 0
+      ? Math.round(totalExposure * 0.005 * disputeCount * (0.7 + rng() * 0.6))
+      : 0;
 
     return {
-      product: cfg.product,
-      initialMargin,
-      variationMargin,
-      currentExposure,
-      threshold,
-      excessDeficit,
+      counterparty: cfg.name,
+      totalExposure,
+      collateralReceived,
+      collateralPosted,
+      netExposure,
+      marginCallsPending,
+      marginCallsAmount,
+      disputeCount,
+      disputeAmount,
+      rating: cfg.rating,
     };
   });
 }
 
-function generateHaircutSchedule(rng: () => number): HaircutScheduleEntry[] {
-  return HAIRCUT_CONFIGS.map((cfg) => {
-    const jitter = () => (rng() - 0.5) * 0.6;
+function generateOptimizationMetrics(rng: () => number): OptimizationMetric[] {
+  return OPTIMIZATION_CONFIGS.map((cfg) => {
+    const costJitter = (rng() - 0.5) * cfg.volatility * 2;
+    const currentCostBps = Math.round((cfg.baseCostBps + costJitter) * 10) / 10;
+
+    const optJitter = (rng() - 0.5) * cfg.volatility * 1.5;
+    const optimizedCostBps = Math.round((cfg.baseOptimizedBps + optJitter) * 10) / 10;
+
+    const savingsBps = Math.round((currentCostBps - optimizedCostBps) * 10) / 10;
+
+    const freedJitter = (rng() - 0.5) * cfg.baseFreedCollateral * 0.15;
+    const estimatedFreedCollateral = Math.round(cfg.baseFreedCollateral + freedJitter);
+
     return {
-      collateralType: cfg.collateralType,
-      ratingAAA: Math.round((cfg.baseAAA + jitter()) * 100) / 100,
-      ratingAA: Math.round((cfg.baseAA + jitter()) * 100) / 100,
-      ratingA: Math.round((cfg.baseA + jitter()) * 100) / 100,
-      ratingBBB: Math.round((cfg.baseBBB + jitter()) * 100) / 100,
-      ratingBelow: Math.round((cfg.baseBelow + jitter()) * 100) / 100,
+      strategy: cfg.strategy,
+      description: cfg.description,
+      currentCostBps,
+      optimizedCostBps,
+      savingsBps,
+      feasibility: cfg.feasibility,
+      estimatedFreedCollateral,
     };
   });
 }
 
-function generateConcentrationLimits(rng: () => number): ConcentrationLimit[] {
-  return CONCENTRATION_CONFIGS.map((cfg) => {
-    const utilJitter = (rng() - 0.5) * cfg.volatility * 2;
-    const currentUtilization = Math.round((cfg.baseUtilization + utilJitter) * 10) / 10;
-    const utilizationPct = Math.round((currentUtilization / cfg.baseLimit) * 1000) / 10;
-
-    let status: 'OK' | 'WARNING' | 'BREACH';
-    if (utilizationPct >= 100) {
-      status = 'BREACH';
-    } else if (utilizationPct >= 85) {
-      status = 'WARNING';
-    } else {
-      status = 'OK';
-    }
-
-    return {
-      dimension: cfg.dimension,
-      name: cfg.name,
-      limit: cfg.baseLimit,
-      currentUtilization,
-      utilizationPct,
-      status,
-    };
-  });
-}
-
-function generateSubstitutionRequests(rng: () => number): SubstitutionRequest[] {
+function generateMarginCallTimeline(rng: () => number): MarginCallEntry[] {
   const today = new Date();
-  return SUBSTITUTION_CONFIGS.map((cfg, idx) => {
-    const daysAgo = Math.floor(rng() * 5);
-    const requestDate = new Date(today);
-    requestDate.setDate(requestDate.getDate() - daysAgo);
+  const statuses: MarginCallEntry['status'][] = ['PENDING', 'AGREED', 'DISPUTED', 'SETTLED', 'PARTIALLY_SETTLED'];
 
-    const notionalJitter = (rng() - 0.5) * cfg.baseNotional * 0.20;
-    const notional = Math.round(cfg.baseNotional + notionalJitter);
+  return MARGIN_CALL_CONFIGS.map((cfg, idx) => {
+    const daysAgoJitter = Math.floor(rng() * 2);
+    const daysAgo = cfg.daysAgoBase + daysAgoJitter;
+    const callDate = new Date(today);
+    callDate.setDate(callDate.getDate() - daysAgo);
+
+    const deadlineOffset = 1 + Math.floor(rng() * 2); // 1-2 business days from call
+    const responseDeadline = new Date(callDate);
+    responseDeadline.setDate(responseDeadline.getDate() + deadlineOffset);
+
+    const amtJitter = (rng() - 0.5) * cfg.baseAmount * cfg.volatility * 2;
+    const amount = Math.round(cfg.baseAmount + amtJitter);
 
     // Determine status from weighted random
     const roll = rng();
-    const [pPending, pApproved, pRejected] = cfg.statusWeights;
-    let status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SETTLED';
-    if (roll < pPending) {
-      status = 'PENDING';
-    } else if (roll < pPending + pApproved) {
-      status = 'APPROVED';
-    } else if (roll < pPending + pApproved + pRejected) {
-      status = 'REJECTED';
-    } else {
-      status = 'SETTLED';
+    let cumulative = 0;
+    let status: MarginCallEntry['status'] = 'PENDING';
+    for (let i = 0; i < cfg.statusWeights.length; i++) {
+      cumulative += cfg.statusWeights[i];
+      if (roll < cumulative) {
+        status = statuses[i];
+        break;
+      }
     }
 
     return {
-      id: `SUB-${String(idx + 1).padStart(4, '0')}`,
-      requestDate: requestDate.toISOString().slice(0, 10),
+      id: `MC-${new Date().getFullYear()}-${String(idx + 1).padStart(4, '0')}`,
       counterparty: cfg.counterparty,
-      outCollateral: cfg.outCollateral,
-      inCollateral: cfg.inCollateral,
-      notional,
+      direction: cfg.direction,
+      amount,
+      currency: cfg.currency,
+      callDate: callDate.toISOString().slice(0, 10),
+      responseDeadline: responseDeadline.toISOString().slice(0, 10),
       status,
-    };
-  });
-}
-
-function generateTripartyBalances(rng: () => number): TripartyBalance[] {
-  return TRIPARTY_CONFIGS.map((cfg) => {
-    const balJitter = (rng() - 0.5) * cfg.baseBalance * cfg.volatility * 2;
-    const totalBalance = Math.round(cfg.baseBalance + balJitter);
-
-    const allocPctJitter = (rng() - 0.5) * 0.08;
-    const allocPct = Math.max(0.60, Math.min(0.95, cfg.baseAllocatedPct + allocPctJitter));
-    const allocated = Math.round(totalBalance * allocPct);
-    const unallocated = totalBalance - allocated;
-
-    const utilizationPct = Math.round(allocPct * 1000) / 10;
-
-    const issuerJitter = Math.floor((rng() - 0.5) * cfg.baseEligibleIssuers * 0.08);
-    const eligibleIssuers = cfg.baseEligibleIssuers + issuerJitter;
-
-    return {
-      agent: cfg.agent,
-      totalBalance,
-      allocated,
-      unallocated,
-      utilizationPct,
-      eligibleIssuers,
+      collateralType: cfg.collateralType,
     };
   });
 }
 
 function generateRegulatoryMetrics(rng: () => number): RegulatoryMetrics {
-  // UMR: Uncleared Margin Rules - AANA threshold is EUR 8B
-  const umrThreshold = 8000; // $M equivalent
-  const aanaJitter = (rng() - 0.5) * 3000;
-  const umrCurrentAANA = Math.round(12500 + aanaJitter); // Above threshold = in scope
-  const umrCompliant = true; // Most large firms are compliant by now
+  // Initial Margin across all counterparties
+  const imBase = 12500;
+  const imJitter = (rng() - 0.5) * imBase * 0.08;
+  const initialMarginTotal = Math.round(imBase + imJitter);
 
-  // ISDA SIMM calculations
-  const simmBase = 4850;
-  const simmJitter = (rng() - 0.5) * simmBase * 0.10;
-  const simmInitialMargin = Math.round(simmBase + simmJitter);
+  // Variation Margin
+  const vmBase = 4200;
+  const vmJitter = (rng() - 0.5) * vmBase * 0.10;
+  const variationMarginTotal = Math.round(vmBase + vmJitter);
 
-  // Grid/schedule margin for comparison
-  const gridBase = 6200;
-  const gridJitter = (rng() - 0.5) * gridBase * 0.08;
+  // ISDA SIMM calculation
+  const simmBase = 9800;
+  const simmJitter = (rng() - 0.5) * simmBase * 0.08;
+  const simmMargin = Math.round(simmBase + simmJitter);
+
+  // Grid/Schedule comparison
+  const gridBase = 13400;
+  const gridJitter = (rng() - 0.5) * gridBase * 0.06;
   const gridScheduleMargin = Math.round(gridBase + gridJitter);
 
-  // Minimum transfer amount and excess
-  const minTransferAmount = 500; // $K
-  const excessBase = 850;
-  const excessJitter = (rng() - 0.5) * 400;
-  const excessOverMinTransfer = Math.round(excessBase + excessJitter);
+  const simmVsGridSavings = gridScheduleMargin - simmMargin;
+
+  // UMR: Uncleared Margin Rules
+  const umrThresholdEur = 8000; // EUR 8B in millions
+  const aanaBase = 14500;
+  const aanaJitter = (rng() - 0.5) * 3000;
+  const currentAANA = Math.round(aanaBase + aanaJitter);
+
+  // Minimum transfer amount and thresholds
+  const minimumTransferAmount = 500; // $K standard ISDA
+  const independentAmountBase = 2200;
+  const iaJitter = (rng() - 0.5) * independentAmountBase * 0.10;
+  const independentAmount = Math.round(independentAmountBase + iaJitter);
+
+  const thresholdBase = 25000;
+  const thresholdJitter = (rng() - 0.5) * thresholdBase * 0.05;
+  const threshold = Math.round(thresholdBase + thresholdJitter);
 
   return {
-    umrCompliant,
-    umrThreshold,
-    umrCurrentAANA,
-    simmInitialMargin,
+    initialMarginTotal,
+    variationMarginTotal,
+    simmMargin,
     simmModelVersion: 'ISDA SIMM v2.6',
     gridScheduleMargin,
-    excessOverMinTransfer,
-    minTransferAmount,
+    simmVsGridSavings,
+    umrCompliant: true,
+    umrPhase: 6,
+    umrThresholdEur,
+    currentAANA,
+    minimumTransferAmount,
+    independentAmount,
+    threshold,
   };
 }
 
-function generateCollateralOptimization(rng: () => number): CollateralOptimizationEntry[] {
-  return OPTIMIZATION_CONFIGS.map((cfg) => {
-    const currentJitter = (rng() - 0.5) * cfg.volatility * 2;
-    const currentCost = Math.round((cfg.baseCurrent + currentJitter) * 10) / 10;
-
-    const optimizedJitter = (rng() - 0.5) * cfg.volatility * 1.5;
-    const optimizedCost = Math.round((cfg.baseOptimized + optimizedJitter) * 10) / 10;
-
-    const savingsBps = Math.round((currentCost - optimizedCost) * 10) / 10;
-
-    return {
-      strategy: cfg.strategy,
-      description: cfg.description,
-      currentCost,
-      optimizedCost,
-      savingsBps,
-      feasibility: cfg.feasibility,
-    };
-  });
-}
-
 function generateCollateralManagementData(): CollateralManagementResponse {
-  const rng = seededRandom('collateral-management');
+  const rng = seededRandom('collateral-mgmt-dashboard');
 
-  const collateralPool = generateCollateralPool(rng);
-  const marginRequirements = generateMarginRequirements(rng);
-  const haircutSchedule = generateHaircutSchedule(rng);
-  const concentrationLimits = generateConcentrationLimits(rng);
-  const substitutionRequests = generateSubstitutionRequests(rng);
-  const tripartyBalances = generateTripartyBalances(rng);
+  const assetClassBreakdown = generateAssetClassBreakdown(rng);
+  const poolSummary = generatePoolSummary(assetClassBreakdown);
+  const counterpartyExposures = generateCounterpartyExposures(rng);
+  const optimizationMetrics = generateOptimizationMetrics(rng);
+  const marginCallTimeline = generateMarginCallTimeline(rng);
   const regulatoryMetrics = generateRegulatoryMetrics(rng);
-  const collateralOptimization = generateCollateralOptimization(rng);
 
   return {
-    collateralPool,
-    marginRequirements,
-    haircutSchedule,
-    concentrationLimits,
-    substitutionRequests,
-    tripartyBalances,
+    poolSummary,
+    assetClassBreakdown,
+    counterpartyExposures,
+    optimizationMetrics,
+    marginCallTimeline,
     regulatoryMetrics,
-    collateralOptimization,
     timestamp: new Date().toISOString(),
   };
 }
@@ -492,7 +442,7 @@ router.get('/', (_req, res) => {
     if (cache.data) {
       return res.json(cache.data);
     }
-    res.status(500).json({ error: 'Failed to generate collateral management data' });
+    res.status(502).json({ error: 'Failed to generate collateral management data' });
   }
 });
 
