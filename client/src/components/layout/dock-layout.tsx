@@ -439,6 +439,9 @@ const BreakevenInflationPanel = lazy(() => import('../panels/breakeven-inflation
 const FxCarryPanel = lazy(() => import('../panels/fx-carry-panel').then(m => ({ default: m.FxCarryPanel })));
 const OptionsSkewPanel = lazy(() => import('../panels/options-skew-panel').then(m => ({ default: m.OptionsSkewPanel })));
 const QuantFactorPanel = lazy(() => import('../panels/quant-factor-panel').then(m => ({ default: m.QuantFactorPanel })));
+const CrossCurrencyBasisPanel = lazy(() => import('../panels/cross-currency-basis-panel').then(m => ({ default: m.CrossCurrencyBasisPanel })));
+const FundFlowPanel = lazy(() => import('../panels/fund-flow-panel').then(m => ({ default: m.FundFlowPanel })));
+const LeveragedLoanPanel = lazy(() => import('../panels/leveraged-loan-panel').then(m => ({ default: m.LeveragedLoanPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -888,6 +891,9 @@ export const PANEL_IDS = {
   FX_CARRY: 'fx-carry',
   OPTIONS_SKEW: 'options-skew',
   QUANT_FACTOR: 'quant-factor',
+  CROSS_CURRENCY_BASIS: 'cross-currency-basis',
+  FUND_FLOW: 'fund-flow',
+  LEVERAGED_LOAN: 'leveraged-loan',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1321,6 +1327,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.FX_CARRY]: 'FX CARRY',
   [PANEL_IDS.OPTIONS_SKEW]: 'OPTIONS SKEW',
   [PANEL_IDS.QUANT_FACTOR]: 'QUANT FACTOR',
+  [PANEL_IDS.CROSS_CURRENCY_BASIS]: 'CROSS-CURRENCY BASIS',
+  [PANEL_IDS.FUND_FLOW]: 'FUND FLOW',
+  [PANEL_IDS.LEVERAGED_LOAN]: 'LEVERAGED LOAN',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1755,6 +1764,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.FX_CARRY]: 'panelFxCarry',
   [PANEL_IDS.OPTIONS_SKEW]: 'panelOptionsSkew',
   [PANEL_IDS.QUANT_FACTOR]: 'panelQuantFactor',
+  [PANEL_IDS.CROSS_CURRENCY_BASIS]: 'panelCrossCurrencyBasis',
+  [PANEL_IDS.FUND_FLOW]: 'panelFundFlow',
+  [PANEL_IDS.LEVERAGED_LOAN]: 'panelLeveragedLoan',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2485,6 +2497,9 @@ export function DockLayout() {
       case PANEL_IDS.FX_CARRY: content = <LazyWrap><FxCarryPanel /></LazyWrap>; break;
       case PANEL_IDS.OPTIONS_SKEW: content = <LazyWrap><OptionsSkewPanel /></LazyWrap>; break;
       case PANEL_IDS.QUANT_FACTOR: content = <LazyWrap><QuantFactorPanel /></LazyWrap>; break;
+      case PANEL_IDS.CROSS_CURRENCY_BASIS: content = <LazyWrap><CrossCurrencyBasisPanel /></LazyWrap>; break;
+      case PANEL_IDS.FUND_FLOW: content = <LazyWrap><FundFlowPanel /></LazyWrap>; break;
+      case PANEL_IDS.LEVERAGED_LOAN: content = <LazyWrap><LeveragedLoanPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

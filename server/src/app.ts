@@ -432,6 +432,9 @@ import breakevenInflationRouter from './routes/breakeven-inflation.js';
 import fxCarryRouter from './routes/fx-carry.js';
 import optionsSkewRouter from './routes/options-skew.js';
 import quantFactorRouter from './routes/quant-factor.js';
+import crossCurrencyBasisRouter from './routes/cross-currency-basis.js';
+import fundFlowRouter from './routes/fund-flow.js';
+import leveragedLoanRouter from './routes/leveraged-loan.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -965,6 +968,9 @@ export function createApp() {
   app.use('/api/fx-carry', fxCarryRouter);
   app.use('/api/options-skew', optionsSkewRouter);
   app.use('/api/quant-factor', quantFactorRouter);
+  app.use('/api/cross-currency-basis', crossCurrencyBasisRouter);
+  app.use('/api/fund-flow', fundFlowRouter);
+  app.use('/api/leveraged-loan', leveragedLoanRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
