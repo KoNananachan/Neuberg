@@ -1613,6 +1613,9 @@ const en = {
   panelGreenBond: 'GREEN BOND',
 
   panelLiquidityMonitor: 'LIQUIDITY MONITOR',
+  panelCoveredBond: 'COVERED BOND',
+  panelInflationLinkedBond: 'INFLATION-LINKED BOND',
+  panelCorrelationRisk: 'CORRELATION RISK',
   ddNoData: 'No drawdown data available',
   ddSummary: 'Summary',
   ddMaxDrawdown: 'Max Drawdown',
@@ -3110,6 +3113,9 @@ const zh: Record<TranslationKey, string> = {
   panelGreenBond: '绿色债券',
 
   panelLiquidityMonitor: '流动性监控',
+  panelCoveredBond: '担保债券',
+  panelInflationLinkedBond: '通胀挂钩债券',
+  panelCorrelationRisk: '相关性风险',
   ddNoData: '暂无回撤数据',
   ddSummary: '概览',
   ddMaxDrawdown: '最大回撤',
@@ -4602,6 +4608,9 @@ const ja: Record<TranslationKey, string> = {
   panelGreenBond: 'グリーンボンド',
 
   panelLiquidityMonitor: '流動性モニター',
+  panelCoveredBond: 'カバードボンド',
+  panelInflationLinkedBond: '物価連動債',
+  panelCorrelationRisk: '相関リスク',
   ddNoData: 'ドローダウンデータなし',
   ddSummary: '概要',
   ddMaxDrawdown: '最大DD',
@@ -6094,6 +6103,9 @@ const ko: Record<TranslationKey, string> = {
   panelGreenBond: '녹색 채권',
 
   panelLiquidityMonitor: '유동성 모니터',
+  panelCoveredBond: '커버드 본드',
+  panelInflationLinkedBond: '물가연동채권',
+  panelCorrelationRisk: '상관관계 리스크',
   ddNoData: '드로다운 데이터 없음',
   ddSummary: '요약',
   ddMaxDrawdown: '최대 DD',
@@ -7586,6 +7598,9 @@ const es: Record<TranslationKey, string> = {
   panelGreenBond: 'BONO VERDE',
 
   panelLiquidityMonitor: 'MONITOR DE LIQUIDEZ',
+  panelCoveredBond: 'BONO GARANTIZADO',
+  panelInflationLinkedBond: 'BONO LIGADO A INFLACION',
+  panelCorrelationRisk: 'RIESGO DE CORRELACION',
   ddNoData: 'Sin datos de drawdown',
   ddSummary: 'Resumen',
   ddMaxDrawdown: 'DD Max',
@@ -9078,6 +9093,9 @@ const fr: Record<TranslationKey, string> = {
   panelGreenBond: 'OBLIGATION VERTE',
 
   panelLiquidityMonitor: 'MONITEUR DE LIQUIDITE',
+  panelCoveredBond: 'OBLIGATION FONCIERE',
+  panelInflationLinkedBond: 'OBLIGATION INDEXEE INFLATION',
+  panelCorrelationRisk: 'RISQUE DE CORRELATION',
   ddNoData: 'Pas de donnees de drawdown',
   ddSummary: 'Resume',
   ddMaxDrawdown: 'DD Max',
