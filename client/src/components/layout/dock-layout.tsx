@@ -424,6 +424,9 @@ const RealEstateInvestmentPanel = lazy(() => import('../panels/real-estate-inves
 const GlobalDebtClockPanel = lazy(() => import('../panels/global-debt-clock-panel').then(m => ({ default: m.GlobalDebtClockPanel })));
 const AITechCapexPanel = lazy(() => import('../panels/ai-tech-capex-panel').then(m => ({ default: m.AITechCapexPanel })));
 const CriticalMineralsPanel = lazy(() => import('../panels/critical-minerals-panel').then(m => ({ default: m.CriticalMineralsPanel })));
+const NuclearEnergyPanel = lazy(() => import('../panels/nuclear-energy-panel').then(m => ({ default: m.NuclearEnergyPanel })));
+const WaterMarketPanel = lazy(() => import('../panels/water-market-panel').then(m => ({ default: m.WaterMarketPanel })));
+const SpaceEconomyPanel = lazy(() => import('../panels/space-economy-panel').then(m => ({ default: m.SpaceEconomyPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -858,6 +861,9 @@ export const PANEL_IDS = {
   GLOBAL_DEBT_CLOCK: 'global-debt-clock',
   AI_TECH_CAPEX: 'ai-tech-capex',
   CRITICAL_MINERALS: 'critical-minerals',
+  NUCLEAR_ENERGY: 'nuclear-energy',
+  WATER_MARKET: 'water-market',
+  SPACE_ECONOMY: 'space-economy',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1276,6 +1282,9 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.GLOBAL_DEBT_CLOCK]: 'GLOBAL DEBT CLOCK',
   [PANEL_IDS.AI_TECH_CAPEX]: 'AI & TECH CAPEX',
   [PANEL_IDS.CRITICAL_MINERALS]: 'CRITICAL MINERALS',
+  [PANEL_IDS.NUCLEAR_ENERGY]: 'NUCLEAR ENERGY',
+  [PANEL_IDS.WATER_MARKET]: 'WATER MARKET',
+  [PANEL_IDS.SPACE_ECONOMY]: 'SPACE ECONOMY',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -1695,6 +1704,9 @@ export const PANEL_NAME_KEYS: Record<string, TranslationKey> = {
   [PANEL_IDS.GLOBAL_DEBT_CLOCK]: 'panelGlobalDebtClock',
   [PANEL_IDS.AI_TECH_CAPEX]: 'panelAITechCapex',
   [PANEL_IDS.CRITICAL_MINERALS]: 'panelCriticalMinerals',
+  [PANEL_IDS.NUCLEAR_ENERGY]: 'panelNuclearEnergy',
+  [PANEL_IDS.WATER_MARKET]: 'panelWaterMarket',
+  [PANEL_IDS.SPACE_ECONOMY]: 'panelSpaceEconomy',
 };
 
 /** Get localized panel name (non-hook, reads locale from store directly) */
@@ -2410,6 +2422,9 @@ export function DockLayout() {
       case PANEL_IDS.GLOBAL_DEBT_CLOCK: content = <LazyWrap><GlobalDebtClockPanel /></LazyWrap>; break;
       case PANEL_IDS.AI_TECH_CAPEX: content = <LazyWrap><AITechCapexPanel /></LazyWrap>; break;
       case PANEL_IDS.CRITICAL_MINERALS: content = <LazyWrap><CriticalMineralsPanel /></LazyWrap>; break;
+      case PANEL_IDS.NUCLEAR_ENERGY: content = <LazyWrap><NuclearEnergyPanel /></LazyWrap>; break;
+      case PANEL_IDS.WATER_MARKET: content = <LazyWrap><WaterMarketPanel /></LazyWrap>; break;
+      case PANEL_IDS.SPACE_ECONOMY: content = <LazyWrap><SpaceEconomyPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;

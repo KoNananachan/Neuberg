@@ -417,6 +417,9 @@ import realEstateInvestmentRouter from './routes/real-estate-investment.js';
 import globalDebtClockRouter from './routes/global-debt-clock.js';
 import aiTechCapexRouter from './routes/ai-tech-capex.js';
 import criticalMineralsRouter from './routes/critical-minerals.js';
+import nuclearEnergyRouter from './routes/nuclear-energy.js';
+import waterMarketRouter from './routes/water-market.js';
+import spaceEconomyRouter from './routes/space-economy.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -935,6 +938,9 @@ export function createApp() {
   app.use('/api/global-debt-clock', globalDebtClockRouter);
   app.use('/api/ai-tech-capex', aiTechCapexRouter);
   app.use('/api/critical-minerals', criticalMineralsRouter);
+  app.use('/api/nuclear-energy', nuclearEnergyRouter);
+  app.use('/api/water-market', waterMarketRouter);
+  app.use('/api/space-economy', spaceEconomyRouter);
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
