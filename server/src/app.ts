@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
+import { lazyRoute } from './lib/lazy-route.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import newsRouter from './routes/news.js';
@@ -62,464 +63,7 @@ import yieldCurveRouter from './routes/yield-curve.js';
 import currencyStrengthRouter from './routes/currency-strength.js';
 import moneyFlowRouter from './routes/money-flow.js';
 import chartRouter from './routes/chart.js';
-import earningsEstimatesRouter from './routes/earnings-estimates.js';
-import crossAssetRouter from './routes/cross-asset.js';
-import holdingsRouter from './routes/holdings.js';
-import sectorPerformanceRouter from './routes/sector-performance.js';
-import etfHoldingsRouter from './routes/etf-holdings.js';
-import drawdownRouter from './routes/drawdown.js';
-import marketRegimeRouter from './routes/market-regime.js';
-import relativeValuationRouter from './routes/relative-valuation.js';
-import confluenceRouter from './routes/confluence.js';
-import ivSurfaceRouter from './routes/iv-surface.js';
-import seasonalityRouter from './routes/seasonality.js';
-import orderFlowRouter from './routes/order-flow.js';
-import portfolioOptimizerRouter from './routes/portfolio-optimizer.js';
-import backtestRouter from './routes/backtest.js';
-import macroDashboardRouter from './routes/macro-dashboard.js';
-import earningsSurpriseRouter from './routes/earnings-surprise.js';
-import futuresCurveRouter from './routes/futures-curve.js';
-import creditSpreadsRouter from './routes/credit-spreads.js';
-import intermarketRouter from './routes/intermarket.js';
-import sectorHeatmapRouter from './routes/sector-heatmap.js';
-import economicSurprisesRouter from './routes/economic-surprises.js';
-import dispersionRouter from './routes/dispersion.js';
-import fundFlowsRouter from './routes/fund-flows.js';
-import volTermStructureRouter from './routes/vol-term-structure.js';
-import macroHeatmapRouter from './routes/macro-heatmap.js';
-import factorExposureRouter from './routes/factor-exposure.js';
-import capitalFlowsRouter from './routes/capital-flows.js';
-import tailRiskRouter from './routes/tail-risk.js';
-import liquidityRouter from './routes/liquidity.js';
-import commoditySpreadsRouter from './routes/commodity-spreads.js';
-import sentimentDashboardRouter from './routes/sentiment-dashboard.js';
-import riskParityRouter from './routes/risk-parity.js';
-import marketAnomaliesRouter from './routes/market-anomalies.js';
-import carryTradeRouter from './routes/carry-trade.js';
-import cotReportRouter from './routes/cot-report.js';
-import ivRankRouter from './routes/iv-rank.js';
-import performanceAttributionRouter from './routes/performance-attribution.js';
-import marketMicrostructureRouter from './routes/market-microstructure.js';
-import positioningRouter from './routes/positioning.js';
-import repoRatesRouter from './routes/repo-rates.js';
-import xccyBasisRouter from './routes/xccy-basis.js';
-import styleBoxRouter from './routes/style-box.js';
-import swapRatesRouter from './routes/swap-rates.js';
-import earningsCalendarRouter from './routes/earnings-calendar.js';
-import corporateCdsRouter from './routes/corporate-cds.js';
-import eventDrivenRouter from './routes/event-driven.js';
-import debtMaturityRouter from './routes/debt-maturity.js';
-import equityRiskPremiumRouter from './routes/equity-risk-premium.js';
-import centralBanksRouter from './routes/central-banks.js';
-import volSkewRouter from './routes/vol-skew.js';
-import globalRatesRouter from './routes/global-rates.js';
-import supplyChainRouter from './routes/supply-chain.js';
-import gammaExposureRouter from './routes/gamma-exposure.js';
-import sovereignSpreadsRouter from './routes/sovereign-spreads.js';
-import earningsRevisionsRouter from './routes/earnings-revisions.js';
-import dividendForecastRouter from './routes/dividend-forecast.js';
-import creditRatingsRouter from './routes/credit-ratings.js';
-import volatilityConeRouter from './routes/volatility-cone.js';
-import termStructureRouter from './routes/term-structure.js';
-import institutionalOwnershipRouter from './routes/institutional-ownership.js';
-import impliedCorrelationRouter from './routes/implied-correlation.js';
-import earningsQualityRouter from './routes/earnings-quality.js';
-import volSurfaceRouter from './routes/vol-surface.js';
-import globalFlowsRouter from './routes/global-flows.js';
-import regressionAnalysisRouter from './routes/regression-analysis.js';
-import covenantMonitorRouter from './routes/covenant-monitor.js';
-import marketInternalsRouter from './routes/market-internals.js';
-import valuationMultiplesRouter from './routes/valuation-multiples.js';
-import fixedIncomeAnalyticsRouter from './routes/fixed-income-analytics.js';
-import insiderSentimentRouter from './routes/insider-sentiment.js';
-import customIndexRouter from './routes/custom-index.js';
-import mbsAnalyticsRouter from './routes/mbs-analytics.js';
-import cdxIndexRouter from './routes/cdx-index.js';
-import muniBondsRouter from './routes/muni-bonds.js';
-import cloAnalyticsRouter from './routes/clo-analytics.js';
-import onchainAnalyticsRouter from './routes/onchain-analytics.js';
-import privateCreditRouter from './routes/private-credit.js';
-import volRiskPremiumRouter from './routes/vol-risk-premium.js';
-import esgRatingsRouter from './routes/esg-ratings.js';
-import freightIndicesRouter from './routes/freight-indices.js';
-import alternativeDataRouter from './routes/alternative-data.js';
-import tradeIdeasRouter from './routes/trade-ideas.js';
-import debtIssuanceRouter from './routes/debt-issuance.js';
-import fxOptionsRouter from './routes/fx-options.js';
-import multiFactorRouter from './routes/multi-factor.js';
-import treasuryAuctionsRouter from './routes/treasury-auctions.js';
-import commodityCurvesRouter from './routes/commodity-curves.js';
-import emBondsRouter from './routes/em-bonds.js';
-import reitMonitorRouter from './routes/reit-monitor.js';
-import moneyMarketRouter from './routes/money-market.js';
-import convertibleBondsRouter from './routes/convertible-bonds.js';
-import globalPmiRouter from './routes/global-pmi.js';
-import leveragedLoansRouter from './routes/leveraged-loans.js';
-import swaptionVolRouter from './routes/swaption-vol.js';
-import distressedDebtRouter from './routes/distressed-debt.js';
-import rateCapsFloorsRouter from './routes/rate-caps-floors.js';
-import dividendSwapsRouter from './routes/dividend-swaps.js';
-import securitiesLendingRouter from './routes/securities-lending.js';
-import varianceSwapsRouter from './routes/variance-swaps.js';
-import carbonCreditsRouter from './routes/carbon-credits.js';
-import weatherDerivativesRouter from './routes/weather-derivatives.js';
-import darkPoolRouter from './routes/dark-pool.js';
-import totalReturnSwapsRouter from './routes/total-return-swaps.js';
-import catBondsRouter from './routes/cat-bonds.js';
-import inflationLinkedBondsRouter from './routes/inflation-linked-bonds.js';
-import equityBasketSwapsRouter from './routes/equity-basket-swaps.js';
-import crossCurrencySwapsRouter from './routes/cross-currency-swaps.js';
-import commodityOptionsRouter from './routes/commodity-options.js';
-import loanCdsRouter from './routes/loan-cds.js';
-import convertibleArbRouter from './routes/convertible-arb.js';
-import shippingRatesRouter from './routes/shipping-rates.js';
-import creditAuctionRouter from './routes/credit-auction.js';
-import muniYieldCurvesRouter from './routes/muni-yield-curves.js';
-import structuredProductsRouter from './routes/structured-products.js';
-import pensionFundRouter from './routes/pension-fund.js';
-import swapSpreadMonitorRouter from './routes/swap-spread-monitor.js';
-import equityLinkedNotesRouter from './routes/equity-linked-notes.js';
-import tradeFinanceRouter from './routes/trade-finance.js';
-import repoMarketRouter from './routes/repo-market.js';
-import commodityInventoryRouter from './routes/commodity-inventory.js';
-import sovereignWealthRouter from './routes/sovereign-wealth.js';
-import agencyMbsTbaRouter from './routes/agency-mbs-tba.js';
-import etfFlowsRouter from './routes/etf-flows.js';
-import creditFlowRouter from './routes/credit-flow.js';
-import commoditySeasonalityRouter from './routes/commodity-seasonality.js';
-import fxVolatilityRouter from './routes/fx-volatility.js';
-import primaryDealerRouter from './routes/primary-dealer.js';
-import realEstateCapitalRouter from './routes/real-estate-capital.js';
-import electricityMarketsRouter from './routes/electricity-markets.js';
-import syndicatedLoansRouter from './routes/syndicated-loans.js';
-import emissionsTradingRouter from './routes/emissions-trading.js';
-import insuranceLinkedRouter from './routes/insurance-linked.js';
-import metalsForwardRouter from './routes/metals-forward.js';
-import centralBankWatchRouter from './routes/central-bank-watch.js';
-import freightDerivativesRouter from './routes/freight-derivatives.js';
-import inflationBreakevensRouter from './routes/inflation-breakevens.js';
-import muniBondAuctionRouter from './routes/muni-bond-auction.js';
-import commodityCurveAnalyticsRouter from './routes/commodity-curve-analytics.js';
-import collateralMonitorRouter from './routes/collateral-monitor.js';
-import sovereignCdsRouter from './routes/sovereign-cds.js';
-import crossAssetMomentumRouter from './routes/cross-asset-momentum.js';
-import cryptoDerivativesRouter from './routes/crypto-derivatives.js';
-import bondRelativeValueRouter from './routes/bond-relative-value.js';
-import volatilityArbitrageRouter from './routes/volatility-arbitrage.js';
-import systematicStrategyRouter from './routes/systematic-strategy.js';
-import fundingRateMonitorRouter from './routes/funding-rate-monitor.js';
-import emLocalRatesRouter from './routes/em-local-rates.js';
-import portfolioRiskAnalyticsRouter from './routes/portfolio-risk-analytics.js';
-import creditIndexMonitorRouter from './routes/credit-index-monitor.js';
-import equityFinancingRouter from './routes/equity-financing.js';
-import globalMacroDashboardRouter from './routes/global-macro-dashboard.js';
-import absRmbsMonitorRouter from './routes/abs-rmbs-monitor.js';
-import liquidityRiskMonitorRouter from './routes/liquidity-risk-monitor.js';
-import fiAttributionRouter from './routes/fi-attribution.js';
-import repoRateHeatmapRouter from './routes/repo-rate-heatmap.js';
-import tradeCompressionRouter from './routes/trade-compression.js';
-import regulatoryCapitalRouter from './routes/regulatory-capital.js';
-import settlementRiskRouter from './routes/settlement-risk.js';
-import swapValuationRouter from './routes/swap-valuation.js';
-import commodityStorageRouter from './routes/commodity-storage.js';
-import counterpartyExposureRouter from './routes/counterparty-exposure.js';
-import marketImpactModelRouter from './routes/market-impact-model.js';
-import structuredNotesRouter from './routes/structured-notes.js';
-import securitiesFinanceRouter from './routes/securities-finance.js';
-import creditCurveBuilderRouter from './routes/credit-curve-builder.js';
-import executionAnalyticsRouter from './routes/execution-analytics.js';
-import bondAuctionCalendarRouter from './routes/bond-auction-calendar.js';
-import fxCarryMonitorRouter from './routes/fx-carry-monitor.js';
-import equityCapitalMarketsRouter from './routes/equity-capital-markets.js';
-import debtCapitalMarketsRouter from './routes/debt-capital-markets.js';
-import hedgeFundMonitorRouter from './routes/hedge-fund-monitor.js';
-import riskDashboardRouter from './routes/risk-dashboard.js';
-import benchmarkTrackerRouter from './routes/benchmark-tracker.js';
-import liquidityCoverageRouter from './routes/liquidity-coverage.js';
-import marketSentimentIndexRouter from './routes/market-sentiment-index.js';
-import portfolioStressTestRouter from './routes/portfolio-stress-test.js';
-import globalLiquidityMonitorRouter from './routes/global-liquidity-monitor.js';
-import tradeRecapRouter from './routes/trade-recap.js';
-import macroSurpriseTrackerRouter from './routes/macro-surprise-tracker.js';
-import fxVolatilitySurfaceRouter from './routes/fx-volatility-surface.js';
-import commodityFundamentalRouter from './routes/commodity-fundamental.js';
-import etfFlowMonitorRouter from './routes/etf-flow-monitor.js';
-import equityFactorMonitorRouter from './routes/equity-factor-monitor.js';
-import ratesStrategyRouter from './routes/rates-strategy.js';
-import creditPortfolioRouter from './routes/credit-portfolio.js';
-import macroRegimeMonitorRouter from './routes/macro-regime-monitor.js';
-import dividendCalendarRouter from './routes/dividend-calendar.js';
-import convertibleArbitrageRouter from './routes/convertible-arbitrage.js';
-import realtimePnlRouter from './routes/realtime-pnl.js';
-import marketBreadthAdvancedRouter from './routes/market-breadth-advanced.js';
-import volatilityDashboardRouter from './routes/volatility-dashboard.js';
-import fiRelativeValueRouter from './routes/fi-relative-value.js';
-import equityScreenResultsRouter from './routes/equity-screen-results.js';
-import crossAssetCorrelationRouter from './routes/cross-asset-correlation.js';
-import portfolioAttributionRouter from './routes/portfolio-attribution.js';
-import ipoCalendarRouter from './routes/ipo-calendar.js';
-import municipalBondMonitorRouter from './routes/municipal-bond-monitor.js';
-import structuredCreditRouter from './routes/structured-credit.js';
-import currencyOptionsRouter from './routes/currency-options.js';
-import swapCurveMonitorRouter from './routes/swap-curve-monitor.js';
-import fundFlowAnalyticsRouter from './routes/fund-flow-analytics.js';
-import tradeCostAnalysisRouter from './routes/trade-cost-analysis.js';
-import warrantConvertibleRouter from './routes/warrant-convertible.js';
-import globalTradeFlowRouter from './routes/global-trade-flow.js';
-import realEstateAnalyticsRouter from './routes/real-estate-analytics.js';
-import inflationMonitorRouter from './routes/inflation-monitor.js';
-import mergerArbitrageRouter from './routes/merger-arbitrage.js';
-import sovereignDebtRouter from './routes/sovereign-debt.js';
-import etfPremiumRouter from './routes/etf-premium.js';
-import etfCreationRedemptionRouter from './routes/etf-creation-redemption.js';
-import commodityDemandRouter from './routes/commodity-demand.js';
-import globalDividendRouter from './routes/global-dividend.js';
-import cdsIndexMonitorRouter from './routes/cds-index-monitor.js';
-import macroRiskRouter from './routes/macro-risk.js';
-import fiAttributionAnalysisRouter from './routes/fi-attribution-analysis.js';
-import equityStyleRouter from './routes/equity-style.js';
-import currencyForecastRouter from './routes/currency-forecast.js';
-import bondLadderRouter from './routes/bond-ladder.js';
-import sectorCreditSpreadRouter from './routes/sector-credit-spread.js';
-import globalPmiDashboardRouter from './routes/global-pmi-dashboard.js';
-import earningsWhisperRouter from './routes/earnings-whisper.js';
-import portfolioHedgingRouter from './routes/portfolio-hedging.js';
-import marketDepthRouter from './routes/market-depth.js';
-import irsMonitorRouter from './routes/irs-monitor.js';
-import equityCapitalRaiseRouter from './routes/equity-capital-raise.js';
-import volatilitySmileRouter from './routes/volatility-smile.js';
-import tradeBlotterRouter from './routes/trade-blotter.js';
-import countryRiskRouter from './routes/country-risk.js';
-import centralBankBalanceSheetRouter from './routes/central-bank-balance-sheet.js';
-import corporateBuybackRouter from './routes/corporate-buyback.js';
-import corporateActionsRouter from './routes/corporate-actions.js';
-import marginDebtRouter from './routes/margin-debt.js';
-import fiscalPolicyRouter from './routes/fiscal-policy.js';
-import basisTradeRouter from './routes/basis-trade.js';
-import flowOfFundsRouter from './routes/flow-of-funds.js';
-import globalSupplyChainRouter from './routes/global-supply-chain.js';
-import treasuryAnalyticsRouter from './routes/treasury-analytics.js';
-import curveTradeRouter from './routes/curve-trade.js';
-import privateEquityRouter from './routes/private-equity.js';
-import capitalStructureRouter from './routes/capital-structure.js';
-import crossBorderMaRouter from './routes/cross-border-ma.js';
-import creditRiskTransferRouter from './routes/credit-risk-transfer.js';
-import swapExecutionRouter from './routes/swap-execution.js';
-import debtCeilingRouter from './routes/debt-ceiling.js';
-import securitizationRouter from './routes/securitization.js';
-import municipalCreditRouter from './routes/municipal-credit.js';
-import commoditySpreadRouter from './routes/commodity-spread.js';
-import inflationSwapRouter from './routes/inflation-swap.js';
-import creditDefaultIndexRouter from './routes/credit-default-index.js';
-import sovereignWealthFundRouter from './routes/sovereign-wealth-fund.js';
-import collateralManagementRouter from './routes/collateral-management.js';
-import primeBrokerageRouter from './routes/prime-brokerage.js';
-import electionRiskRouter from './routes/election-risk.js';
-import cvaMonitorRouter from './routes/cva-monitor.js';
-import algoExecutionRouter from './routes/algo-execution.js';
-import securitiesClassActionRouter from './routes/securities-class-action.js';
-import proxyVotingRouter from './routes/proxy-voting.js';
-import indexRebalanceRouter from './routes/index-rebalance.js';
-import shareholderActivismRouter from './routes/shareholder-activism.js';
-import fundFlowTrackerRouter from './routes/fund-flow-tracker.js';
-import insiderTransactionRouter from './routes/insider-transaction.js';
-import shortSqueezeRouter from './routes/short-squeeze.js';
-import spacMonitorRouter from './routes/spac-monitor.js';
-import blockTradeRouter from './routes/block-trade.js';
-import regulatoryFilingRouter from './routes/regulatory-filing.js';
-import taxLossHarvestRouter from './routes/tax-loss-harvest.js';
-import dividendCaptureRouter from './routes/dividend-capture.js';
-import creditRatingMigrationRouter from './routes/credit-rating-migration.js';
-import mergerArbMonitorRouter from './routes/merger-arb-monitor.js';
-import marketMakingRouter from './routes/market-making.js';
-import rateProbabilityRouter from './routes/rate-probability.js';
-import fxForwardRouter from './routes/fx-forward.js';
-import creditEventRouter from './routes/credit-event.js';
-import portfolioMarginRouter from './routes/portfolio-margin.js';
-import corporateGovernanceRouter from './routes/corporate-governance.js';
-import treasuryBillRouter from './routes/treasury-bill.js';
-import equityLendingRouter from './routes/equity-lending.js';
-import tradeSettlementRouter from './routes/trade-settlement.js';
-import indexArbitrageRouter from './routes/index-arbitrage.js';
-import assetAllocationRouter from './routes/asset-allocation.js';
-import bondFuturesBasisRouter from './routes/bond-futures-basis.js';
-import riskBudgetingRouter from './routes/risk-budgeting.js';
-import marketSurveillanceRouter from './routes/market-surveillance.js';
-import durationManagementRouter from './routes/duration-management.js';
-import swapPricingRouter from './routes/swap-pricing.js';
-import optionStrategyBuilderRouter from './routes/option-strategy-builder.js';
-import currencyBasketRouter from './routes/currency-basket.js';
-import liquidityStressTestRouter from './routes/liquidity-stress-test.js';
-import tradeRepositoryRouter from './routes/trade-repository.js';
-import sovereignRiskScoreRouter from './routes/sovereign-risk-score.js';
-import collateralOptimizationRouter from './routes/collateral-optimization.js';
-import crossMarginingRouter from './routes/cross-margining.js';
-import fundManagerRankingRouter from './routes/fund-manager-ranking.js';
-import priceDiscoveryRouter from './routes/price-discovery.js';
-import operationalRiskRouter from './routes/operational-risk.js';
-import transitionManagementRouter from './routes/transition-management.js';
-import securitiesValuationRouter from './routes/securities-valuation.js';
-import benchmarkAnalyticsRouter from './routes/benchmark-analytics.js';
-import counterpartyRiskRouter from './routes/counterparty-risk.js';
-import equityValuationRouter from './routes/equity-valuation.js';
-import macroIndicatorsRouter from './routes/macro-indicators.js';
-import volatilitySkewRouter from './routes/volatility-skew.js';
-import orderBookRouter from './routes/order-book.js';
-import fixedIncomeLadderRouter from './routes/fixed-income-ladder.js';
-import cdsMonitorRouter from './routes/cds-monitor.js';
-import sovereignDebtMonitorRouter from './routes/sovereign-debt-monitor.js';
-import liquidityDashboardRouter from './routes/liquidity-dashboard.js';
-import preciousMetalsRouter from './routes/precious-metals.js';
-import bankCapitalRouter from './routes/bank-capital.js';
-import agriculturalCommoditiesRouter from './routes/agricultural-commodities.js';
-import energyTransitionRouter from './routes/energy-transition.js';
-import geopoliticalRiskRouter from './routes/geopolitical-risk.js';
-import laborMarketRouter from './routes/labor-market.js';
-import housingMarketRouter from './routes/housing-market.js';
-import supplyChainStressRouter from './routes/supply-chain-stress.js';
-import creditImpulseRouter from './routes/credit-impulse.js';
-import consumerConfidenceRouter from './routes/consumer-confidence.js';
-import sovereignYieldRouter from './routes/sovereign-yield.js';
-import tradeBalanceRouter from './routes/trade-balance.js';
-import semiconductorRouter from './routes/semiconductor.js';
-import infrastructureInvestmentRouter from './routes/infrastructure-investment.js';
-import insuranceMarketRouter from './routes/insurance-market.js';
-import shippingIndexRouter from './routes/shipping-index.js';
-import ventureCapitalRouter from './routes/venture-capital.js';
-import demographicTrendsRouter from './routes/demographic-trends.js';
-import economicForecastRouter from './routes/economic-forecast.js';
-import globalIndexMonitorRouter from './routes/global-index-monitor.js';
-import leagueTablesRouter from './routes/league-tables.js';
-import gdpNowcastRouter from './routes/gdp-nowcast.js';
-import recessionProbabilityRouter from './routes/recession-probability.js';
-import financialConditionsRouter from './routes/financial-conditions.js';
-import commodityFundamentalsRouter from './routes/commodity-fundamentals.js';
-import wageGrowthRouter from './routes/wage-growth.js';
-import fiscalDeficitRouter from './routes/fiscal-deficit.js';
-import centralClearingRouter from './routes/central-clearing.js';
-import moneyVelocityRouter from './routes/money-velocity.js';
-import productivityMonitorRouter from './routes/productivity-monitor.js';
-import balanceOfPaymentsRouter from './routes/balance-of-payments.js';
-import globalTaxRatesRouter from './routes/global-tax-rates.js';
-import sanctionsMonitorRouter from './routes/sanctions-monitor.js';
-import climateRiskRouter from './routes/climate-risk.js';
-import sovereignDefaultRouter from './routes/sovereign-default.js';
-import bankStressTestRouter from './routes/bank-stress-test.js';
-import equityDerivativesRouter from './routes/equity-derivatives.js';
-import moneyMarketRatesRouter from './routes/money-market-rates.js';
-import moneyMarketFundRouter from './routes/money-market-fund.js';
-import globalMARouter from './routes/global-ma.js';
-import creditDefaultSwapsRouter from './routes/credit-default-swaps.js';
-import realEstateInvestmentRouter from './routes/real-estate-investment.js';
-import globalDebtClockRouter from './routes/global-debt-clock.js';
-import aiTechCapexRouter from './routes/ai-tech-capex.js';
-import criticalMineralsRouter from './routes/critical-minerals.js';
-import nuclearEnergyRouter from './routes/nuclear-energy.js';
-import waterMarketRouter from './routes/water-market.js';
-import spaceEconomyRouter from './routes/space-economy.js';
-import cybersecurityRouter from './routes/cybersecurity.js';
-import globalFoodPriceRouter from './routes/global-food-price.js';
-import pharmaPipelineRouter from './routes/pharma-pipeline.js';
-import etfFlowRouter from './routes/etf-flow.js';
-import volatilitySurfaceRouter from './routes/volatility-surface.js';
-import creditSpreadRouter from './routes/credit-spread.js';
-import earningsRevisionRouter from './routes/earnings-revision.js';
-import swapSpreadRouter from './routes/swap-spread.js';
-import breakevenInflationRouter from './routes/breakeven-inflation.js';
-import fxCarryRouter from './routes/fx-carry.js';
-import optionsSkewRouter from './routes/options-skew.js';
-import quantFactorRouter from './routes/quant-factor.js';
-import crossCurrencyBasisRouter from './routes/cross-currency-basis.js';
-import fundFlowRouter from './routes/fund-flow.js';
-import leveragedLoanRouter from './routes/leveraged-loan.js';
-import structuredProductRouter from './routes/structured-product.js';
-import mergerArbRouter from './routes/merger-arb.js';
-import greenBondRouter from './routes/green-bond.js';
-import marketBreadthRouter from './routes/market-breadth.js';
-import liquidityMonitorRouter from './routes/liquidity-monitor.js';
-import coveredBondRouter from './routes/covered-bond.js';
-import inflationLinkedBondRouter from './routes/inflation-linked-bond.js';
-import correlationRiskRouter from './routes/correlation-risk.js';
-import subordinatedDebtRouter from './routes/subordinated-debt.js';
-import smartBetaRouter from './routes/smart-beta.js';
-import factorRotationRouter from './routes/factor-rotation.js';
-import endowmentRouter from './routes/endowment.js';
-import familyOfficeRouter from './routes/family-office.js';
-import hedgeFundReplicationRouter from './routes/hedge-fund-replication.js';
-import infrastructureDebtRouter from './routes/infrastructure-debt.js';
-import supplyChainFinanceRouter from './routes/supply-chain-finance.js';
-import cdsRouter from './routes/cds.js';
-import cloRouter from './routes/clo.js';
-import interestRateSwapRouter from './routes/interest-rate-swap.js';
-import shippingFreightRouter from './routes/shipping-freight.js';
-import absRouter from './routes/abs.js';
-import totalReturnSwapRouter from './routes/total-return-swap.js';
-import varianceSwapRouter from './routes/variance-swap.js';
-import convertibleBondRouter from './routes/convertible-bond.js';
-import creditIndexRouter from './routes/credit-index.js';
-import dividendSwapRouter from './routes/dividend-swap.js';
 import centralBankRouter from './routes/central-bank.js';
-import commercialPaperRouter from './routes/commercial-paper.js';
-import fxReservesRouter from './routes/fx-reserves.js';
-import equityIndexFuturesRouter from './routes/equity-index-futures.js';
-import preferredStockRouter from './routes/preferred-stock.js';
-import treasuryStripsRouter from './routes/treasury-strips.js';
-import commodityWarehouseRouter from './routes/commodity-warehouse.js';
-import agencyDebtRouter from './routes/agency-debt.js';
-import loanSyndicationPipelineRouter from './routes/loan-syndication-pipeline.js';
-import sovereignBondAuctionRouter from './routes/sovereign-bond-auction.js';
-import crossCurrencyBasisSwapRouter from './routes/cross-currency-basis-swap.js';
-import securitiesBorrowingLendingRouter from './routes/securities-borrowing-lending.js';
-import equityTotalReturnIndexRouter from './routes/equity-total-return-index.js';
-import globalCreditMonitorRouter from './routes/global-credit-monitor.js';
-import bondIndexMonitorRouter from './routes/bond-index-monitor.js';
-import fxOptionVolMatrixRouter from './routes/fx-option-vol-matrix.js';
-import equitySwapPricingRouter from './routes/equity-swap-pricing.js';
-import creditValuationAdjustmentRouter from './routes/credit-valuation-adjustment.js';
-import interestRateVolSurfaceRouter from './routes/interest-rate-vol-surface.js';
-import municipalCreditAnalysisRouter from './routes/municipal-credit-analysis.js';
-import structuredProductsAnalyzerRouter from './routes/structured-products-analyzer.js';
-import riskScenarioAnalysisRouter from './routes/risk-scenario-analysis.js';
-import convertibleBondAnalyzerRouter from './routes/convertible-bond-analyzer.js';
-import commoditiesForwardCurveRouter from './routes/commodities-forward-curve.js';
-import varianceSwapMonitorRouter from './routes/variance-swap-monitor.js';
-import securitiesLendingRevenueRouter from './routes/securities-lending-revenue.js';
-import equityMarketMicrostructureRouter from './routes/equity-market-microstructure.js';
-import fxCarryTradeMonitorRouter from './routes/fx-carry-trade-monitor.js';
-import privateCreditDashboardRouter from './routes/private-credit-dashboard.js';
-import sovereignCdsMonitorRouter from './routes/sovereign-cds-monitor.js';
-import equityDividendForecastRouter from './routes/equity-dividend-forecast.js';
-import cloTrancheAnalyticsRouter from './routes/clo-tranche-analytics.js';
-import equityPairsTradingRouter from './routes/equity-pairs-trading.js';
-import treasuryFuturesBasisRouter from './routes/treasury-futures-basis.js';
-import creditIndexTranchesRouter from './routes/credit-index-tranches.js';
-import mortgagePrepaymentRouter from './routes/mortgage-prepayment.js';
-import optionSkewSurfaceRouter from './routes/option-skew-surface.js';
-import equityShortInterestRouter from './routes/equity-short-interest.js';
-import warrantPricingRouter from './routes/warrant-pricing.js';
-import tradeExecutionQualityRouter from './routes/trade-execution-quality.js';
-import freightRateMonitorRouter from './routes/freight-rate-monitor.js';
-import powerMarketRouter from './routes/power-market.js';
-import specialSituationsRouter from './routes/special-situations.js';
-import industrialMetalsRouter from './routes/industrial-metals.js';
-import securitizationPipelineRouter from './routes/securitization-pipeline.js';
-import equityAnalystRevisionsRouter from './routes/equity-analyst-revisions.js';
-import naturalGasStorageRouter from './routes/natural-gas-storage.js';
-import preciousMetalsLeaseRouter from './routes/precious-metals-lease.js';
-import corporateActionCalendarRouter from './routes/corporate-action-calendar.js';
-import sovereignDebtMaturityRouter from './routes/sovereign-debt-maturity.js';
-import agriculturalFuturesRouter from './routes/agricultural-futures.js';
-import bankEarningsRouter from './routes/bank-earnings.js';
-import privateEquitySecondariesRouter from './routes/private-equity-secondaries.js';
-import sukukMonitorRouter from './routes/sukuk-monitor.js';
-import frontierMarketDebtRouter from './routes/frontier-market-debt.js';
-import aircraftFinanceRouter from './routes/aircraft-finance.js';
-import rareEarthBatteryMetalsRouter from './routes/rare-earth-battery-metals.js';
-import dataCenterInfrastructureRouter from './routes/data-center-infrastructure.js';
-import sportsMediaRightsRouter from './routes/sports-media-rights.js';
-import luxuryCollectiblesIndexRouter from './routes/luxury-collectibles-index.js';
-import fintechDigitalPaymentsRouter from './routes/fintech-digital-payments.js';
-import cyberRiskInsuranceRouter from './routes/cyber-risk-insurance.js';
 import { attachUser } from './middleware/auth.js';
 import { runScrapeAndAnalyze } from './services/scraper/scraper-scheduler.js';
 
@@ -696,464 +240,471 @@ export function createApp() {
   app.use('/api/currency-strength', currencyStrengthRouter);
   app.use('/api/money-flow', moneyFlowRouter);
   app.use('/api/chart', chartRouter);
-  app.use('/api/earnings-estimates', earningsEstimatesRouter);
-  app.use('/api/cross-asset', crossAssetRouter);
-  app.use('/api/holdings', holdingsRouter);
-  app.use('/api/sector-performance', sectorPerformanceRouter);
-  app.use('/api/etf-holdings', etfHoldingsRouter);
-  app.use('/api/drawdown', drawdownRouter);
-  app.use('/api/market-regime', marketRegimeRouter);
-  app.use('/api/relative-valuation', relativeValuationRouter);
-  app.use('/api/confluence', confluenceRouter);
-  app.use('/api/iv-surface', ivSurfaceRouter);
-  app.use('/api/seasonality', seasonalityRouter);
-  app.use('/api/order-flow', orderFlowRouter);
-  app.use('/api/portfolio-optimizer', portfolioOptimizerRouter);
-  app.use('/api/backtest', backtestRouter);
-  app.use('/api/macro-dashboard', macroDashboardRouter);
-  app.use('/api/earnings-surprise', earningsSurpriseRouter);
-  app.use('/api/futures-curve', futuresCurveRouter);
-  app.use('/api/credit-spreads', creditSpreadsRouter);
-  app.use('/api/intermarket', intermarketRouter);
-  app.use('/api/sector-heatmap', sectorHeatmapRouter);
-  app.use('/api/economic-surprises', economicSurprisesRouter);
-  app.use('/api/dispersion', dispersionRouter);
-  app.use('/api/fund-flows', fundFlowsRouter);
-  app.use('/api/vol-term-structure', volTermStructureRouter);
-  app.use('/api/macro-heatmap', macroHeatmapRouter);
-  app.use('/api/factor-exposure', factorExposureRouter);
-  app.use('/api/capital-flows', capitalFlowsRouter);
-  app.use('/api/tail-risk', tailRiskRouter);
-  app.use('/api/liquidity', liquidityRouter);
-  app.use('/api/commodity-spreads', commoditySpreadsRouter);
-  app.use('/api/sentiment-dashboard', sentimentDashboardRouter);
-  app.use('/api/risk-parity', riskParityRouter);
-  app.use('/api/market-anomalies', marketAnomaliesRouter);
-  app.use('/api/carry-trade', carryTradeRouter);
-  app.use('/api/cot-report', cotReportRouter);
-  app.use('/api/iv-rank', ivRankRouter);
-  app.use('/api/performance-attribution', performanceAttributionRouter);
-  app.use('/api/market-microstructure', marketMicrostructureRouter);
-  app.use('/api/positioning', positioningRouter);
-  app.use('/api/repo-rates', repoRatesRouter);
-  app.use('/api/xccy-basis', xccyBasisRouter);
-  app.use('/api/style-box', styleBoxRouter);
-  app.use('/api/swap-rates', swapRatesRouter);
-  app.use('/api/earnings-calendar', earningsCalendarRouter);
-  app.use('/api/corporate-cds', corporateCdsRouter);
-  app.use('/api/event-driven', eventDrivenRouter);
-  app.use('/api/debt-maturity', debtMaturityRouter);
-  app.use('/api/equity-risk-premium', equityRiskPremiumRouter);
-  app.use('/api/central-banks', centralBanksRouter);
-  app.use('/api/vol-skew', volSkewRouter);
-  app.use('/api/global-rates', globalRatesRouter);
-  app.use('/api/supply-chain', supplyChainRouter);
-  app.use('/api/gamma-exposure', gammaExposureRouter);
-  app.use('/api/sovereign-spreads', sovereignSpreadsRouter);
-  app.use('/api/earnings-revisions', earningsRevisionsRouter);
-  app.use('/api/dividend-forecast', dividendForecastRouter);
-  app.use('/api/credit-ratings', creditRatingsRouter);
-  app.use('/api/volatility-cone', volatilityConeRouter);
-  app.use('/api/term-structure', termStructureRouter);
-  app.use('/api/institutional-ownership', institutionalOwnershipRouter);
-  app.use('/api/implied-correlation', impliedCorrelationRouter);
-  app.use('/api/earnings-quality', earningsQualityRouter);
-  app.use('/api/vol-surface', volSurfaceRouter);
-  app.use('/api/global-flows', globalFlowsRouter);
-  app.use('/api/regression-analysis', regressionAnalysisRouter);
-  app.use('/api/covenant-monitor', covenantMonitorRouter);
-  app.use('/api/market-internals', marketInternalsRouter);
-  app.use('/api/valuation-multiples', valuationMultiplesRouter);
-  app.use('/api/fixed-income-analytics', fixedIncomeAnalyticsRouter);
-  app.use('/api/insider-sentiment', insiderSentimentRouter);
-  app.use('/api/custom-index', customIndexRouter);
-  app.use('/api/mbs-analytics', mbsAnalyticsRouter);
-  app.use('/api/cdx-index', cdxIndexRouter);
-  app.use('/api/muni-bonds', muniBondsRouter);
-  app.use('/api/clo-analytics', cloAnalyticsRouter);
-  app.use('/api/onchain-analytics', onchainAnalyticsRouter);
-  app.use('/api/private-credit', privateCreditRouter);
-  app.use('/api/vol-risk-premium', volRiskPremiumRouter);
-  app.use('/api/esg-ratings', esgRatingsRouter);
-  app.use('/api/freight-indices', freightIndicesRouter);
-  app.use('/api/alternative-data', alternativeDataRouter);
-  app.use('/api/trade-ideas', tradeIdeasRouter);
-  app.use('/api/debt-issuance', debtIssuanceRouter);
-  app.use('/api/fx-options', fxOptionsRouter);
-  app.use('/api/multi-factor', multiFactorRouter);
-  app.use('/api/treasury-auctions', treasuryAuctionsRouter);
-  app.use('/api/commodity-curves', commodityCurvesRouter);
-  app.use('/api/em-bonds', emBondsRouter);
-  app.use('/api/reit-monitor', reitMonitorRouter);
-  app.use('/api/money-market', moneyMarketRouter);
-  app.use('/api/convertible-bonds', convertibleBondsRouter);
-  app.use('/api/global-pmi', globalPmiRouter);
-  app.use('/api/leveraged-loans', leveragedLoansRouter);
-  app.use('/api/swaption-vol', swaptionVolRouter);
-  app.use('/api/distressed-debt', distressedDebtRouter);
-  app.use('/api/rate-caps-floors', rateCapsFloorsRouter);
-  app.use('/api/dividend-swaps', dividendSwapsRouter);
-  app.use('/api/securities-lending', securitiesLendingRouter);
-  app.use('/api/variance-swaps', varianceSwapsRouter);
-  app.use('/api/carbon-credits', carbonCreditsRouter);
-  app.use('/api/weather-derivatives', weatherDerivativesRouter);
-  app.use('/api/dark-pool', darkPoolRouter);
-  app.use('/api/total-return-swaps', totalReturnSwapsRouter);
-  app.use('/api/cat-bonds', catBondsRouter);
-  app.use('/api/inflation-linked-bonds', inflationLinkedBondsRouter);
-  app.use('/api/equity-basket-swaps', equityBasketSwapsRouter);
-  app.use('/api/cross-currency-swaps', crossCurrencySwapsRouter);
-  app.use('/api/commodity-options', commodityOptionsRouter);
-  app.use('/api/loan-cds', loanCdsRouter);
-  app.use('/api/convertible-arb', convertibleArbRouter);
-  app.use('/api/shipping-rates', shippingRatesRouter);
-  app.use('/api/credit-auction', creditAuctionRouter);
-  app.use('/api/muni-yield-curves', muniYieldCurvesRouter);
-  app.use('/api/structured-products', structuredProductsRouter);
-  app.use('/api/pension-fund', pensionFundRouter);
-  app.use('/api/swap-spread-monitor', swapSpreadMonitorRouter);
-  app.use('/api/equity-linked-notes', equityLinkedNotesRouter);
-  app.use('/api/trade-finance', tradeFinanceRouter);
-  app.use('/api/repo-market', repoMarketRouter);
-  app.use('/api/commodity-inventory', commodityInventoryRouter);
-  app.use('/api/sovereign-wealth', sovereignWealthRouter);
-  app.use('/api/agency-mbs-tba', agencyMbsTbaRouter);
-  app.use('/api/etf-flows', etfFlowsRouter);
-  app.use('/api/credit-flow', creditFlowRouter);
-  app.use('/api/commodity-seasonality', commoditySeasonalityRouter);
-  app.use('/api/fx-volatility', fxVolatilityRouter);
-  app.use('/api/primary-dealer', primaryDealerRouter);
-  app.use('/api/real-estate-capital', realEstateCapitalRouter);
-  app.use('/api/electricity-markets', electricityMarketsRouter);
-  app.use('/api/syndicated-loans', syndicatedLoansRouter);
-  app.use('/api/emissions-trading', emissionsTradingRouter);
-  app.use('/api/insurance-linked', insuranceLinkedRouter);
-  app.use('/api/metals-forward', metalsForwardRouter);
-  app.use('/api/central-bank-watch', centralBankWatchRouter);
-  app.use('/api/freight-derivatives', freightDerivativesRouter);
-  app.use('/api/inflation-breakevens', inflationBreakevensRouter);
-  app.use('/api/muni-bond-auction', muniBondAuctionRouter);
-  app.use('/api/commodity-curve-analytics', commodityCurveAnalyticsRouter);
-  app.use('/api/collateral-monitor', collateralMonitorRouter);
-  app.use('/api/sovereign-cds', sovereignCdsRouter);
-  app.use('/api/cross-asset-momentum', crossAssetMomentumRouter);
-  app.use('/api/crypto-derivatives', cryptoDerivativesRouter);
-  app.use('/api/bond-relative-value', bondRelativeValueRouter);
-  app.use('/api/volatility-arbitrage', volatilityArbitrageRouter);
-  app.use('/api/systematic-strategy', systematicStrategyRouter);
-  app.use('/api/funding-rate-monitor', fundingRateMonitorRouter);
-  app.use('/api/em-local-rates', emLocalRatesRouter);
-  app.use('/api/portfolio-risk-analytics', portfolioRiskAnalyticsRouter);
-  app.use('/api/credit-index-monitor', creditIndexMonitorRouter);
-  app.use('/api/equity-financing', equityFinancingRouter);
-  app.use('/api/global-macro-dashboard', globalMacroDashboardRouter);
-  app.use('/api/abs-rmbs-monitor', absRmbsMonitorRouter);
-  app.use('/api/liquidity-risk-monitor', liquidityRiskMonitorRouter);
-  app.use('/api/fi-attribution', fiAttributionRouter);
-  app.use('/api/repo-rate-heatmap', repoRateHeatmapRouter);
-  app.use('/api/trade-compression', tradeCompressionRouter);
-  app.use('/api/regulatory-capital', regulatoryCapitalRouter);
-  app.use('/api/settlement-risk', settlementRiskRouter);
-  app.use('/api/swap-valuation', swapValuationRouter);
-  app.use('/api/commodity-storage', commodityStorageRouter);
-  app.use('/api/counterparty-exposure', counterpartyExposureRouter);
-  app.use('/api/market-impact-model', marketImpactModelRouter);
-  app.use('/api/structured-notes', structuredNotesRouter);
-  app.use('/api/securities-finance', securitiesFinanceRouter);
-  app.use('/api/credit-curve-builder', creditCurveBuilderRouter);
-  app.use('/api/execution-analytics', executionAnalyticsRouter);
-  app.use('/api/bond-auction-calendar', bondAuctionCalendarRouter);
-  app.use('/api/fx-carry-monitor', fxCarryMonitorRouter);
-  app.use('/api/equity-capital-markets', equityCapitalMarketsRouter);
-  app.use('/api/debt-capital-markets', debtCapitalMarketsRouter);
-  app.use('/api/hedge-fund-monitor', hedgeFundMonitorRouter);
-  app.use('/api/risk-dashboard', riskDashboardRouter);
-  app.use('/api/benchmark-tracker', benchmarkTrackerRouter);
-  app.use('/api/liquidity-coverage', liquidityCoverageRouter);
-  app.use('/api/market-sentiment-index', marketSentimentIndexRouter);
-  app.use('/api/portfolio-stress-test', portfolioStressTestRouter);
-  app.use('/api/global-liquidity-monitor', globalLiquidityMonitorRouter);
-  app.use('/api/trade-recap', tradeRecapRouter);
-  app.use('/api/macro-surprise-tracker', macroSurpriseTrackerRouter);
-  app.use('/api/fx-volatility-surface', fxVolatilitySurfaceRouter);
-  app.use('/api/commodity-fundamental', commodityFundamentalRouter);
-  app.use('/api/etf-flow-monitor', etfFlowMonitorRouter);
-  app.use('/api/equity-factor-monitor', equityFactorMonitorRouter);
-  app.use('/api/rates-strategy', ratesStrategyRouter);
-  app.use('/api/credit-portfolio', creditPortfolioRouter);
-  app.use('/api/macro-regime-monitor', macroRegimeMonitorRouter);
-  app.use('/api/dividend-calendar', dividendCalendarRouter);
-  app.use('/api/convertible-arbitrage', convertibleArbitrageRouter);
-  app.use('/api/realtime-pnl', realtimePnlRouter);
-  app.use('/api/market-breadth-advanced', marketBreadthAdvancedRouter);
-  app.use('/api/volatility-dashboard', volatilityDashboardRouter);
-  app.use('/api/fi-relative-value', fiRelativeValueRouter);
-  app.use('/api/equity-screen-results', equityScreenResultsRouter);
-  app.use('/api/cross-asset-correlation', crossAssetCorrelationRouter);
-  app.use('/api/portfolio-attribution', portfolioAttributionRouter);
-  app.use('/api/ipo-calendar', ipoCalendarRouter);
-  app.use('/api/municipal-bond-monitor', municipalBondMonitorRouter);
-  app.use('/api/structured-credit', structuredCreditRouter);
-  app.use('/api/currency-options', currencyOptionsRouter);
-  app.use('/api/swap-curve-monitor', swapCurveMonitorRouter);
-  app.use('/api/fund-flow-analytics', fundFlowAnalyticsRouter);
-  app.use('/api/trade-cost-analysis', tradeCostAnalysisRouter);
-  app.use('/api/warrant-convertible', warrantConvertibleRouter);
-  app.use('/api/global-trade-flow', globalTradeFlowRouter);
-  app.use('/api/real-estate-analytics', realEstateAnalyticsRouter);
-  app.use('/api/inflation-monitor', inflationMonitorRouter);
-  app.use('/api/merger-arbitrage', mergerArbitrageRouter);
-  app.use('/api/sovereign-debt', sovereignDebtRouter);
-  app.use('/api/etf-premium', etfPremiumRouter);
-  app.use('/api/etf-creation-redemption', etfCreationRedemptionRouter);
-  app.use('/api/commodity-demand', commodityDemandRouter);
-  app.use('/api/global-dividend', globalDividendRouter);
-  app.use('/api/cds-index-monitor', cdsIndexMonitorRouter);
-  app.use('/api/macro-risk', macroRiskRouter);
-  app.use('/api/fi-attribution-analysis', fiAttributionAnalysisRouter);
-  app.use('/api/equity-style', equityStyleRouter);
-  app.use('/api/currency-forecast', currencyForecastRouter);
-  app.use('/api/bond-ladder', bondLadderRouter);
-  app.use('/api/sector-credit-spread', sectorCreditSpreadRouter);
-  app.use('/api/global-pmi-dashboard', globalPmiDashboardRouter);
-  app.use('/api/earnings-whisper', earningsWhisperRouter);
-  app.use('/api/portfolio-hedging', portfolioHedgingRouter);
-  app.use('/api/market-depth', marketDepthRouter);
-  app.use('/api/irs-monitor', irsMonitorRouter);
-  app.use('/api/equity-capital-raise', equityCapitalRaiseRouter);
-  app.use('/api/volatility-smile', volatilitySmileRouter);
-  app.use('/api/trade-blotter', tradeBlotterRouter);
-  app.use('/api/country-risk', countryRiskRouter);
-  app.use('/api/central-bank-balance-sheet', centralBankBalanceSheetRouter);
-  app.use('/api/corporate-buyback', corporateBuybackRouter);
-  app.use('/api/corporate-actions', corporateActionsRouter);
-  app.use('/api/margin-debt', marginDebtRouter);
-  app.use('/api/fiscal-policy', fiscalPolicyRouter);
-  app.use('/api/basis-trade', basisTradeRouter);
-  app.use('/api/flow-of-funds', flowOfFundsRouter);
-  app.use('/api/global-supply-chain', globalSupplyChainRouter);
-  app.use('/api/treasury-analytics', treasuryAnalyticsRouter);
-  app.use('/api/curve-trade', curveTradeRouter);
-  app.use('/api/private-equity', privateEquityRouter);
-  app.use('/api/capital-structure', capitalStructureRouter);
-  app.use('/api/cross-border-ma', crossBorderMaRouter);
-  app.use('/api/credit-risk-transfer', creditRiskTransferRouter);
-  app.use('/api/swap-execution', swapExecutionRouter);
-  app.use('/api/debt-ceiling', debtCeilingRouter);
-  app.use('/api/securitization', securitizationRouter);
-  app.use('/api/municipal-credit', municipalCreditRouter);
-  app.use('/api/commodity-spread', commoditySpreadRouter);
-  app.use('/api/inflation-swap', inflationSwapRouter);
-  app.use('/api/credit-default-index', creditDefaultIndexRouter);
-  app.use('/api/sovereign-wealth-fund', sovereignWealthFundRouter);
-  app.use('/api/collateral-management', collateralManagementRouter);
-  app.use('/api/prime-brokerage', primeBrokerageRouter);
-  app.use('/api/election-risk', electionRiskRouter);
-  app.use('/api/cva-monitor', cvaMonitorRouter);
-  app.use('/api/algo-execution', algoExecutionRouter);
-  app.use('/api/securities-class-action', securitiesClassActionRouter);
-  app.use('/api/proxy-voting', proxyVotingRouter);
-  app.use('/api/index-rebalance', indexRebalanceRouter);
-  app.use('/api/shareholder-activism', shareholderActivismRouter);
-  app.use('/api/fund-flow-tracker', fundFlowTrackerRouter);
-  app.use('/api/insider-transaction', insiderTransactionRouter);
-  app.use('/api/short-squeeze', shortSqueezeRouter);
-  app.use('/api/spac-monitor', spacMonitorRouter);
-  app.use('/api/block-trade', blockTradeRouter);
-  app.use('/api/regulatory-filing', regulatoryFilingRouter);
-  app.use('/api/tax-loss-harvest', taxLossHarvestRouter);
-  app.use('/api/dividend-capture', dividendCaptureRouter);
-  app.use('/api/credit-rating-migration', creditRatingMigrationRouter);
-  app.use('/api/merger-arb-monitor', mergerArbMonitorRouter);
-  app.use('/api/market-making', marketMakingRouter);
-  app.use('/api/rate-probability', rateProbabilityRouter);
-  app.use('/api/fx-forward', fxForwardRouter);
-  app.use('/api/credit-event', creditEventRouter);
-  app.use('/api/portfolio-margin', portfolioMarginRouter);
-  app.use('/api/corporate-governance', corporateGovernanceRouter);
-  app.use('/api/treasury-bill', treasuryBillRouter);
-  app.use('/api/equity-lending', equityLendingRouter);
-  app.use('/api/trade-settlement', tradeSettlementRouter);
-  app.use('/api/index-arbitrage', indexArbitrageRouter);
-  app.use('/api/asset-allocation', assetAllocationRouter);
-  app.use('/api/bond-futures-basis', bondFuturesBasisRouter);
-  app.use('/api/risk-budgeting', riskBudgetingRouter);
-  app.use('/api/market-surveillance', marketSurveillanceRouter);
-  app.use('/api/duration-management', durationManagementRouter);
-  app.use('/api/swap-pricing', swapPricingRouter);
-  app.use('/api/option-strategy-builder', optionStrategyBuilderRouter);
-  app.use('/api/currency-basket', currencyBasketRouter);
-  app.use('/api/liquidity-stress-test', liquidityStressTestRouter);
-  app.use('/api/trade-repository', tradeRepositoryRouter);
-  app.use('/api/sovereign-risk-score', sovereignRiskScoreRouter);
-  app.use('/api/collateral-optimization', collateralOptimizationRouter);
-  app.use('/api/cross-margining', crossMarginingRouter);
-  app.use('/api/fund-manager-ranking', fundManagerRankingRouter);
-  app.use('/api/price-discovery', priceDiscoveryRouter);
-  app.use('/api/operational-risk', operationalRiskRouter);
-  app.use('/api/transition-management', transitionManagementRouter);
-  app.use('/api/securities-valuation', securitiesValuationRouter);
-  app.use('/api/benchmark-analytics', benchmarkAnalyticsRouter);
-  app.use('/api/counterparty-risk', counterpartyRiskRouter);
-  app.use('/api/equity-valuation', equityValuationRouter);
-  app.use('/api/macro-indicators', macroIndicatorsRouter);
-  app.use('/api/volatility-skew', volatilitySkewRouter);
-  app.use('/api/order-book', orderBookRouter);
-  app.use('/api/fixed-income-ladder', fixedIncomeLadderRouter);
-  app.use('/api/cds-monitor', cdsMonitorRouter);
-  app.use('/api/sovereign-debt-monitor', sovereignDebtMonitorRouter);
-  app.use('/api/liquidity-dashboard', liquidityDashboardRouter);
-  app.use('/api/precious-metals', preciousMetalsRouter);
-  app.use('/api/bank-capital', bankCapitalRouter);
-  app.use('/api/agricultural-commodities', agriculturalCommoditiesRouter);
-  app.use('/api/energy-transition', energyTransitionRouter);
-  app.use('/api/geopolitical-risk', geopoliticalRiskRouter);
-  app.use('/api/labor-market', laborMarketRouter);
-  app.use('/api/housing-market', housingMarketRouter);
-  app.use('/api/supply-chain-stress', supplyChainStressRouter);
-  app.use('/api/credit-impulse', creditImpulseRouter);
-  app.use('/api/consumer-confidence', consumerConfidenceRouter);
-  app.use('/api/sovereign-yield', sovereignYieldRouter);
-  app.use('/api/trade-balance', tradeBalanceRouter);
-  app.use('/api/semiconductor', semiconductorRouter);
-  app.use('/api/infrastructure-investment', infrastructureInvestmentRouter);
-  app.use('/api/insurance-market', insuranceMarketRouter);
-  app.use('/api/shipping-index', shippingIndexRouter);
-  app.use('/api/venture-capital', ventureCapitalRouter);
-  app.use('/api/demographic-trends', demographicTrendsRouter);
-  app.use('/api/economic-forecast', economicForecastRouter);
-  app.use('/api/global-index-monitor', globalIndexMonitorRouter);
-  app.use('/api/league-tables', leagueTablesRouter);
-  app.use('/api/gdp-nowcast', gdpNowcastRouter);
-  app.use('/api/recession-probability', recessionProbabilityRouter);
-  app.use('/api/financial-conditions', financialConditionsRouter);
-  app.use('/api/commodity-fundamentals', commodityFundamentalsRouter);
-  app.use('/api/wage-growth', wageGrowthRouter);
-  app.use('/api/fiscal-deficit', fiscalDeficitRouter);
-  app.use('/api/central-clearing', centralClearingRouter);
-  app.use('/api/money-velocity', moneyVelocityRouter);
-  app.use('/api/productivity-monitor', productivityMonitorRouter);
-  app.use('/api/balance-of-payments', balanceOfPaymentsRouter);
-  app.use('/api/global-tax-rates', globalTaxRatesRouter);
-  app.use('/api/sanctions-monitor', sanctionsMonitorRouter);
-  app.use('/api/climate-risk', climateRiskRouter);
-  app.use('/api/sovereign-default', sovereignDefaultRouter);
-  app.use('/api/bank-stress-test', bankStressTestRouter);
-  app.use('/api/equity-derivatives', equityDerivativesRouter);
-  app.use('/api/money-market-rates', moneyMarketRatesRouter);
-  app.use('/api/money-market-fund', moneyMarketFundRouter);
-  app.use('/api/global-ma', globalMARouter);
-  app.use('/api/credit-default-swaps', creditDefaultSwapsRouter);
-  app.use('/api/real-estate-investment', realEstateInvestmentRouter);
-  app.use('/api/global-debt-clock', globalDebtClockRouter);
-  app.use('/api/ai-tech-capex', aiTechCapexRouter);
-  app.use('/api/critical-minerals', criticalMineralsRouter);
-  app.use('/api/nuclear-energy', nuclearEnergyRouter);
-  app.use('/api/water-market', waterMarketRouter);
-  app.use('/api/space-economy', spaceEconomyRouter);
-  app.use('/api/cybersecurity', cybersecurityRouter);
-  app.use('/api/global-food-price', globalFoodPriceRouter);
-  app.use('/api/pharma-pipeline', pharmaPipelineRouter);
-  app.use('/api/etf-flow', etfFlowRouter);
-  app.use('/api/volatility-surface', volatilitySurfaceRouter);
-  app.use('/api/credit-spread', creditSpreadRouter);
-  app.use('/api/earnings-revision', earningsRevisionRouter);
-  app.use('/api/swap-spread', swapSpreadRouter);
-  app.use('/api/breakeven-inflation', breakevenInflationRouter);
-  app.use('/api/fx-carry', fxCarryRouter);
-  app.use('/api/options-skew', optionsSkewRouter);
-  app.use('/api/quant-factor', quantFactorRouter);
-  app.use('/api/cross-currency-basis', crossCurrencyBasisRouter);
-  app.use('/api/fund-flow', fundFlowRouter);
-  app.use('/api/leveraged-loan', leveragedLoanRouter);
-  app.use('/api/structured-product', structuredProductRouter);
-  app.use('/api/merger-arb', mergerArbRouter);
-  app.use('/api/green-bond', greenBondRouter);
-  app.use('/api/market-breadth', marketBreadthRouter);
-  app.use('/api/liquidity-monitor', liquidityMonitorRouter);
-  app.use('/api/covered-bond', coveredBondRouter);
-  app.use('/api/inflation-linked-bond', inflationLinkedBondRouter);
-  app.use('/api/correlation-risk', correlationRiskRouter);
-  app.use('/api/subordinated-debt', subordinatedDebtRouter);
-  app.use('/api/smart-beta', smartBetaRouter);
-  app.use('/api/factor-rotation', factorRotationRouter);
-  app.use('/api/endowment', endowmentRouter);
-  app.use('/api/family-office', familyOfficeRouter);
-  app.use('/api/hedge-fund-replication', hedgeFundReplicationRouter);
-  app.use('/api/infrastructure-debt', infrastructureDebtRouter);
-  app.use('/api/supply-chain-finance', supplyChainFinanceRouter);
-  app.use('/api/cds', cdsRouter);
-  app.use('/api/clo', cloRouter);
-  app.use('/api/interest-rate-swap', interestRateSwapRouter);
-  app.use('/api/shipping-freight', shippingFreightRouter);
-  app.use('/api/abs', absRouter);
-  app.use('/api/total-return-swap', totalReturnSwapRouter);
-  app.use('/api/variance-swap', varianceSwapRouter);
-  app.use('/api/convertible-bond', convertibleBondRouter);
-  app.use('/api/credit-index', creditIndexRouter);
-  app.use('/api/dividend-swap', dividendSwapRouter);
   app.use('/api/central-bank', centralBankRouter);
-  app.use('/api/commercial-paper', commercialPaperRouter);
-  app.use('/api/fx-reserves', fxReservesRouter);
-  app.use('/api/equity-index-futures', equityIndexFuturesRouter);
-  app.use('/api/preferred-stock', preferredStockRouter);
-  app.use('/api/treasury-strips', treasuryStripsRouter);
-  app.use('/api/commodity-warehouse', commodityWarehouseRouter);
-  app.use('/api/agency-debt', agencyDebtRouter);
-  app.use('/api/loan-syndication-pipeline', loanSyndicationPipelineRouter);
-  app.use('/api/sovereign-bond-auction', sovereignBondAuctionRouter);
-  app.use('/api/cross-currency-basis-swap', crossCurrencyBasisSwapRouter);
-  app.use('/api/securities-borrowing-lending', securitiesBorrowingLendingRouter);
-  app.use('/api/equity-total-return-index', equityTotalReturnIndexRouter);
-  app.use('/api/global-credit-monitor', globalCreditMonitorRouter);
-  app.use('/api/bond-index-monitor', bondIndexMonitorRouter);
-  app.use('/api/fx-option-vol-matrix', fxOptionVolMatrixRouter);
-  app.use('/api/equity-swap-pricing', equitySwapPricingRouter);
-  app.use('/api/credit-valuation-adjustment', creditValuationAdjustmentRouter);
-  app.use('/api/interest-rate-vol-surface', interestRateVolSurfaceRouter);
-  app.use('/api/municipal-credit-analysis', municipalCreditAnalysisRouter);
-  app.use('/api/structured-products-analyzer', structuredProductsAnalyzerRouter);
-  app.use('/api/risk-scenario-analysis', riskScenarioAnalysisRouter);
-  app.use('/api/convertible-bond-analyzer', convertibleBondAnalyzerRouter);
-  app.use('/api/commodities-forward-curve', commoditiesForwardCurveRouter);
-  app.use('/api/variance-swap-monitor', varianceSwapMonitorRouter);
-  app.use('/api/securities-lending-revenue', securitiesLendingRevenueRouter);
-  app.use('/api/equity-market-microstructure', equityMarketMicrostructureRouter);
-  app.use('/api/fx-carry-trade-monitor', fxCarryTradeMonitorRouter);
-  app.use('/api/private-credit-dashboard', privateCreditDashboardRouter);
-  app.use('/api/sovereign-cds-monitor', sovereignCdsMonitorRouter);
-  app.use('/api/equity-dividend-forecast', equityDividendForecastRouter);
-  app.use('/api/clo-tranche-analytics', cloTrancheAnalyticsRouter);
-  app.use('/api/equity-pairs-trading', equityPairsTradingRouter);
-  app.use('/api/treasury-futures-basis', treasuryFuturesBasisRouter);
-  app.use('/api/credit-index-tranches', creditIndexTranchesRouter);
-  app.use('/api/mortgage-prepayment', mortgagePrepaymentRouter);
-  app.use('/api/option-skew-surface', optionSkewSurfaceRouter);
-  app.use('/api/equity-short-interest', equityShortInterestRouter);
-  app.use('/api/warrant-pricing', warrantPricingRouter);
-  app.use('/api/trade-execution-quality', tradeExecutionQualityRouter);
-  app.use('/api/freight-rate-monitor', freightRateMonitorRouter);
-  app.use('/api/power-market', powerMarketRouter);
-  app.use('/api/special-situations', specialSituationsRouter);
-  app.use('/api/industrial-metals', industrialMetalsRouter);
-  app.use('/api/securitization-pipeline', securitizationPipelineRouter);
-  app.use('/api/equity-analyst-revisions', equityAnalystRevisionsRouter);
-  app.use('/api/natural-gas-storage', naturalGasStorageRouter);
-  app.use('/api/precious-metals-lease', preciousMetalsLeaseRouter);
-  app.use('/api/corporate-action-calendar', corporateActionCalendarRouter);
-  app.use('/api/sovereign-debt-maturity', sovereignDebtMaturityRouter);
-  app.use('/api/agricultural-futures', agriculturalFuturesRouter);
-  app.use('/api/bank-earnings', bankEarningsRouter);
-  app.use('/api/private-equity-secondaries', privateEquitySecondariesRouter);
-  app.use('/api/sukuk-monitor', sukukMonitorRouter);
-  app.use('/api/frontier-market-debt', frontierMarketDebtRouter);
-  app.use('/api/aircraft-finance', aircraftFinanceRouter);
-  app.use('/api/rare-earth-battery-metals', rareEarthBatteryMetalsRouter);
-  app.use('/api/data-center-infrastructure', dataCenterInfrastructureRouter);
-  app.use('/api/sports-media-rights', sportsMediaRightsRouter);
-  app.use('/api/luxury-collectibles-index', luxuryCollectiblesIndexRouter);
-  app.use('/api/fintech-digital-payments', fintechDigitalPaymentsRouter);
-  app.use('/api/cyber-risk-insurance', cyberRiskInsuranceRouter);
+
+  // ── Lazy-loaded panel routes (loaded on first request to save startup memory) ──
+  const panelRoutes: [string, () => Promise<{ default: any }>][] = [
+    ['earnings-estimates', () => import('./routes/earnings-estimates.js')],
+    ['cross-asset', () => import('./routes/cross-asset.js')],
+    ['holdings', () => import('./routes/holdings.js')],
+    ['sector-performance', () => import('./routes/sector-performance.js')],
+    ['etf-holdings', () => import('./routes/etf-holdings.js')],
+    ['drawdown', () => import('./routes/drawdown.js')],
+    ['market-regime', () => import('./routes/market-regime.js')],
+    ['relative-valuation', () => import('./routes/relative-valuation.js')],
+    ['confluence', () => import('./routes/confluence.js')],
+    ['iv-surface', () => import('./routes/iv-surface.js')],
+    ['seasonality', () => import('./routes/seasonality.js')],
+    ['order-flow', () => import('./routes/order-flow.js')],
+    ['portfolio-optimizer', () => import('./routes/portfolio-optimizer.js')],
+    ['backtest', () => import('./routes/backtest.js')],
+    ['macro-dashboard', () => import('./routes/macro-dashboard.js')],
+    ['earnings-surprise', () => import('./routes/earnings-surprise.js')],
+    ['futures-curve', () => import('./routes/futures-curve.js')],
+    ['credit-spreads', () => import('./routes/credit-spreads.js')],
+    ['intermarket', () => import('./routes/intermarket.js')],
+    ['sector-heatmap', () => import('./routes/sector-heatmap.js')],
+    ['economic-surprises', () => import('./routes/economic-surprises.js')],
+    ['dispersion', () => import('./routes/dispersion.js')],
+    ['fund-flows', () => import('./routes/fund-flows.js')],
+    ['vol-term-structure', () => import('./routes/vol-term-structure.js')],
+    ['macro-heatmap', () => import('./routes/macro-heatmap.js')],
+    ['factor-exposure', () => import('./routes/factor-exposure.js')],
+    ['capital-flows', () => import('./routes/capital-flows.js')],
+    ['tail-risk', () => import('./routes/tail-risk.js')],
+    ['liquidity', () => import('./routes/liquidity.js')],
+    ['commodity-spreads', () => import('./routes/commodity-spreads.js')],
+    ['sentiment-dashboard', () => import('./routes/sentiment-dashboard.js')],
+    ['risk-parity', () => import('./routes/risk-parity.js')],
+    ['market-anomalies', () => import('./routes/market-anomalies.js')],
+    ['carry-trade', () => import('./routes/carry-trade.js')],
+    ['cot-report', () => import('./routes/cot-report.js')],
+    ['iv-rank', () => import('./routes/iv-rank.js')],
+    ['performance-attribution', () => import('./routes/performance-attribution.js')],
+    ['market-microstructure', () => import('./routes/market-microstructure.js')],
+    ['positioning', () => import('./routes/positioning.js')],
+    ['repo-rates', () => import('./routes/repo-rates.js')],
+    ['xccy-basis', () => import('./routes/xccy-basis.js')],
+    ['style-box', () => import('./routes/style-box.js')],
+    ['swap-rates', () => import('./routes/swap-rates.js')],
+    ['earnings-calendar', () => import('./routes/earnings-calendar.js')],
+    ['corporate-cds', () => import('./routes/corporate-cds.js')],
+    ['event-driven', () => import('./routes/event-driven.js')],
+    ['debt-maturity', () => import('./routes/debt-maturity.js')],
+    ['equity-risk-premium', () => import('./routes/equity-risk-premium.js')],
+    ['central-banks', () => import('./routes/central-banks.js')],
+    ['vol-skew', () => import('./routes/vol-skew.js')],
+    ['global-rates', () => import('./routes/global-rates.js')],
+    ['supply-chain', () => import('./routes/supply-chain.js')],
+    ['gamma-exposure', () => import('./routes/gamma-exposure.js')],
+    ['sovereign-spreads', () => import('./routes/sovereign-spreads.js')],
+    ['earnings-revisions', () => import('./routes/earnings-revisions.js')],
+    ['dividend-forecast', () => import('./routes/dividend-forecast.js')],
+    ['credit-ratings', () => import('./routes/credit-ratings.js')],
+    ['volatility-cone', () => import('./routes/volatility-cone.js')],
+    ['term-structure', () => import('./routes/term-structure.js')],
+    ['institutional-ownership', () => import('./routes/institutional-ownership.js')],
+    ['implied-correlation', () => import('./routes/implied-correlation.js')],
+    ['earnings-quality', () => import('./routes/earnings-quality.js')],
+    ['vol-surface', () => import('./routes/vol-surface.js')],
+    ['global-flows', () => import('./routes/global-flows.js')],
+    ['regression-analysis', () => import('./routes/regression-analysis.js')],
+    ['covenant-monitor', () => import('./routes/covenant-monitor.js')],
+    ['market-internals', () => import('./routes/market-internals.js')],
+    ['valuation-multiples', () => import('./routes/valuation-multiples.js')],
+    ['fixed-income-analytics', () => import('./routes/fixed-income-analytics.js')],
+    ['insider-sentiment', () => import('./routes/insider-sentiment.js')],
+    ['custom-index', () => import('./routes/custom-index.js')],
+    ['mbs-analytics', () => import('./routes/mbs-analytics.js')],
+    ['cdx-index', () => import('./routes/cdx-index.js')],
+    ['muni-bonds', () => import('./routes/muni-bonds.js')],
+    ['clo-analytics', () => import('./routes/clo-analytics.js')],
+    ['onchain-analytics', () => import('./routes/onchain-analytics.js')],
+    ['private-credit', () => import('./routes/private-credit.js')],
+    ['vol-risk-premium', () => import('./routes/vol-risk-premium.js')],
+    ['esg-ratings', () => import('./routes/esg-ratings.js')],
+    ['freight-indices', () => import('./routes/freight-indices.js')],
+    ['alternative-data', () => import('./routes/alternative-data.js')],
+    ['trade-ideas', () => import('./routes/trade-ideas.js')],
+    ['debt-issuance', () => import('./routes/debt-issuance.js')],
+    ['fx-options', () => import('./routes/fx-options.js')],
+    ['multi-factor', () => import('./routes/multi-factor.js')],
+    ['treasury-auctions', () => import('./routes/treasury-auctions.js')],
+    ['commodity-curves', () => import('./routes/commodity-curves.js')],
+    ['em-bonds', () => import('./routes/em-bonds.js')],
+    ['reit-monitor', () => import('./routes/reit-monitor.js')],
+    ['money-market', () => import('./routes/money-market.js')],
+    ['convertible-bonds', () => import('./routes/convertible-bonds.js')],
+    ['global-pmi', () => import('./routes/global-pmi.js')],
+    ['leveraged-loans', () => import('./routes/leveraged-loans.js')],
+    ['swaption-vol', () => import('./routes/swaption-vol.js')],
+    ['distressed-debt', () => import('./routes/distressed-debt.js')],
+    ['rate-caps-floors', () => import('./routes/rate-caps-floors.js')],
+    ['dividend-swaps', () => import('./routes/dividend-swaps.js')],
+    ['securities-lending', () => import('./routes/securities-lending.js')],
+    ['variance-swaps', () => import('./routes/variance-swaps.js')],
+    ['carbon-credits', () => import('./routes/carbon-credits.js')],
+    ['weather-derivatives', () => import('./routes/weather-derivatives.js')],
+    ['dark-pool', () => import('./routes/dark-pool.js')],
+    ['total-return-swaps', () => import('./routes/total-return-swaps.js')],
+    ['cat-bonds', () => import('./routes/cat-bonds.js')],
+    ['inflation-linked-bonds', () => import('./routes/inflation-linked-bonds.js')],
+    ['equity-basket-swaps', () => import('./routes/equity-basket-swaps.js')],
+    ['cross-currency-swaps', () => import('./routes/cross-currency-swaps.js')],
+    ['commodity-options', () => import('./routes/commodity-options.js')],
+    ['loan-cds', () => import('./routes/loan-cds.js')],
+    ['convertible-arb', () => import('./routes/convertible-arb.js')],
+    ['shipping-rates', () => import('./routes/shipping-rates.js')],
+    ['credit-auction', () => import('./routes/credit-auction.js')],
+    ['muni-yield-curves', () => import('./routes/muni-yield-curves.js')],
+    ['structured-products', () => import('./routes/structured-products.js')],
+    ['pension-fund', () => import('./routes/pension-fund.js')],
+    ['swap-spread-monitor', () => import('./routes/swap-spread-monitor.js')],
+    ['equity-linked-notes', () => import('./routes/equity-linked-notes.js')],
+    ['trade-finance', () => import('./routes/trade-finance.js')],
+    ['repo-market', () => import('./routes/repo-market.js')],
+    ['commodity-inventory', () => import('./routes/commodity-inventory.js')],
+    ['sovereign-wealth', () => import('./routes/sovereign-wealth.js')],
+    ['agency-mbs-tba', () => import('./routes/agency-mbs-tba.js')],
+    ['etf-flows', () => import('./routes/etf-flows.js')],
+    ['credit-flow', () => import('./routes/credit-flow.js')],
+    ['commodity-seasonality', () => import('./routes/commodity-seasonality.js')],
+    ['fx-volatility', () => import('./routes/fx-volatility.js')],
+    ['primary-dealer', () => import('./routes/primary-dealer.js')],
+    ['real-estate-capital', () => import('./routes/real-estate-capital.js')],
+    ['electricity-markets', () => import('./routes/electricity-markets.js')],
+    ['syndicated-loans', () => import('./routes/syndicated-loans.js')],
+    ['emissions-trading', () => import('./routes/emissions-trading.js')],
+    ['insurance-linked', () => import('./routes/insurance-linked.js')],
+    ['metals-forward', () => import('./routes/metals-forward.js')],
+    ['central-bank-watch', () => import('./routes/central-bank-watch.js')],
+    ['freight-derivatives', () => import('./routes/freight-derivatives.js')],
+    ['inflation-breakevens', () => import('./routes/inflation-breakevens.js')],
+    ['muni-bond-auction', () => import('./routes/muni-bond-auction.js')],
+    ['commodity-curve-analytics', () => import('./routes/commodity-curve-analytics.js')],
+    ['collateral-monitor', () => import('./routes/collateral-monitor.js')],
+    ['sovereign-cds', () => import('./routes/sovereign-cds.js')],
+    ['cross-asset-momentum', () => import('./routes/cross-asset-momentum.js')],
+    ['crypto-derivatives', () => import('./routes/crypto-derivatives.js')],
+    ['bond-relative-value', () => import('./routes/bond-relative-value.js')],
+    ['volatility-arbitrage', () => import('./routes/volatility-arbitrage.js')],
+    ['systematic-strategy', () => import('./routes/systematic-strategy.js')],
+    ['funding-rate-monitor', () => import('./routes/funding-rate-monitor.js')],
+    ['em-local-rates', () => import('./routes/em-local-rates.js')],
+    ['portfolio-risk-analytics', () => import('./routes/portfolio-risk-analytics.js')],
+    ['credit-index-monitor', () => import('./routes/credit-index-monitor.js')],
+    ['equity-financing', () => import('./routes/equity-financing.js')],
+    ['global-macro-dashboard', () => import('./routes/global-macro-dashboard.js')],
+    ['abs-rmbs-monitor', () => import('./routes/abs-rmbs-monitor.js')],
+    ['liquidity-risk-monitor', () => import('./routes/liquidity-risk-monitor.js')],
+    ['fi-attribution', () => import('./routes/fi-attribution.js')],
+    ['repo-rate-heatmap', () => import('./routes/repo-rate-heatmap.js')],
+    ['trade-compression', () => import('./routes/trade-compression.js')],
+    ['regulatory-capital', () => import('./routes/regulatory-capital.js')],
+    ['settlement-risk', () => import('./routes/settlement-risk.js')],
+    ['swap-valuation', () => import('./routes/swap-valuation.js')],
+    ['commodity-storage', () => import('./routes/commodity-storage.js')],
+    ['counterparty-exposure', () => import('./routes/counterparty-exposure.js')],
+    ['market-impact-model', () => import('./routes/market-impact-model.js')],
+    ['structured-notes', () => import('./routes/structured-notes.js')],
+    ['securities-finance', () => import('./routes/securities-finance.js')],
+    ['credit-curve-builder', () => import('./routes/credit-curve-builder.js')],
+    ['execution-analytics', () => import('./routes/execution-analytics.js')],
+    ['bond-auction-calendar', () => import('./routes/bond-auction-calendar.js')],
+    ['fx-carry-monitor', () => import('./routes/fx-carry-monitor.js')],
+    ['equity-capital-markets', () => import('./routes/equity-capital-markets.js')],
+    ['debt-capital-markets', () => import('./routes/debt-capital-markets.js')],
+    ['hedge-fund-monitor', () => import('./routes/hedge-fund-monitor.js')],
+    ['risk-dashboard', () => import('./routes/risk-dashboard.js')],
+    ['benchmark-tracker', () => import('./routes/benchmark-tracker.js')],
+    ['liquidity-coverage', () => import('./routes/liquidity-coverage.js')],
+    ['market-sentiment-index', () => import('./routes/market-sentiment-index.js')],
+    ['portfolio-stress-test', () => import('./routes/portfolio-stress-test.js')],
+    ['global-liquidity-monitor', () => import('./routes/global-liquidity-monitor.js')],
+    ['trade-recap', () => import('./routes/trade-recap.js')],
+    ['macro-surprise-tracker', () => import('./routes/macro-surprise-tracker.js')],
+    ['fx-volatility-surface', () => import('./routes/fx-volatility-surface.js')],
+    ['commodity-fundamental', () => import('./routes/commodity-fundamental.js')],
+    ['etf-flow-monitor', () => import('./routes/etf-flow-monitor.js')],
+    ['equity-factor-monitor', () => import('./routes/equity-factor-monitor.js')],
+    ['rates-strategy', () => import('./routes/rates-strategy.js')],
+    ['credit-portfolio', () => import('./routes/credit-portfolio.js')],
+    ['macro-regime-monitor', () => import('./routes/macro-regime-monitor.js')],
+    ['dividend-calendar', () => import('./routes/dividend-calendar.js')],
+    ['convertible-arbitrage', () => import('./routes/convertible-arbitrage.js')],
+    ['realtime-pnl', () => import('./routes/realtime-pnl.js')],
+    ['market-breadth-advanced', () => import('./routes/market-breadth-advanced.js')],
+    ['volatility-dashboard', () => import('./routes/volatility-dashboard.js')],
+    ['fi-relative-value', () => import('./routes/fi-relative-value.js')],
+    ['equity-screen-results', () => import('./routes/equity-screen-results.js')],
+    ['cross-asset-correlation', () => import('./routes/cross-asset-correlation.js')],
+    ['portfolio-attribution', () => import('./routes/portfolio-attribution.js')],
+    ['ipo-calendar', () => import('./routes/ipo-calendar.js')],
+    ['municipal-bond-monitor', () => import('./routes/municipal-bond-monitor.js')],
+    ['structured-credit', () => import('./routes/structured-credit.js')],
+    ['currency-options', () => import('./routes/currency-options.js')],
+    ['swap-curve-monitor', () => import('./routes/swap-curve-monitor.js')],
+    ['fund-flow-analytics', () => import('./routes/fund-flow-analytics.js')],
+    ['trade-cost-analysis', () => import('./routes/trade-cost-analysis.js')],
+    ['warrant-convertible', () => import('./routes/warrant-convertible.js')],
+    ['global-trade-flow', () => import('./routes/global-trade-flow.js')],
+    ['real-estate-analytics', () => import('./routes/real-estate-analytics.js')],
+    ['inflation-monitor', () => import('./routes/inflation-monitor.js')],
+    ['merger-arbitrage', () => import('./routes/merger-arbitrage.js')],
+    ['sovereign-debt', () => import('./routes/sovereign-debt.js')],
+    ['etf-premium', () => import('./routes/etf-premium.js')],
+    ['etf-creation-redemption', () => import('./routes/etf-creation-redemption.js')],
+    ['commodity-demand', () => import('./routes/commodity-demand.js')],
+    ['global-dividend', () => import('./routes/global-dividend.js')],
+    ['cds-index-monitor', () => import('./routes/cds-index-monitor.js')],
+    ['macro-risk', () => import('./routes/macro-risk.js')],
+    ['fi-attribution-analysis', () => import('./routes/fi-attribution-analysis.js')],
+    ['equity-style', () => import('./routes/equity-style.js')],
+    ['currency-forecast', () => import('./routes/currency-forecast.js')],
+    ['bond-ladder', () => import('./routes/bond-ladder.js')],
+    ['sector-credit-spread', () => import('./routes/sector-credit-spread.js')],
+    ['global-pmi-dashboard', () => import('./routes/global-pmi-dashboard.js')],
+    ['earnings-whisper', () => import('./routes/earnings-whisper.js')],
+    ['portfolio-hedging', () => import('./routes/portfolio-hedging.js')],
+    ['market-depth', () => import('./routes/market-depth.js')],
+    ['irs-monitor', () => import('./routes/irs-monitor.js')],
+    ['equity-capital-raise', () => import('./routes/equity-capital-raise.js')],
+    ['volatility-smile', () => import('./routes/volatility-smile.js')],
+    ['trade-blotter', () => import('./routes/trade-blotter.js')],
+    ['country-risk', () => import('./routes/country-risk.js')],
+    ['central-bank-balance-sheet', () => import('./routes/central-bank-balance-sheet.js')],
+    ['corporate-buyback', () => import('./routes/corporate-buyback.js')],
+    ['corporate-actions', () => import('./routes/corporate-actions.js')],
+    ['margin-debt', () => import('./routes/margin-debt.js')],
+    ['fiscal-policy', () => import('./routes/fiscal-policy.js')],
+    ['basis-trade', () => import('./routes/basis-trade.js')],
+    ['flow-of-funds', () => import('./routes/flow-of-funds.js')],
+    ['global-supply-chain', () => import('./routes/global-supply-chain.js')],
+    ['treasury-analytics', () => import('./routes/treasury-analytics.js')],
+    ['curve-trade', () => import('./routes/curve-trade.js')],
+    ['private-equity', () => import('./routes/private-equity.js')],
+    ['capital-structure', () => import('./routes/capital-structure.js')],
+    ['cross-border-ma', () => import('./routes/cross-border-ma.js')],
+    ['credit-risk-transfer', () => import('./routes/credit-risk-transfer.js')],
+    ['swap-execution', () => import('./routes/swap-execution.js')],
+    ['debt-ceiling', () => import('./routes/debt-ceiling.js')],
+    ['securitization', () => import('./routes/securitization.js')],
+    ['municipal-credit', () => import('./routes/municipal-credit.js')],
+    ['commodity-spread', () => import('./routes/commodity-spread.js')],
+    ['inflation-swap', () => import('./routes/inflation-swap.js')],
+    ['credit-default-index', () => import('./routes/credit-default-index.js')],
+    ['sovereign-wealth-fund', () => import('./routes/sovereign-wealth-fund.js')],
+    ['collateral-management', () => import('./routes/collateral-management.js')],
+    ['prime-brokerage', () => import('./routes/prime-brokerage.js')],
+    ['election-risk', () => import('./routes/election-risk.js')],
+    ['cva-monitor', () => import('./routes/cva-monitor.js')],
+    ['algo-execution', () => import('./routes/algo-execution.js')],
+    ['securities-class-action', () => import('./routes/securities-class-action.js')],
+    ['proxy-voting', () => import('./routes/proxy-voting.js')],
+    ['index-rebalance', () => import('./routes/index-rebalance.js')],
+    ['shareholder-activism', () => import('./routes/shareholder-activism.js')],
+    ['fund-flow-tracker', () => import('./routes/fund-flow-tracker.js')],
+    ['insider-transaction', () => import('./routes/insider-transaction.js')],
+    ['short-squeeze', () => import('./routes/short-squeeze.js')],
+    ['spac-monitor', () => import('./routes/spac-monitor.js')],
+    ['block-trade', () => import('./routes/block-trade.js')],
+    ['regulatory-filing', () => import('./routes/regulatory-filing.js')],
+    ['tax-loss-harvest', () => import('./routes/tax-loss-harvest.js')],
+    ['dividend-capture', () => import('./routes/dividend-capture.js')],
+    ['credit-rating-migration', () => import('./routes/credit-rating-migration.js')],
+    ['merger-arb-monitor', () => import('./routes/merger-arb-monitor.js')],
+    ['market-making', () => import('./routes/market-making.js')],
+    ['rate-probability', () => import('./routes/rate-probability.js')],
+    ['fx-forward', () => import('./routes/fx-forward.js')],
+    ['credit-event', () => import('./routes/credit-event.js')],
+    ['portfolio-margin', () => import('./routes/portfolio-margin.js')],
+    ['corporate-governance', () => import('./routes/corporate-governance.js')],
+    ['treasury-bill', () => import('./routes/treasury-bill.js')],
+    ['equity-lending', () => import('./routes/equity-lending.js')],
+    ['trade-settlement', () => import('./routes/trade-settlement.js')],
+    ['index-arbitrage', () => import('./routes/index-arbitrage.js')],
+    ['asset-allocation', () => import('./routes/asset-allocation.js')],
+    ['bond-futures-basis', () => import('./routes/bond-futures-basis.js')],
+    ['risk-budgeting', () => import('./routes/risk-budgeting.js')],
+    ['market-surveillance', () => import('./routes/market-surveillance.js')],
+    ['duration-management', () => import('./routes/duration-management.js')],
+    ['swap-pricing', () => import('./routes/swap-pricing.js')],
+    ['option-strategy-builder', () => import('./routes/option-strategy-builder.js')],
+    ['currency-basket', () => import('./routes/currency-basket.js')],
+    ['liquidity-stress-test', () => import('./routes/liquidity-stress-test.js')],
+    ['trade-repository', () => import('./routes/trade-repository.js')],
+    ['sovereign-risk-score', () => import('./routes/sovereign-risk-score.js')],
+    ['collateral-optimization', () => import('./routes/collateral-optimization.js')],
+    ['cross-margining', () => import('./routes/cross-margining.js')],
+    ['fund-manager-ranking', () => import('./routes/fund-manager-ranking.js')],
+    ['price-discovery', () => import('./routes/price-discovery.js')],
+    ['operational-risk', () => import('./routes/operational-risk.js')],
+    ['transition-management', () => import('./routes/transition-management.js')],
+    ['securities-valuation', () => import('./routes/securities-valuation.js')],
+    ['benchmark-analytics', () => import('./routes/benchmark-analytics.js')],
+    ['counterparty-risk', () => import('./routes/counterparty-risk.js')],
+    ['equity-valuation', () => import('./routes/equity-valuation.js')],
+    ['macro-indicators', () => import('./routes/macro-indicators.js')],
+    ['volatility-skew', () => import('./routes/volatility-skew.js')],
+    ['order-book', () => import('./routes/order-book.js')],
+    ['fixed-income-ladder', () => import('./routes/fixed-income-ladder.js')],
+    ['cds-monitor', () => import('./routes/cds-monitor.js')],
+    ['sovereign-debt-monitor', () => import('./routes/sovereign-debt-monitor.js')],
+    ['liquidity-dashboard', () => import('./routes/liquidity-dashboard.js')],
+    ['precious-metals', () => import('./routes/precious-metals.js')],
+    ['bank-capital', () => import('./routes/bank-capital.js')],
+    ['agricultural-commodities', () => import('./routes/agricultural-commodities.js')],
+    ['energy-transition', () => import('./routes/energy-transition.js')],
+    ['geopolitical-risk', () => import('./routes/geopolitical-risk.js')],
+    ['labor-market', () => import('./routes/labor-market.js')],
+    ['housing-market', () => import('./routes/housing-market.js')],
+    ['supply-chain-stress', () => import('./routes/supply-chain-stress.js')],
+    ['credit-impulse', () => import('./routes/credit-impulse.js')],
+    ['consumer-confidence', () => import('./routes/consumer-confidence.js')],
+    ['sovereign-yield', () => import('./routes/sovereign-yield.js')],
+    ['trade-balance', () => import('./routes/trade-balance.js')],
+    ['semiconductor', () => import('./routes/semiconductor.js')],
+    ['infrastructure-investment', () => import('./routes/infrastructure-investment.js')],
+    ['insurance-market', () => import('./routes/insurance-market.js')],
+    ['shipping-index', () => import('./routes/shipping-index.js')],
+    ['venture-capital', () => import('./routes/venture-capital.js')],
+    ['demographic-trends', () => import('./routes/demographic-trends.js')],
+    ['economic-forecast', () => import('./routes/economic-forecast.js')],
+    ['global-index-monitor', () => import('./routes/global-index-monitor.js')],
+    ['league-tables', () => import('./routes/league-tables.js')],
+    ['gdp-nowcast', () => import('./routes/gdp-nowcast.js')],
+    ['recession-probability', () => import('./routes/recession-probability.js')],
+    ['financial-conditions', () => import('./routes/financial-conditions.js')],
+    ['commodity-fundamentals', () => import('./routes/commodity-fundamentals.js')],
+    ['wage-growth', () => import('./routes/wage-growth.js')],
+    ['fiscal-deficit', () => import('./routes/fiscal-deficit.js')],
+    ['central-clearing', () => import('./routes/central-clearing.js')],
+    ['money-velocity', () => import('./routes/money-velocity.js')],
+    ['productivity-monitor', () => import('./routes/productivity-monitor.js')],
+    ['balance-of-payments', () => import('./routes/balance-of-payments.js')],
+    ['global-tax-rates', () => import('./routes/global-tax-rates.js')],
+    ['sanctions-monitor', () => import('./routes/sanctions-monitor.js')],
+    ['climate-risk', () => import('./routes/climate-risk.js')],
+    ['sovereign-default', () => import('./routes/sovereign-default.js')],
+    ['bank-stress-test', () => import('./routes/bank-stress-test.js')],
+    ['equity-derivatives', () => import('./routes/equity-derivatives.js')],
+    ['money-market-rates', () => import('./routes/money-market-rates.js')],
+    ['money-market-fund', () => import('./routes/money-market-fund.js')],
+    ['global-ma', () => import('./routes/global-ma.js')],
+    ['credit-default-swaps', () => import('./routes/credit-default-swaps.js')],
+    ['real-estate-investment', () => import('./routes/real-estate-investment.js')],
+    ['global-debt-clock', () => import('./routes/global-debt-clock.js')],
+    ['ai-tech-capex', () => import('./routes/ai-tech-capex.js')],
+    ['critical-minerals', () => import('./routes/critical-minerals.js')],
+    ['nuclear-energy', () => import('./routes/nuclear-energy.js')],
+    ['water-market', () => import('./routes/water-market.js')],
+    ['space-economy', () => import('./routes/space-economy.js')],
+    ['cybersecurity', () => import('./routes/cybersecurity.js')],
+    ['global-food-price', () => import('./routes/global-food-price.js')],
+    ['pharma-pipeline', () => import('./routes/pharma-pipeline.js')],
+    ['etf-flow', () => import('./routes/etf-flow.js')],
+    ['volatility-surface', () => import('./routes/volatility-surface.js')],
+    ['credit-spread', () => import('./routes/credit-spread.js')],
+    ['earnings-revision', () => import('./routes/earnings-revision.js')],
+    ['swap-spread', () => import('./routes/swap-spread.js')],
+    ['breakeven-inflation', () => import('./routes/breakeven-inflation.js')],
+    ['fx-carry', () => import('./routes/fx-carry.js')],
+    ['options-skew', () => import('./routes/options-skew.js')],
+    ['quant-factor', () => import('./routes/quant-factor.js')],
+    ['cross-currency-basis', () => import('./routes/cross-currency-basis.js')],
+    ['fund-flow', () => import('./routes/fund-flow.js')],
+    ['leveraged-loan', () => import('./routes/leveraged-loan.js')],
+    ['structured-product', () => import('./routes/structured-product.js')],
+    ['merger-arb', () => import('./routes/merger-arb.js')],
+    ['green-bond', () => import('./routes/green-bond.js')],
+    ['market-breadth', () => import('./routes/market-breadth.js')],
+    ['liquidity-monitor', () => import('./routes/liquidity-monitor.js')],
+    ['covered-bond', () => import('./routes/covered-bond.js')],
+    ['inflation-linked-bond', () => import('./routes/inflation-linked-bond.js')],
+    ['correlation-risk', () => import('./routes/correlation-risk.js')],
+    ['subordinated-debt', () => import('./routes/subordinated-debt.js')],
+    ['smart-beta', () => import('./routes/smart-beta.js')],
+    ['factor-rotation', () => import('./routes/factor-rotation.js')],
+    ['endowment', () => import('./routes/endowment.js')],
+    ['family-office', () => import('./routes/family-office.js')],
+    ['hedge-fund-replication', () => import('./routes/hedge-fund-replication.js')],
+    ['infrastructure-debt', () => import('./routes/infrastructure-debt.js')],
+    ['supply-chain-finance', () => import('./routes/supply-chain-finance.js')],
+    ['cds', () => import('./routes/cds.js')],
+    ['clo', () => import('./routes/clo.js')],
+    ['interest-rate-swap', () => import('./routes/interest-rate-swap.js')],
+    ['shipping-freight', () => import('./routes/shipping-freight.js')],
+    ['abs', () => import('./routes/abs.js')],
+    ['total-return-swap', () => import('./routes/total-return-swap.js')],
+    ['variance-swap', () => import('./routes/variance-swap.js')],
+    ['convertible-bond', () => import('./routes/convertible-bond.js')],
+    ['credit-index', () => import('./routes/credit-index.js')],
+    ['dividend-swap', () => import('./routes/dividend-swap.js')],
+    ['commercial-paper', () => import('./routes/commercial-paper.js')],
+    ['fx-reserves', () => import('./routes/fx-reserves.js')],
+    ['equity-index-futures', () => import('./routes/equity-index-futures.js')],
+    ['preferred-stock', () => import('./routes/preferred-stock.js')],
+    ['treasury-strips', () => import('./routes/treasury-strips.js')],
+    ['commodity-warehouse', () => import('./routes/commodity-warehouse.js')],
+    ['agency-debt', () => import('./routes/agency-debt.js')],
+    ['loan-syndication-pipeline', () => import('./routes/loan-syndication-pipeline.js')],
+    ['sovereign-bond-auction', () => import('./routes/sovereign-bond-auction.js')],
+    ['cross-currency-basis-swap', () => import('./routes/cross-currency-basis-swap.js')],
+    ['securities-borrowing-lending', () => import('./routes/securities-borrowing-lending.js')],
+    ['equity-total-return-index', () => import('./routes/equity-total-return-index.js')],
+    ['global-credit-monitor', () => import('./routes/global-credit-monitor.js')],
+    ['bond-index-monitor', () => import('./routes/bond-index-monitor.js')],
+    ['fx-option-vol-matrix', () => import('./routes/fx-option-vol-matrix.js')],
+    ['equity-swap-pricing', () => import('./routes/equity-swap-pricing.js')],
+    ['credit-valuation-adjustment', () => import('./routes/credit-valuation-adjustment.js')],
+    ['interest-rate-vol-surface', () => import('./routes/interest-rate-vol-surface.js')],
+    ['municipal-credit-analysis', () => import('./routes/municipal-credit-analysis.js')],
+    ['structured-products-analyzer', () => import('./routes/structured-products-analyzer.js')],
+    ['risk-scenario-analysis', () => import('./routes/risk-scenario-analysis.js')],
+    ['convertible-bond-analyzer', () => import('./routes/convertible-bond-analyzer.js')],
+    ['commodities-forward-curve', () => import('./routes/commodities-forward-curve.js')],
+    ['variance-swap-monitor', () => import('./routes/variance-swap-monitor.js')],
+    ['securities-lending-revenue', () => import('./routes/securities-lending-revenue.js')],
+    ['equity-market-microstructure', () => import('./routes/equity-market-microstructure.js')],
+    ['fx-carry-trade-monitor', () => import('./routes/fx-carry-trade-monitor.js')],
+    ['private-credit-dashboard', () => import('./routes/private-credit-dashboard.js')],
+    ['sovereign-cds-monitor', () => import('./routes/sovereign-cds-monitor.js')],
+    ['equity-dividend-forecast', () => import('./routes/equity-dividend-forecast.js')],
+    ['clo-tranche-analytics', () => import('./routes/clo-tranche-analytics.js')],
+    ['equity-pairs-trading', () => import('./routes/equity-pairs-trading.js')],
+    ['treasury-futures-basis', () => import('./routes/treasury-futures-basis.js')],
+    ['credit-index-tranches', () => import('./routes/credit-index-tranches.js')],
+    ['mortgage-prepayment', () => import('./routes/mortgage-prepayment.js')],
+    ['option-skew-surface', () => import('./routes/option-skew-surface.js')],
+    ['equity-short-interest', () => import('./routes/equity-short-interest.js')],
+    ['warrant-pricing', () => import('./routes/warrant-pricing.js')],
+    ['trade-execution-quality', () => import('./routes/trade-execution-quality.js')],
+    ['freight-rate-monitor', () => import('./routes/freight-rate-monitor.js')],
+    ['power-market', () => import('./routes/power-market.js')],
+    ['special-situations', () => import('./routes/special-situations.js')],
+    ['industrial-metals', () => import('./routes/industrial-metals.js')],
+    ['securitization-pipeline', () => import('./routes/securitization-pipeline.js')],
+    ['equity-analyst-revisions', () => import('./routes/equity-analyst-revisions.js')],
+    ['natural-gas-storage', () => import('./routes/natural-gas-storage.js')],
+    ['precious-metals-lease', () => import('./routes/precious-metals-lease.js')],
+    ['corporate-action-calendar', () => import('./routes/corporate-action-calendar.js')],
+    ['sovereign-debt-maturity', () => import('./routes/sovereign-debt-maturity.js')],
+    ['agricultural-futures', () => import('./routes/agricultural-futures.js')],
+    ['bank-earnings', () => import('./routes/bank-earnings.js')],
+    ['private-equity-secondaries', () => import('./routes/private-equity-secondaries.js')],
+    ['sukuk-monitor', () => import('./routes/sukuk-monitor.js')],
+    ['frontier-market-debt', () => import('./routes/frontier-market-debt.js')],
+    ['aircraft-finance', () => import('./routes/aircraft-finance.js')],
+    ['rare-earth-battery-metals', () => import('./routes/rare-earth-battery-metals.js')],
+    ['data-center-infrastructure', () => import('./routes/data-center-infrastructure.js')],
+    ['sports-media-rights', () => import('./routes/sports-media-rights.js')],
+    ['luxury-collectibles-index', () => import('./routes/luxury-collectibles-index.js')],
+    ['fintech-digital-payments', () => import('./routes/fintech-digital-payments.js')],
+    ['cyber-risk-insurance', () => import('./routes/cyber-risk-insurance.js')],
+  ];
+  for (const [routePath, importFn] of panelRoutes) {
+    app.use(`/api/${routePath}`, lazyRoute(importFn));
+  }
 
   // Manual scrape trigger
   const scrapeLimiter = rateLimit({ windowMs: 60_000, max: 1, message: { error: 'Too many scrape requests' } });
