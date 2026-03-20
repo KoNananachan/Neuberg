@@ -1,13 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useOrderFlow, type ProfileBin, type DeltaPoint } from '../../api/hooks/use-order-flow';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
 
 // i18n helper with fallback
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 type RangeOption = '1d' | '5d' | '1mo';
 
 const RANGE_OPTIONS: { key: RangeOption; label: string; interval: string }[] = [

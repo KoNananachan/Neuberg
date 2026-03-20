@@ -1,14 +1,9 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useRelativeValuation, type ValuationMetrics, type PeerEntry } from '../../api/hooks/use-relative-valuation';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw, TrendingUp } from 'lucide-react';
 
 // ── Translation helper with fallback ──
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
 
 // ── Types ──
 

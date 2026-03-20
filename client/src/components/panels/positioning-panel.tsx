@@ -7,14 +7,10 @@ import {
   type SignalLevel,
   type IndicatorCategory,
 } from '../../api/hooks/use-positioning';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { Compass, RefreshCw } from 'lucide-react';
 
 // i18n helper with fallback
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  return (t as (k: string) => string)(key) || fallback;
-};
-
 // ── Signal Colors ──
 
 function getSignalColor(signal: SignalLevel): { text: string; fill: string; bg: string } {

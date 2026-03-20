@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { usePortfolioStressTest } from '../../api/hooks/use-portfolio-stress-test';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw, Loader2 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -16,14 +16,6 @@ const TAB_LABELS: { key: Tab; label: string }[] = [
 ];
 
 // ── i18n fallback helper ─────────────────────────────────────────────
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Color / formatting helpers ───────────────────────────────────────
 

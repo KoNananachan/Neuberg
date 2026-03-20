@@ -1,11 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import { useAbsRmbsMonitor } from '../../api/hooks/use-abs-rmbs-monitor';
-import { useT } from '../../i18n';
-
-type TFn = ReturnType<typeof useT>;
-const tr = (_t: TFn, _key: string, fallback: string): string => {
-  try { return (_t as (k: string) => string)(_key) || fallback; } catch { return fallback; }
-};
+import { useT, tr, TFn } from '../../i18n';
 
 const ACCENT = '#2dd4bf'; // teal-400
 

@@ -1,13 +1,6 @@
 import { useMemo } from 'react';
 import { useTradeRepository } from '../../api/hooks/use-trade-repository';
-import { useT } from '../../i18n';
-
-// ── i18n fallback helper ──
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
+import { useT, tr, TFn } from '../../i18n';
 
 // ── Local types (data shape placeholders) ──
 

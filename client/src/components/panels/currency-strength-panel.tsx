@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useCurrencyStrength, type CurrencyStrength } from '../../api/hooks/use-currency-strength';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { Activity, RefreshCw } from 'lucide-react';
 
 type TabMode = 'strength' | 'matrix';
@@ -17,10 +17,6 @@ const FLAG_EMOJI: Record<string, string> = {
 };
 
 // i18n keys may not exist yet — use fallback pattern
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  return (t as (k: string) => string)(key) || fallback;
-};
-
 function strengthColor(value: number): string {
   if (value >= 80) return '#34d399'; // emerald
   if (value >= 60) return '#4ade80'; // green

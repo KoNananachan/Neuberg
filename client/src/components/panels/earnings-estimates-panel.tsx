@@ -2,13 +2,9 @@ import { useState, useMemo } from 'react';
 import { GlassCard } from '../common/glass-card';
 import { useEarningsEstimates, type EarningsHistoryEntry, type EstimatePeriod, type RevisionPeriod } from '../../api/hooks/use-earnings-estimates';
 import { BarChart3, RefreshCw, Search } from 'lucide-react';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 type TabKey = 'estimates' | 'history' | 'revisions';
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as any)(key) || fallback; } catch { return fallback; }
-};
 
 function formatLargeNumber(n: number | null): string {
   if (n == null) return '-';

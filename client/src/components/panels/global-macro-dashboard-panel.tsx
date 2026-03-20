@@ -1,18 +1,8 @@
 import { Loader2 } from 'lucide-react';
 import { useGlobalMacroDashboard } from '../../api/hooks/use-global-macro-dashboard';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 const ACCENT = '#38bdf8'; // sky-400
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Formatting helpers ──
 

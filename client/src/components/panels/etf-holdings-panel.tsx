@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useETFHoldings, type ETFHolding, type SectorWeight } from '../../api/hooks/use-etf-holdings';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { Layers, RefreshCw, Search } from 'lucide-react';
 
 // ── Helpers ──
@@ -26,15 +26,6 @@ function fmtPct(n: number | null | undefined): string {
 }
 
 // Safe i18n: try translation key, fallback to literal
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    const result = (t as (k: string) => string)(key);
-    return result === key ? fallback : result;
-  } catch {
-    return fallback;
-  }
-};
-
 // ── Preset ETFs ──
 
 const PRESET_ETFS = ['SPY', 'QQQ', 'IWM', 'DIA', 'XLK', 'XLF', 'XLE'];

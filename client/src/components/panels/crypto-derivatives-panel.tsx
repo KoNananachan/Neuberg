@@ -1,6 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import { useCryptoDerivatives } from '../../api/hooks/use-crypto-derivatives';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 // -- Formatting helpers --
 
@@ -56,14 +56,6 @@ function spreadColor(n: number | null | undefined): string {
 }
 
 // -- i18n fallback helper --
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // -- Asset badge --
 

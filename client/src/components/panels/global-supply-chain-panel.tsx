@@ -1,5 +1,5 @@
 import { useGlobalSupplyChain } from '../../api/hooks/use-global-supply-chain';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw, Anchor } from 'lucide-react';
 
 import type {
@@ -11,14 +11,6 @@ import type {
 } from '../../api/hooks/use-global-supply-chain';
 
 // i18n fallback helper
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
-
 // ── Color helpers ──
 
 function changeColor(value: number): string {

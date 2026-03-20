@@ -1,10 +1,7 @@
 import { useState, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useOnchainAnalytics } from '../../api/hooks/use-onchain-analytics';
-import { useT } from '../../i18n';
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => { try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; } };
+import { useT, tr, TFn } from '../../i18n';
 
 type View = 'OVERVIEW' | 'EXCHANGE' | 'SUPPLY';
 

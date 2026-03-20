@@ -1,13 +1,9 @@
 import { useState } from 'react';
 import { useFundFlows, type FundFlowCategory, type FundFlowEtf } from '../../api/hooks/use-fund-flows';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 
 // i18n helper with fallback
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 // ── Number formatting ──
 
 function fmtFlow(n: number): string {

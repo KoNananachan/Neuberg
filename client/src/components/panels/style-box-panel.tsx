@@ -5,18 +5,8 @@ import {
   type StyleCell,
   type RotationSignal,
 } from '../../api/hooks/use-style-box';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { Grid3x3, RefreshCw, ArrowRight } from 'lucide-react';
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Constants ──
 

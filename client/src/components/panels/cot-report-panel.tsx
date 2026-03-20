@@ -1,17 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useCotReport, type CotEntry } from '../../api/hooks/use-cot-report';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { BarChart3, RefreshCw } from 'lucide-react';
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Types ──
 

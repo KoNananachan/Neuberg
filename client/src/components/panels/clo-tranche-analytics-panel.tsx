@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCloTrancheAnalytics } from '../../api/hooks/use-clo-tranche-analytics';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import {
   RefreshCw,
   Layers,
@@ -11,17 +11,6 @@ import {
   Rocket,
   Activity,
 } from 'lucide-react';
-
-// ── i18n fallback helper ──
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 const ACCENT = '#22d3ee'; // cyan-400
 const DIM = 'rgba(34,211,238,0.08)';

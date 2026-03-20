@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { PieChart, Plus, Trash2 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -78,10 +78,6 @@ function fmtPct(n: number): string {
 }
 
 // Translated string helper — keys don't exist yet so we cast and provide fallback
-function tr(t: ReturnType<typeof useT>, key: string, fallback: string): string {
-  return (t as (k: string) => string)(key) || fallback;
-}
-
 // ---------------------------------------------------------------------------
 // Default portfolio
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEquityFactorMonitor } from '../../api/hooks/use-equity-factor-monitor';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
 
 // ── Constants ──
@@ -9,16 +9,6 @@ const ACCENT = '#60a5fa'; // blue-400
 const ACCENT_DIM = 'rgba(96,165,250,0.08)';
 
 type Tab = 'performance' | 'spreads' | 'crowding' | 'correlation' | 'movers';
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Color helpers ──
 

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useFundManagerRanking } from '../../api/hooks/use-fund-manager-ranking';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FundManager = any;
@@ -8,16 +8,6 @@ type FundManager = any;
 type RiskAdjustedEntry = any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StrategyFlow = any;
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Constants ──
 

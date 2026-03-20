@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useFiRelativeValue } from '../../api/hooks/use-fi-relative-value';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
-// ── i18n fallback helper ──
-
-type TFn = ReturnType<typeof useT>;
-const tr = (_t: TFn, _key: string, fallback: string): string => {
-  try { return (_t as (k: string) => string)(_key) || fallback; } catch { return fallback; }
-};
 
 // ── Tabs ──
 

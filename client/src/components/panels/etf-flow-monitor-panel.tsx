@@ -1,11 +1,7 @@
 import { useEtfFlowMonitor } from '../../api/hooks/use-etf-flow-monitor';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 // i18n helper with fallback
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 // ── Formatting ──
 
 function fmtAum(n: number): string {

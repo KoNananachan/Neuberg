@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useRealEstateCapital } from '../../api/hooks/use-real-estate-capital';
-import { useT } from '../../i18n';
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => { try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; } };
+import { useT, tr, TFn } from '../../i18n';
 
 const ACCENT = '#f472b6';
 const ACCENT_DIM = 'rgba(244,114,182,0.08)';

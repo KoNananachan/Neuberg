@@ -1,18 +1,7 @@
 import { useState } from 'react';
 import { useABS } from '../../api/hooks/use-abs';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
-
-// ── i18n fallback helper ──
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 const ACCENT = '#facc15'; // yellow-400
 const DIM = 'rgba(250,204,21,0.12)';

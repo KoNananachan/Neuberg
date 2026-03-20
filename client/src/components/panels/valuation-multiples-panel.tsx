@@ -1,10 +1,7 @@
 import { useState, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useValuationMultiples } from '../../api/hooks/use-valuation-multiples';
-import { useT } from '../../i18n';
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => { try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; } };
+import { useT, tr, TFn } from '../../i18n';
 
 type View = 'COMPS' | 'SECTORS' | 'HISTORY';
 type SortKey = 'ticker' | 'peTrailing' | 'peForward' | 'evEbitda' | 'pSales' | 'pBook' | 'pegRatio' | 'pe5YPctile' | 'vsSector';

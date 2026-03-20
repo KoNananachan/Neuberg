@@ -1,11 +1,7 @@
 import { useGlobalTradeFlow } from '../../api/hooks/use-global-trade-flow';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 // i18n helper with fallback
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 // ── Constants ──
 
 const CYAN = '#22d3ee'; // cyan-400

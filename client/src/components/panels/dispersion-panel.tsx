@@ -1,13 +1,9 @@
 import { useState } from 'react';
 import { useDispersion, type DispersionData, type DispersionStock } from '../../api/hooks/use-dispersion';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
 
 // i18n helper with fallback for keys not yet in translations
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 // ── Color helpers ──
 
 const VIOLET = '#8b5cf6';

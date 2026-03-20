@@ -1,13 +1,8 @@
 import { useState } from 'react';
 import { useCommodityWarehouse } from '../../api/hooks/use-commodity-warehouse';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 // -- i18n fallback helper --
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
 
 // -- Constants --
 

@@ -1,13 +1,9 @@
 import { useState } from 'react';
 import { useMoneyFlow, type FlowData } from '../../api/hooks/use-money-flow';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
 
 // i18n helper with fallback
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 type Tab = 'overview' | 'sectors' | 'fixed_income';
 
 // ── Number formatting ──

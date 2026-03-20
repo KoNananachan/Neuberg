@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEquityStyle } from '../../api/hooks/use-equity-style';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw, ArrowRight } from 'lucide-react';
 
 // ── Constants ──
@@ -73,16 +73,6 @@ interface EquityStyleData {
   rotation: RotationSignal[];
   summary: Summary;
 }
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Color helpers ──
 

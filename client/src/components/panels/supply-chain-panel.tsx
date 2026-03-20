@@ -4,14 +4,10 @@ import {
   type SupplyChainIndicator,
   type SupplyChainSector,
 } from '../../api/hooks/use-supply-chain';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { Container, RefreshCw, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 // i18n helper with fallback
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 // ── Constants ──
 
 const ORANGE = '#f97316';

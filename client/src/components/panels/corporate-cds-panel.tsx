@@ -4,14 +4,8 @@ import {
   type CorporateCdsEntry,
   type CdsSectorSummary,
 } from '../../api/hooks/use-corporate-cds';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { ShieldAlert, RefreshCw } from 'lucide-react';
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  return (t as (k: string) => string)(key) || fallback;
-};
 
 // ── Constants ──
 

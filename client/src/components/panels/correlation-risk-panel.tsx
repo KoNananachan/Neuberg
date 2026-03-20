@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import { useCorrelationRisk } from '../../api/hooks/use-correlation-risk';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
 
 // i18n helper with fallback
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 // ── Constants ──
 
 const VIOLET = '#a78bfa';

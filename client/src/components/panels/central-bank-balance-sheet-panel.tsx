@@ -6,18 +6,8 @@ import {
   type QtTimelineEntry,
   type BalanceSheetSummary,
 } from '../../api/hooks/use-central-bank-balance-sheet';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Formatting helpers ──
 

@@ -2,13 +2,7 @@ import { useMemo } from 'react';
 import { GlassCard } from '../common/glass-card';
 import { useEarningsWhisper } from '../../api/hooks/use-earnings-whisper';
 import { RefreshCw } from 'lucide-react';
-import { useT } from '../../i18n';
-
-// ── i18n helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
+import { useT, tr, TFn } from '../../i18n';
 
 // ── Types ──
 

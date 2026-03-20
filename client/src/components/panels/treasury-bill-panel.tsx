@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTreasuryBill } from '../../api/hooks/use-treasury-bill';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,16 +71,6 @@ function flowColor(n: number | undefined | null): string {
   if (n < 0) return 'text-red-400';
   return 'text-neutral-500';
 }
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Main Panel ──
 

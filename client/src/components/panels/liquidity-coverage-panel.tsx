@@ -7,14 +7,10 @@ import {
   type CashFlowBucket,
   type LiquidityCoverageData,
 } from '../../api/hooks/use-liquidity-coverage';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
 
 // i18n helper with fallback
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 // ── Constants ──
 
 const SKY = '#38bdf8';

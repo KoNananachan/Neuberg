@@ -1,17 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSovereignCdsMonitor } from '../../api/hooks/use-sovereign-cds-monitor';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw, AlertTriangle, TrendingUp, TrendingDown, Globe, BarChart3, Activity } from 'lucide-react';
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Constants ──
 

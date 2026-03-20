@@ -1,10 +1,7 @@
 import { useState, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useMuniBonds } from '../../api/hooks/use-muni-bonds';
-import { useT } from '../../i18n';
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => { try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; } };
+import { useT, tr, TFn } from '../../i18n';
 
 type View = 'STATES' | 'BONDS' | 'CURVE';
 

@@ -1,12 +1,8 @@
 import { useTailRisk, type TailRiskData, type TailRiskIndicator } from '../../api/hooks/use-tail-risk';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 // i18n fallback helper
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  return (t as (k: string) => string)(key) || fallback;
-};
-
 // ── Color Helpers ──
 
 type RiskLevel = TailRiskData['level'];

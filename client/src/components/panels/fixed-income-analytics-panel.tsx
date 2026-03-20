@@ -1,10 +1,7 @@
 import { useState, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useFixedIncomeAnalytics } from '../../api/hooks/use-fixed-income-analytics';
-import { useT } from '../../i18n';
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => { try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; } };
+import { useT, tr, TFn } from '../../i18n';
 
 type View = 'BONDS' | 'RISK' | 'KRD';
 type SortKey = 'ticker' | 'yield' | 'duration' | 'oas' | 'convexity' | 'dv01' | 'price';

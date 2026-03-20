@@ -1,17 +1,7 @@
 import { useState } from 'react';
 import { useTreasuryFuturesBasis } from '../../api/hooks/use-treasury-futures-basis';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Local types ──
 

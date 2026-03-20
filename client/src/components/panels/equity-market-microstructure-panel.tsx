@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useEquityMarketMicrostructure } from '../../api/hooks/use-equity-market-microstructure';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw, Activity, Shield, BarChart3 } from 'lucide-react';
 
 // ── Constants ──
@@ -12,16 +12,6 @@ const RED = '#ef4444';
 const YELLOW = '#eab308';
 
 type Tab = 'spreads' | 'orderbook' | 'toxicity' | 'darkpool' | 'flow' | 'impact';
-
-// ── i18n fallback helper ──
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── Fallback data ──
 

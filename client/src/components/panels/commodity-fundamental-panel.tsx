@@ -1,16 +1,11 @@
 import { useState } from 'react';
 import { useCommodityFundamental } from '../../api/hooks/use-commodity-fundamental';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 const ACCENT = '#a3e635'; // lime-400
 const ACCENT_DIM = 'rgba(163,230,53,0.08)';
 
 type Tab = 'sd' | 'inventory' | 'opec' | 'production' | 'valuation';
-
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
 
 // ── Formatting helpers ──
 

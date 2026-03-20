@@ -1,13 +1,8 @@
 import { useRiskScenarioAnalysis } from '../../api/hooks/use-risk-scenario-analysis';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { ShieldAlert, RefreshCw } from 'lucide-react';
 
 // i18n fallback helper
-type TFn = ReturnType<typeof useT>;
-const tr = (t: TFn, key: string, fallback: string): string => {
-  try { return (t as (k: string) => string)(key) || fallback; } catch { return fallback; }
-};
-
 // ── Color / formatting helpers ──
 
 function fmtPct(n: number | null | undefined, decimals = 2): string {

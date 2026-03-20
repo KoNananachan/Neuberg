@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEquityLending } from '../../api/hooks/use-equity-lending';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EquityLendingData = any;
@@ -14,11 +14,6 @@ type SectorBreakdown = any;
 type FeeTrend = any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type NewLoan = any;
-
-type TFn = ReturnType<typeof useT>;
-const tr = (_t: TFn, _key: string, fallback: string): string => {
-  try { return (_t as (k: string) => string)(_key) || fallback; } catch { return fallback; }
-};
 
 const ACCENT = '#fb923c'; // orange-400
 

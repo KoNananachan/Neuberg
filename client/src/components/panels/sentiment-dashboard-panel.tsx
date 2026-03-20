@@ -4,14 +4,10 @@ import {
   type SentimentIndicator,
   type SentimentLevel,
 } from '../../api/hooks/use-sentiment-dashboard';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 import { RefreshCw } from 'lucide-react';
 
 // i18n helper with fallback
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  return (t as (k: string) => string)(key) || fallback;
-};
-
 // ── Color Helpers ──
 
 function getLevelColor(level: SentimentLevel): { text: string; fill: string; bg: string; stroke: string } {

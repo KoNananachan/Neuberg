@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useCurrencyBasket } from '../../api/hooks/use-currency-basket';
-import { useT } from '../../i18n';
+import { useT, tr, TFn } from '../../i18n';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CurrencyBasketData = any;
@@ -14,14 +14,6 @@ type ReerEntry = any;
 type CustomBasket = any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TwiEntry = any;
-
-const tr = (t: ReturnType<typeof useT>, key: string, fallback: string): string => {
-  try {
-    return (t as (k: string) => string)(key) || fallback;
-  } catch {
-    return fallback;
-  }
-};
 
 // ── DXY component weights (ICE methodology) ──
 
