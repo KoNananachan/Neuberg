@@ -276,6 +276,7 @@ model InsiderTrade {
   @@index([symbol])
   @@index([filingDate])
   @@index([transactionType])
+  @@index([symbol, filingDate])
 }
 
 model SentimentArchive {

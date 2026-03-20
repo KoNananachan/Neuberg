@@ -83,6 +83,7 @@ export function useNewsById(id: number | null) {
     queryKey: ['news', id],
     queryFn: () => api.get<NewsArticle>(`/news/${id}`),
     enabled: id !== null,
+    staleTime: 60_000,
   });
 }
 

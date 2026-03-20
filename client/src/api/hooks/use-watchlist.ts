@@ -14,6 +14,7 @@ export function useWatchlist() {
     queryKey: ['watchlist'],
     queryFn: () => api.get<WatchlistItem[]>('/watchlist'),
     refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 }
 

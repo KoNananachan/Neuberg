@@ -24,5 +24,6 @@ export function useRecommendations(limit = 20) {
   return useQuery({
     queryKey: ['recommendations', limit],
     queryFn: () => api.get<Recommendation[]>(`/recommendations?limit=${limit}`),
+    staleTime: 30_000,
   });
 }

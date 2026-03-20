@@ -39,7 +39,12 @@ router.get('/', async (req, res) => {
     const [articles, total] = await Promise.all([
       prisma.newsArticle.findMany({
         where,
-        include: { category: true, recommendations: true },
+        include: {
+          category: true,
+          recommendations: {
+            select: { id: true, symbol: true, action: true, confidence: true, reason: true, reasonTranslations: true, createdAt: true },
+          },
+        },
         orderBy: [{ publishedAt: 'desc' }, { scrapedAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
