@@ -195,7 +195,7 @@ const CROSSOVER_TEMPLATE = [
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cacheData: CreditSpreadResponse | null = null;
 let cacheTime = 0;
 

@@ -37,7 +37,7 @@ const COMPANIES = [
 
 const CONTROVERSY_TYPES = ['Labor Practices', 'Environmental Violation', 'Data Privacy', 'Supply Chain', 'Product Safety', 'Governance Failure', 'Tax Avoidance', 'Anti-Competitive', 'Human Rights'];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

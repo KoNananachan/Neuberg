@@ -53,7 +53,7 @@ const SECTORS = [
   { sector: 'Financial Services', baseVolume: 18, baseSpread: 330, baseLeverage: 4.2, baseDealCount: 14, baseDefault: 0.8 },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

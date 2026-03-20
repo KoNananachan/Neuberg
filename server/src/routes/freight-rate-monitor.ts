@@ -91,7 +91,7 @@ const PORTS = [
   { port: 'Houston', country: 'USA', baseVessels: 62, baseWaitDays: 2.4 },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

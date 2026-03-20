@@ -387,7 +387,7 @@ function generateAdvancedBreadth(): AdvancedBreadthResponse {
 }
 
 // ── Cache ────────────────────────────────────────────────────────────────────
-const CACHE_TTL = 60 * 60_000; // 5 minutes
+const CACHE_TTL = 12 * 60 * 60_000; // 5 minutes
 let cache: AdvancedBreadthResponse | null = null;
 let cacheTime = 0;
 

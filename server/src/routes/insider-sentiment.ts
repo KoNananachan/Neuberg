@@ -33,7 +33,7 @@ const INSIDERS = [
 const TITLES = ['CEO', 'CFO', 'COO', 'SVP', 'EVP', 'Director', 'VP Operations', 'General Counsel', 'CTO', 'President'];
 const FORM_TYPES = ['Form 4', 'Form 4', 'Form 4', 'Form 4', 'Form 144', '13D', '13G'];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

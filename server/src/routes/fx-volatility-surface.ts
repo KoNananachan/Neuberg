@@ -23,7 +23,7 @@ const TENOR_FACTORS: Record<string, number> = {
   '1W': 0.88, '2W': 0.92, '1M': 1.00, '2M': 1.04, '3M': 1.07, '6M': 1.12, '1Y': 1.18,
 };
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

@@ -60,6 +60,5 @@ export function useLiquidityCoverage() {
     queryKey: ['liquidity-coverage'],
     queryFn: () => api.get<LiquidityCoverageData>('/liquidity-coverage'),
     staleTime: 5 * 60_000,
-    refetchInterval: 10 * 60_000,
   });
 }

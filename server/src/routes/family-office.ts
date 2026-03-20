@@ -201,7 +201,7 @@ const FILING_TEMPLATES: FilingTemplate[] = [
 
 // -- Cache --
 
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: FamilyOfficeResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,

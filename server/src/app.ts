@@ -634,7 +634,7 @@ export function createApp() {
     if (req.method !== 'GET' || skip.some(p => req.path.startsWith(p))) {
       return next();
     }
-    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=1800');
     next();
   });
 

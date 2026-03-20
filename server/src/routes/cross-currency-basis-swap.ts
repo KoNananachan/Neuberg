@@ -114,7 +114,7 @@ const HISTORY_PAIRS = [
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: CrossCurrencyBasisSwapResponse | null; ts: number } = { data: null, ts: 0 };
 
 // ── Helpers ──

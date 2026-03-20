@@ -86,7 +86,7 @@ const SAUDI_BASE_YIELDS = [4.55, 4.70, 4.82, 5.00, 5.15, 5.30, 5.48, 5.60, 5.72]
 
 // -- Cache --
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // -- Helpers --

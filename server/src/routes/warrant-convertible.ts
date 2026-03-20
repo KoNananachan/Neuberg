@@ -47,7 +47,7 @@ const WARRANT_ISSUERS = [
   { issuer: 'Ginkgo Bioworks', ticker: 'DNA', strikeBase: 10, stockBase: 2.8, expiry: '2028-03-15' },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cacheData: unknown = null;
 let cacheTime = 0;
 

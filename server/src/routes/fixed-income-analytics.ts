@@ -35,7 +35,7 @@ const BONDS = [
   { name: 'iShares IG Corporate', ticker: 'LQD', coupon: 3.8, maturity: '2033-06-01', rating: 'A-', sector: 'ETF', baseYield: 5.1, baseDur: 8.2 },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

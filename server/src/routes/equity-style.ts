@@ -138,7 +138,7 @@ const STYLE_NAMES: readonly string[] = ['Value', 'Growth', 'Momentum', 'Quality'
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: EquityStyleData | null; ts: number } = { data: null, ts: 0 };
 
 // ── Data Generation ──

@@ -45,7 +45,7 @@ interface SeasonalityResponse {
 // ── Cache ──
 
 const cache = new Map<string, { data: SeasonalityResponse; expiresAt: number }>();
-const CACHE_TTL = 60 * 60_000; // 1 hour
+const CACHE_TTL = 12 * 60 * 60_000; // 1 hour
 const MAX_CACHE_SIZE = 100;
 
 // ── Helpers ──

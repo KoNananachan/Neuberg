@@ -53,7 +53,7 @@ const DELINQUENCY_TEMPLATES = [
 const STATUSES = ['Priced', 'Pricing', 'Pre-Marketing', 'Closed'] as const;
 const OUTLOOKS = ['Improving', 'Stable', 'Weakening'] as const;
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

@@ -40,7 +40,7 @@ const TRADE_ROUTES = [
   { id: 'TC2', name: 'MR Product AG-Japan', unit: '$/mt', base: 28 },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

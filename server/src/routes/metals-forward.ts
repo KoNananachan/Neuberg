@@ -25,7 +25,7 @@ const METALS = [
 const TENORS = ['Cash', '3M', '6M', '12M', '15M', '27M'] as const;
 const TENOR_MONTHS = [0, 3, 6, 12, 15, 27] as const;
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

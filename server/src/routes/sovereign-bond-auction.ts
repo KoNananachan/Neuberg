@@ -140,7 +140,7 @@ interface SovereignBondAuctionResponse {
   generatedAt: string;
 }
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: SovereignBondAuctionResponse; ts: number } | null = null;
 
 // Get the Monday of the week for a given date

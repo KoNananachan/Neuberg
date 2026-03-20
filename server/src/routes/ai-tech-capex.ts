@@ -420,7 +420,7 @@ function generateAll(): AITechCapexData {
 
 let cacheData: AITechCapexData | null = null;
 let cacheTime = 0;
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 
 // -- Route --
 

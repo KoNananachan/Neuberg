@@ -4,7 +4,7 @@ const router = Router();
 
 // In-memory cache: handle → { videoId, ts } (bounded to prevent memory leaks)
 const cache = new Map<string, { videoId: string | null; ts: number }>();
-const CACHE_TTL = 60 * 60_000; // 5 min
+const CACHE_TTL = 12 * 60 * 60_000; // 5 min
 const CACHE_MAX_SIZE = 200;
 
 // GET /api/streams/live-id?handle=@ChannelHandle

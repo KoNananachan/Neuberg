@@ -268,7 +268,7 @@ function generateFiscalData(): CountryFiscalData[] {
 
 let cacheData: CountryFiscalData[] | null = null;
 let cacheTime = 0;
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 
 // ── Route ──
 

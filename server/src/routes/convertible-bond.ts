@@ -104,7 +104,7 @@ const SECTORS: Array<{ sector: string; outBase: number }> = [
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: ConvertibleBondResponse; ts: number } | null = null;
 
 // ── Generator ──

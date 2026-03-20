@@ -53,7 +53,7 @@ const SEASONAL_BASE = {
   container: [95, 90, 92, 96, 98, 100, 104, 108, 106, 102, 98, 95],
 };
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

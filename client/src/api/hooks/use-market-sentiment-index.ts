@@ -54,7 +54,6 @@ export function useMarketSentimentIndex() {
   return useQuery<MarketSentimentIndexData>({
     queryKey: ['market-sentiment-index'],
     queryFn: () => api.get<MarketSentimentIndexData>('/market-sentiment-index'),
-    refetchInterval: 3 * 60_000,
     staleTime: 2 * 60_000,
   });
 }

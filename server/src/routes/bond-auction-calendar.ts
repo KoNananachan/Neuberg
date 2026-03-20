@@ -90,7 +90,7 @@ const AUCTION_STATUSES = ['strong', 'fair', 'weak'] as const;
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // ── Helpers ──

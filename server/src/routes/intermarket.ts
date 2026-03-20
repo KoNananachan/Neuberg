@@ -157,7 +157,7 @@ const ALL_SYMBOLS = Array.from(
 // ── Cache (5-minute TTL) ──
 
 let cache: { data: IntermarketResponse; expiresAt: number } | null = null;
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 
 // ── Math helpers ──
 

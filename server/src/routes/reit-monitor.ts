@@ -33,7 +33,7 @@ const REITS = [
   { ticker: 'ESS', name: 'Essex Property', type: 'Residential', baseNAV: 280, baseFFO: 15.0, baseDiv: 3.5 },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

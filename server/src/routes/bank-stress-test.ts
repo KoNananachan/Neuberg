@@ -90,7 +90,7 @@ interface BankStressTestResponse {
 // ── Cache ──
 
 let cache: { data: BankStressTestResponse | null; ts: number } = { data: null, ts: 0 };
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 
 // ── Bank seed data ──
 

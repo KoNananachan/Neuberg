@@ -64,7 +64,7 @@ const BLOCK_SELLERS = [
 const OFFER_TYPES = ['follow-on', 'block', 'ATM', 'convertible'] as const;
 const IPO_STATUSES = ['filed', 'roadshow', 'priced', 'trading'] as const;
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

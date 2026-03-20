@@ -95,7 +95,7 @@ const AGRI_SEASONAL = [0.90, 0.92, 0.98, 1.12, 1.15, 1.05, 0.95, 0.93, 1.08, 1.1
 // Metals: relatively flat with slight Q4 uptick
 const METALS_SEASONAL = [0.98, 0.96, 0.95, 0.97, 0.98, 0.97, 0.96, 0.98, 1.00, 1.02, 1.05, 1.08];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

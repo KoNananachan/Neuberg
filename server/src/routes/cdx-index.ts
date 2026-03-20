@@ -49,7 +49,7 @@ const TOP_MOVERS_NAMES = [
   { ticker: 'AIG', name: 'AIG', sector: 'Insurance' },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

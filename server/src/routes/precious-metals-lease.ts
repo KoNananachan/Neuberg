@@ -134,7 +134,7 @@ const ETF_SEEDS = [
   { ticker: 'PALL', metal: 'Palladium', holdingsBase: 5.1,    aumBase: 0.29  },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // -- Helpers --

@@ -41,7 +41,7 @@ interface ETFHoldingsData {
 // ── Cache: 1 hour per symbol ──
 
 const cache = new Map<string, { data: ETFHoldingsData; time: number }>();
-const CACHE_TTL = 60 * 60_000; // 1 hour
+const CACHE_TTL = 12 * 60 * 60_000; // 1 hour
 
 // ── Helpers ──
 

@@ -29,7 +29,7 @@ const STRUCTURES = ['Fixed Rate', 'Floating Rate', 'Zero Coupon', 'Callable', 'P
 const LEAD_MANAGERS = ['JPMorgan', 'Goldman Sachs', 'Morgan Stanley', 'BofA Securities', 'Citi', 'Barclays', 'Deutsche Bank', 'HSBC', 'BNP Paribas', 'UBS'];
 const RATINGS_MAP = ['AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-', 'BB+', 'BB', 'B+', 'B', 'NR'];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

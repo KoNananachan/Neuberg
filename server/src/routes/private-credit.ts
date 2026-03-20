@@ -57,7 +57,7 @@ const DEAL_PIPELINE_BORROWERS = [
 ];
 const DEAL_PIPELINE_ARRANGERS = ['Ares Management', 'Owl Rock', 'Golub Capital', 'HPS Investment', 'Blue Owl', 'KKR Credit'];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cacheData: unknown = null;
 let cacheTime = 0;
 

@@ -49,7 +49,6 @@ export function useGlobalSupplyChain() {
   return useQuery<GlobalSupplyChainData>({
     queryKey: ['global-supply-chain'],
     queryFn: () => api.get<GlobalSupplyChainData>('/global-supply-chain'),
-    refetchInterval: 10 * 60 * 1000,
     staleTime: 5 * 60 * 1000,
   });
 }

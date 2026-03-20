@@ -154,7 +154,7 @@ const LIQUIDITY_TRENDS: LiquidityTrend[] = ['improving', 'stable', 'deterioratin
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: LiquidityMonitorData; ts: number } | null = null;
 
 // ── Data Generation ──

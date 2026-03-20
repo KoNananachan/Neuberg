@@ -87,7 +87,7 @@ const TENOR_MULT: Record<string, number> = {
   '1W': 0.88, '2W': 0.92, '1M': 1.00, '2M': 1.03, '3M': 1.06, '6M': 1.10, '1Y': 1.14,
 };
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cacheData: unknown = null;
 let cacheTime = 0;
 

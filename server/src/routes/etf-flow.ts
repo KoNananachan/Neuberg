@@ -212,7 +212,7 @@ const REDEMPTION_DEFS: CreationRedemptionDef[] = [
 
 // --- Cache ---
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: ETFFlowData; ts: number } | null = null;
 
 // --- Generator ---

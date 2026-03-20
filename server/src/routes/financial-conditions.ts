@@ -391,7 +391,7 @@ let cache: { data: FinancialConditionsData | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,
 };
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 
 // ── Route ──
 

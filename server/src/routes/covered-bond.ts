@@ -394,7 +394,7 @@ function generate(): CoveredBondResponse {
 
 // ── Cache (5min TTL, stale fallback) ──
 
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: CoveredBondResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,

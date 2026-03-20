@@ -71,7 +71,7 @@ let cache: { data: RateProbabilityResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,
 };
-const CACHE_TTL = 60 * 60_000; // 5 minutes
+const CACHE_TTL = 12 * 60 * 60_000; // 5 minutes
 
 // ── Central bank configuration ──
 

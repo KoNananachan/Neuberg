@@ -34,7 +34,7 @@ const STRATEGIES = [
 
 const TIMEFRAMES = ['Intraday', '1-3 Days', '1 Week', '2 Weeks', '1 Month', '3 Months'];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

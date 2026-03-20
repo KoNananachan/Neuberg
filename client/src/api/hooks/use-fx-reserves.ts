@@ -5,7 +5,6 @@ export function useFxReserves() {
   return useQuery({
     queryKey: ['fx-reserves'],
     queryFn: () => api.get<any>('/fx-reserves'),
-    refetchInterval: 300000,
     staleTime: 180000,
   });
 }

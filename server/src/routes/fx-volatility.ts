@@ -30,7 +30,7 @@ const PAIRS = [
 const TERM_STRUCTURE_PAIRS = ['EURUSD', 'USDJPY', 'GBPUSD'];
 const TENORS = ['1W', '2W', '1M', '3M', '6M', '1Y'];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

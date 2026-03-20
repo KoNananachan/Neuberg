@@ -519,7 +519,7 @@ let cache: { data: SanctionsMonitorResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,
 };
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 
 // ── Route ──
 

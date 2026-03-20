@@ -71,7 +71,7 @@ const LTV_BUCKETS = ['<=60', '60-70', '70-80', '80-90', '90-95', '>95'];
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // ── Data generation ──

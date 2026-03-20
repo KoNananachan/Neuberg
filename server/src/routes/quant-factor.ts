@@ -196,7 +196,7 @@ const CORRELATION_PRIORS: [number, number, number][] = [
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: QuantFactorData; ts: number } | null = null;
 
 // ── Helpers ──

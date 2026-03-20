@@ -5,7 +5,6 @@ export function useCommercialPaper() {
   return useQuery({
     queryKey: ['commercial-paper'],
     queryFn: () => api.get<any>('/commercial-paper'),
-    refetchInterval: 300000,
     staleTime: 180000,
   });
 }

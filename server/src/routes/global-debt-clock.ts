@@ -81,7 +81,7 @@ interface GlobalDebtClockData {
 // --- Cache ---
 let cachedData: GlobalDebtClockData | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 60 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 5 minutes
 
 // --- Helper ---
 function jitter(rng: () => number, base: number, pct: number): number {

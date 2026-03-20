@@ -187,7 +187,7 @@ function gaussian(rng: () => number): number {
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 5 minutes
 let cache: { data: EquityScreenData | null; ts: number } = { data: null, ts: 0 };
 
 // ── Generator ──

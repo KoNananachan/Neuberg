@@ -63,7 +63,7 @@ interface EconomicSurprisesData {
 // ── Cache (5min TTL) ──
 
 let cache: { data: EconomicSurprisesData | null; expiresAt: number } = { data: null, expiresAt: 0 };
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 
 // ── Helpers ──
 

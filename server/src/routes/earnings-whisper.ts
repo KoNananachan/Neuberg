@@ -81,7 +81,7 @@ interface EarningsWhisperResponse {
 
 let cachedData: { data: EarningsWhisperResponse; ts: number } | null = null;
 let staleData: EarningsWhisperResponse | null = null;
-const CACHE_TTL = 60 * 60_000; // 5 minutes
+const CACHE_TTL = 12 * 60 * 60_000; // 5 minutes
 
 // ── Stock Definitions ──
 

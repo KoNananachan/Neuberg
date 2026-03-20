@@ -83,7 +83,7 @@ const INTRADAY_SPREAD_MULTIPLIERS = [
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // ── Generator ──

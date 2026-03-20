@@ -71,7 +71,7 @@ const LESSORS = [
   { name: 'DAE Capital', baseFleetCount: 480, basePortfolioValue: 12, baseAvgAge: 7.4, baseOrderBook: 120 },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

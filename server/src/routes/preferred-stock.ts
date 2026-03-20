@@ -143,7 +143,7 @@ const NEW_ISSUE_ISSUERS = [
 
 // ── Cache ───────────────────────────────────────────────────────────────────
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: PreferredStockData; ts: number } | null = null;
 
 // ── Generator ───────────────────────────────────────────────────────────────

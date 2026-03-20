@@ -30,7 +30,7 @@ const ISSUERS = [
   { issuer: 'ON Semi', ticker: 'ON', coupon: 0.0, maturity: '2029-06-01', convPrice: 95, stockBase: 76, rating: 'BBB-', sizeM: 1200 },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

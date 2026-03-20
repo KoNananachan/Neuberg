@@ -43,7 +43,7 @@ interface FibonacciCache {
 }
 
 const cache = new Map<string, FibonacciCache>();
-const CACHE_TTL = 60 * 60_000; // 5 minutes
+const CACHE_TTL = 12 * 60 * 60_000; // 5 minutes
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;

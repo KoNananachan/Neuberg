@@ -129,7 +129,7 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 
 // -- Cache --
 
-const CACHE_TTL = 60 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 5 minutes
 let cacheData: unknown = null;
 let cacheTime = 0;
 

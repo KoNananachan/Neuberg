@@ -116,7 +116,7 @@ const SOFR_ON_BASE = 5.31;
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: FundingRateMonitorResponse; ts: number } | null = null;
 
 // ── Data generation ──

@@ -261,7 +261,7 @@ const TENDER_TEMPLATES: TenderTemplate[] = [
 
 // ── Cache ──
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: SpecialSituationsResponse; ts: number } | null = null;
 
 // ── Helpers ──

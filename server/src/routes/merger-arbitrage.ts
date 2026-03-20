@@ -52,7 +52,7 @@ const DEAL_TEMPLATES = [
 
 const SECTORS = ['Technology', 'Healthcare', 'Energy', 'Financials', 'Consumer', 'Industrials'];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

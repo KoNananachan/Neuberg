@@ -60,7 +60,7 @@ const CORR_SIGNALS = ['Converging', 'Diverging', 'Fair'] as const;
 const VOL_REGIMES = ['Low Vol', 'Normal', 'Elevated', 'Crisis'] as const;
 const VOL_TRENDS = ['Rising', 'Falling', 'Stable'] as const;
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

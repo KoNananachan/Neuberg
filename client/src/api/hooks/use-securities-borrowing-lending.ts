@@ -5,7 +5,6 @@ export function useSecuritiesBorrowingLending() {
   return useQuery({
     queryKey: ['securities-borrowing-lending'],
     queryFn: () => api.get<any>('/securities-borrowing-lending'),
-    refetchInterval: 300000,
     staleTime: 180000,
   });
 }

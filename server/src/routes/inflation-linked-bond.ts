@@ -194,7 +194,7 @@ function round4(v: number): number { return Math.round(v * 10000) / 10000; }
 
 // ── Cache ────────────────────────────────────────────────────────────────────
 
-const CACHE_TTL = 60 * 60_000;
+const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: InflationLinkedBondResponse; ts: number } | null = null;
 
 // ── Data generation ──────────────────────────────────────────────────────────

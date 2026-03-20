@@ -114,7 +114,7 @@ const PIPELINE_COMPANIES: { company: string; sector: Sector }[] = [
   { company: 'Arcanium Semiconductor', sector: 'Technology' },
 ];
 
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: ECRData; ts: number } | null = null;
 
 function generate(): ECRData {
