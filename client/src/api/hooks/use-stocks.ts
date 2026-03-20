@@ -95,6 +95,7 @@ export function useStockQuotes() {
     queryKey: ['stocks', 'quotes'],
     queryFn: () => api.get<StockQuote[]>('/stocks/quotes'),
     refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 }
 
@@ -206,5 +207,7 @@ export function useStockDetail(
     queryKey: ['stocks', symbol, range, interval],
     queryFn: () => api.get<StockDetail>(`/stocks/${symbol}${qs ? `?${qs}` : ''}`),
     enabled: symbol !== null,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
   });
 }

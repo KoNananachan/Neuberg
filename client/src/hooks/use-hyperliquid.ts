@@ -17,9 +17,9 @@ import {
 import type { AllMids } from '../lib/hyperliquid/types';
 
 // Refresh intervals
-const FAST = 3_000;   // prices, orderbook
-const MEDIUM = 10_000; // user state
-const SLOW = 30_000;   // fills, meta
+const FAST = 5_000;    // prices, orderbook (was 3s)
+const MEDIUM = 15_000; // user state (was 10s)
+const SLOW = 60_000;   // fills, meta (was 30s)
 
 export function useAllMids() {
   return useQuery({

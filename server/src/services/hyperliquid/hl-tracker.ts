@@ -36,6 +36,41 @@ let perpAssets: HlAsset[] = [];
 let stockPerpAssets: HlAsset[] = [];
 let lastUpdated: number = 0;
 
+// Previous snapshot keyed by symbol for delta detection
+let prevPerps = new Map<string, HlAsset>();
+let prevStockPerps = new Map<string, HlAsset>();
+let isFirstBroadcast = true;
+
+function assetChanged(a: HlAsset, b: HlAsset): boolean {
+  return a.markPx !== b.markPx
+    || a.prevDayPx !== b.prevDayPx
+    || a.funding !== b.funding
+    || a.openInterest !== b.openInterest
+    || a.dayNtlVlm !== b.dayNtlVlm;
+}
+
+function buildSnapshot(map: Map<string, HlAsset>): Map<string, HlAsset> {
+  const m = new Map<string, HlAsset>();
+  for (const [k, v] of map) m.set(k, { ...v });
+  return m;
+}
+
+function computeDelta(
+  current: HlAsset[],
+  prev: Map<string, HlAsset>,
+): HlAsset[] | null {
+  const changed: HlAsset[] = [];
+  for (const a of current) {
+    const old = prev.get(a.symbol);
+    if (!old || assetChanged(a, old)) {
+      changed.push(a);
+    }
+  }
+  // If most assets changed, send full snapshot (delta overhead not worth it)
+  if (changed.length > current.length * 0.6) return null;
+  return changed;
+}
+
 // Hyperliquid perps that are commodity/index proxies
 const COMMODITY_PERPS = new Set(['PAXG']);
 
@@ -129,12 +164,33 @@ async function refresh() {
     stockPerpAssets = parseAssets(stockData[0], stockData[1], 'stock-perp');
     lastUpdated = Date.now();
 
-    // Broadcast combined update to all WebSocket clients
-    broadcastHyperliquidUpdate({
-      perps: perpAssets,
-      stockPerps: stockPerpAssets,
-      updatedAt: lastUpdated,
-    });
+    // Delta broadcast: only send changed assets after first full snapshot
+    if (isFirstBroadcast) {
+      broadcastHyperliquidUpdate({
+        perps: perpAssets,
+        stockPerps: stockPerpAssets,
+        updatedAt: lastUpdated,
+        delta: false,
+      });
+      isFirstBroadcast = false;
+    } else {
+      const perpDelta = computeDelta(perpAssets, prevPerps);
+      const stockDelta = computeDelta(stockPerpAssets, prevStockPerps);
+
+      // Only broadcast if something actually changed
+      if (perpDelta !== null || stockDelta !== null) {
+        broadcastHyperliquidUpdate({
+          perps: perpDelta ?? perpAssets,
+          stockPerps: stockDelta ?? stockPerpAssets,
+          updatedAt: lastUpdated,
+          delta: !!(perpDelta && stockDelta), // true only if both are deltas
+        });
+      }
+    }
+
+    // Store snapshot for next delta comparison
+    prevPerps = new Map(perpAssets.map(a => [a.symbol, { ...a }]));
+    prevStockPerps = new Map(stockPerpAssets.map(a => [a.symbol, { ...a }]));
   } catch (err: any) {
     console.error('[HLTracker] Error refreshing:', err?.message);
   } finally {

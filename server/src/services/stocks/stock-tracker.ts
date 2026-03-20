@@ -12,7 +12,9 @@ async function refreshQuotes() {
   if (getClientCount() === 0) return;
   isRefreshing = true;
   try {
-    const tracked = await prisma.trackedStock.findMany();
+    const tracked = await prisma.trackedStock.findMany({
+      select: { symbol: true },
+    });
     if (tracked.length === 0) return;
 
     const symbols = tracked.map((t) => t.symbol);

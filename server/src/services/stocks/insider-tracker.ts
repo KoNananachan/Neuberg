@@ -18,45 +18,52 @@ async function pollInsiderTrades() {
 
     console.log(`[InsiderTracker] Checking insider trades for ${trackedStocks.length} symbols`);
 
+    // Pre-fetch existing trade keys for batch dedup (avoids N+1 findFirst queries)
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60_000);
+    const existingTrades = await prisma.insiderTrade.findMany({
+      where: { tradeDate: { gte: ninetyDaysAgo } },
+      select: { symbol: true, ownerName: true, tradeDate: true, shares: true, transactionType: true },
+    });
+    const existingKeys = new Set(
+      existingTrades.map(t => `${t.symbol}|${t.ownerName}|${t.tradeDate.getTime()}|${t.shares}|${t.transactionType}`),
+    );
+
     for (const stock of trackedStocks) {
       const txns = await getInsiderTransactions(stock.symbol);
+      const newTrades: Parameters<typeof prisma.insiderTrade.create>[0]['data'][] = [];
 
       for (const t of txns) {
         const tradeDate = new Date(t.transactionDate);
-        const filingDate = t.filingDate ? new Date(t.filingDate) : tradeDate;
 
         // Skip trades older than 90 days
-        if (Date.now() - tradeDate.getTime() > 90 * 24 * 60 * 60_000) continue;
+        if (tradeDate < ninetyDaysAgo) continue;
 
-        // Dedup by symbol + owner + date + shares + type
-        const existing = await prisma.insiderTrade.findFirst({
-          where: {
-            symbol: stock.symbol,
-            ownerName: t.ownerName,
-            tradeDate,
-            shares: t.shares,
-            transactionType: t.transactionType,
-          },
-          select: { id: true },
-        });
-        if (existing) continue;
+        const key = `${stock.symbol}|${t.ownerName}|${tradeDate.getTime()}|${t.shares}|${t.transactionType}`;
+        if (existingKeys.has(key)) continue;
+        existingKeys.add(key); // Prevent duplicates within this batch
 
         const pricePerShare = t.value && t.shares ? Math.round((t.value / t.shares) * 100) / 100 : null;
+        const filingDate = t.filingDate ? new Date(t.filingDate) : tradeDate;
 
-        await prisma.insiderTrade.create({
-          data: {
-            symbol: stock.symbol,
-            filingDate,
-            tradeDate,
-            ownerName: t.ownerName,
-            ownerTitle: t.ownerTitle,
-            transactionType: t.transactionType,
-            shares: t.shares,
-            pricePerShare,
-            totalValue: t.value,
-            secFilingUrl: null,
-          },
+        newTrades.push({
+          symbol: stock.symbol,
+          filingDate,
+          tradeDate,
+          ownerName: t.ownerName,
+          ownerTitle: t.ownerTitle,
+          transactionType: t.transactionType,
+          shares: t.shares,
+          pricePerShare,
+          totalValue: t.value,
+          secFilingUrl: null,
         });
+      }
+
+      // Batch create all new trades for this symbol
+      if (newTrades.length > 0) {
+        await prisma.$transaction(
+          newTrades.map(data => prisma.insiderTrade.create({ data })),
+        );
       }
 
       // Small delay between symbols to avoid rate limiting

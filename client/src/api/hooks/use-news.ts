@@ -74,6 +74,7 @@ export function useNews(filters: NewsFilters = {}) {
   return useQuery({
     queryKey: ['news', filters],
     queryFn: () => api.get<NewsResponse>(path),
+    staleTime: 30_000,
   });
 }
 
