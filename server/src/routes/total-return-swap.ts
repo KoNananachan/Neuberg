@@ -118,7 +118,7 @@ const DEALER_RATINGS = ['AA-', 'A+', 'AA-', 'A', 'A+', 'A+'];
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: TotalReturnSwapResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,

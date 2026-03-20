@@ -191,7 +191,7 @@ const REGULATORY_TEMPLATES: RegUpdateTemplate[] = [
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: CarbonCreditResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,

@@ -174,7 +174,7 @@ const GEX_CONFIGS = [
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: VarianceSwapMonitorResponse; ts: number } | null = null;
 
 // ── Data generation ──

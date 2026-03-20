@@ -6,7 +6,7 @@ export function useCommodityInventory() {
   return useQuery({
     queryKey: ['commodity-inventory'],
     queryFn: () => api.get<any>('/commodity-inventory'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

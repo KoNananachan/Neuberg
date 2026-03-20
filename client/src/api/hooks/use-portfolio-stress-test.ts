@@ -6,7 +6,7 @@ export function usePortfolioStressTest() {
   return useQuery({
     queryKey: ['portfolio-stress-test'],
     queryFn: () => api.get<any>('/portfolio-stress-test'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

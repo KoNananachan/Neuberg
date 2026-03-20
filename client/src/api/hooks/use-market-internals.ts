@@ -88,7 +88,7 @@ export function useMarketInternals() {
   return useQuery({
     queryKey: ['market-internals'],
     queryFn: () => api.get<MarketInternalsData>('/market-internals'),
-    refetchInterval: 5 * 60_000,
-    staleTime: 3 * 60_000,
+    refetchInterval: 30 * 60_000,
+    staleTime: 10 * 60_000,
   });
 }

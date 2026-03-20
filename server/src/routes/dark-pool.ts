@@ -86,7 +86,7 @@ const TIME_SLOTS = [
 // Typical intraday volume distribution weights (U-shaped)
 const TIME_WEIGHTS = [0.18, 0.16, 0.12, 0.09, 0.11, 0.15, 0.19];
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

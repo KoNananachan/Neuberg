@@ -6,7 +6,7 @@ export function useMarketMaking() {
   return useQuery({
     queryKey: ['market-making'],
     queryFn: () => api.get<any>('/market-making'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

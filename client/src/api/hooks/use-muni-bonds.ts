@@ -7,7 +7,7 @@ export function useMuniBonds() {
     queryKey: ['muni-bonds'],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     queryFn: () => api.get<any>('/muni-bonds'),
-    refetchInterval: 5 * 60_000,
-    staleTime: 3 * 60_000,
+    refetchInterval: 30 * 60_000,
+    staleTime: 10 * 60_000,
   });
 }

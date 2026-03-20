@@ -5,7 +5,7 @@ export function useStructuredProduct() {
   return useQuery({
     queryKey: ['structured-product'],
     queryFn: () => api.get<any>('/structured-product'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

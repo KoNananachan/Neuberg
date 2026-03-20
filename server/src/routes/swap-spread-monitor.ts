@@ -99,7 +99,7 @@ const KEY_TENORS = ['2Y', '5Y', '10Y', '30Y'];
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: SwapSpreadMonitorResponse | null; ts: number } = { data: null, ts: 0 };
 
 // ── Helpers ──

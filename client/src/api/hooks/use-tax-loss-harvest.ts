@@ -6,7 +6,7 @@ export function useTaxLossHarvest() {
   return useQuery({
     queryKey: ['tax-loss-harvest'],
     queryFn: () => api.get<any>('/tax-loss-harvest'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

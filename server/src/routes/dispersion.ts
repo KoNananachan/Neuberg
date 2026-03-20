@@ -30,7 +30,7 @@ const ALL_SYMBOLS = [INDEX_SYMBOL, ...CONSTITUENTS.map((c) => c.symbol)];
 // ── Cache (5 min TTL) ──
 
 let cache: { data: any; expiresAt: number } = { data: null, expiresAt: 0 };
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 // ── Math helpers ──
 

@@ -39,7 +39,7 @@ const COUNTRIES = [
   { id: 'TH', name: 'Thailand', region: 'Asia-Pacific', mfgBase: 48.0, svcBase: 50.5 },
 ];
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

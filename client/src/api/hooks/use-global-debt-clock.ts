@@ -5,7 +5,7 @@ export function useGlobalDebtClock() {
   return useQuery({
     queryKey: ['global-debt-clock'],
     queryFn: () => api.get<any>('/global-debt-clock'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

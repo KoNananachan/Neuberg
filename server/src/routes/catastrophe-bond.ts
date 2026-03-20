@@ -122,7 +122,7 @@ const ISSUANCE_NAMES = [
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: CatBondMarketData; ts: number } | null = null;
 
 // ── Helpers ──

@@ -6,7 +6,7 @@ export function useCryptoDerivatives() {
   return useQuery({
     queryKey: ['crypto-derivatives'],
     queryFn: () => api.get<any>('/crypto-derivatives'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

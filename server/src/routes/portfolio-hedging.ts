@@ -284,7 +284,7 @@ const BASE_TAIL_RISK_SCENARIOS = [
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: PortfolioHedgingResponse; ts: number } | null = null;
 
 // -- Generator --

@@ -109,7 +109,7 @@ const RATING_NUMERIC: Record<string, number> = {
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: LadderData; ts: number } | null = null;
 
 // ── Helpers ──

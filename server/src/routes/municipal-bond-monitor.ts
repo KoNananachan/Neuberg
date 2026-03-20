@@ -98,7 +98,7 @@ const STATE_NAMES_FOR_MOVERS = [
   { name: 'Arizona', abbr: 'AZ', rating: 'AA' },
 ];
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cacheData: unknown = null;
 let cacheTime = 0;
 

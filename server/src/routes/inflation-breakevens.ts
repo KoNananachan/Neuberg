@@ -131,7 +131,7 @@ function jitter(rng: () => number, base: number, bps: number): number {
 
 // ── Cache ────────────────────────────────────────────────────────────────────
 
-const CACHE_TTL = 5 * 60_000; // 5 minutes
+const CACHE_TTL = 60 * 60_000; // 5 minutes
 let cacheKey = '';
 let cacheData: InflationBreakevensResponse | null = null;
 let cacheTime = 0;

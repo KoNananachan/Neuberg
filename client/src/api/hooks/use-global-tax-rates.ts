@@ -5,7 +5,7 @@ export function useGlobalTaxRates() {
   return useQuery({
     queryKey: ['global-tax-rates'],
     queryFn: () => api.get<any>('/global-tax-rates'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

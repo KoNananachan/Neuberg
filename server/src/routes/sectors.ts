@@ -5,7 +5,7 @@ const router = Router();
 
 // In-memory cache (5 min TTL)
 const cache = new Map<string, { data: any; ts: number }>();
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const entry = cache.get(key);
   if (entry && Date.now() - entry.ts < CACHE_TTL) return Promise.resolve(entry.data);

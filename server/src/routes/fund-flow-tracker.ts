@@ -301,7 +301,7 @@ const CONTRARIAN_DEFS: ContrarianDef[] = [
 // ── Cache ──
 
 let cache: { data: FundFlowTrackerData | null; ts: number } = { data: null, ts: 0 };
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 // ── Data Generation ──
 

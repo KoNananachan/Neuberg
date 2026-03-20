@@ -6,7 +6,7 @@ export function useEquityStyle() {
   return useQuery({
     queryKey: ['equity-style'],
     queryFn: () => api.get<any>('/equity-style'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

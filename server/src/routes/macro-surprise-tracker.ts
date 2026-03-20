@@ -77,7 +77,7 @@ const RELEASE_TIMES = ['08:30', '09:00', '09:45', '10:00', '13:00', '14:00', '02
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // -- Data generation --

@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import newsRouter from './routes/news.js';
@@ -627,10 +628,24 @@ export function createApp() {
     });
   }
 
+  app.use(compression({ threshold: 1024 })); // Gzip responses > 1KB
   app.use(cookieParser());
   app.use(express.json({ limit: '1mb' })); // Cap body size
   app.use(attachUser);
   app.use(globalLimiter);
+
+  // ── Cache-Control for data API routes ──
+  // Most data routes use date-seeded PRNG (data changes daily, not per-request).
+  // Cache aggressively to reduce Cloud Run compute and bandwidth.
+  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+    // Skip caching for auth, mutations, and streaming endpoints
+    const skip = ['/api/auth', '/api/billing', '/api/alpaca', '/api/streams', '/api/audit', '/api/chat', '/api/scrape', '/api/export'];
+    if (req.method !== 'GET' || skip.some(p => req.path.startsWith(p))) {
+      return next();
+    }
+    res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=300');
+    next();
+  });
 
   // ── Routes ──
 

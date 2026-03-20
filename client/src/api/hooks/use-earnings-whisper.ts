@@ -6,7 +6,7 @@ export function useEarningsWhisper() {
   return useQuery({
     queryKey: ['earnings-whisper'],
     queryFn: () => api.get<any>('/earnings-whisper'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

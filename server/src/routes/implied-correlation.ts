@@ -204,7 +204,7 @@ function generateImpliedCorrelationData(cycleSeed: number): ImpliedCorrelationRe
 // ── Cache (5 min TTL) ──
 
 let cache: { data: ImpliedCorrelationResponse; expiresAt: number } | null = null;
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 // ── Route ──
 

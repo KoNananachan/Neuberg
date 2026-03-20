@@ -34,7 +34,7 @@ export function useEconomicSurprises() {
   return useQuery<EconomicSurprisesData>({
     queryKey: ['economic-surprises'],
     queryFn: () => api.get<EconomicSurprisesData>('/economic-surprises'),
-    staleTime: 3 * 60_000,
-    refetchInterval: 5 * 60_000,
+    staleTime: 10 * 60_000,
+    refetchInterval: 30 * 60_000,
   });
 }

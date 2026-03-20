@@ -100,7 +100,7 @@ interface EndowmentResponse {
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 60 * 60 * 1000; // 5 minutes
 let cacheData: EndowmentResponse | null = null;
 let cacheTime = 0;
 

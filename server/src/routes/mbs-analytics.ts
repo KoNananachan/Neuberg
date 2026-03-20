@@ -31,7 +31,7 @@ const MBS_POOLS = [
   { id: 'FNMA-ARM', issuer: 'Fannie Mae', type: '5/1 ARM', coupon: 4.75, baseWAC: 5.3, baseWAM: 355, baseCPR: 15.0 },
 ];
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

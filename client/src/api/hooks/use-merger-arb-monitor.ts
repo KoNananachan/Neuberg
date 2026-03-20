@@ -6,7 +6,7 @@ export function useMergerArbMonitor() {
   return useQuery({
     queryKey: ['merger-arb-monitor'],
     queryFn: () => api.get<any>('/merger-arb-monitor'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

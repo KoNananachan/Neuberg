@@ -47,7 +47,7 @@ const PIPELINE_TEMPLATES = [
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // -- Helpers --

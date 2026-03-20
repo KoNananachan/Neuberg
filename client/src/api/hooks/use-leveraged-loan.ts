@@ -5,7 +5,7 @@ export function useLeveragedLoan() {
   return useQuery({
     queryKey: ['leveraged-loan'],
     queryFn: () => api.get<any>('/leveraged-loan'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

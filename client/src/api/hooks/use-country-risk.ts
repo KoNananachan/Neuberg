@@ -6,7 +6,7 @@ export function useCountryRisk() {
   return useQuery({
     queryKey: ['country-risk'],
     queryFn: () => api.get<any>('/country-risk'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

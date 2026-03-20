@@ -6,7 +6,7 @@ export function useProxyVoting() {
   return useQuery({
     queryKey: ['proxy-voting'],
     queryFn: () => api.get<any>('/proxy-voting'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

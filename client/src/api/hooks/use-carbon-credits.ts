@@ -6,7 +6,7 @@ export function useCarbonCredits() {
   return useQuery({
     queryKey: ['carbon-credits'],
     queryFn: () => api.get<any>('/carbon-credits'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

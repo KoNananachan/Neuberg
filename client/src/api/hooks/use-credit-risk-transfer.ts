@@ -6,7 +6,7 @@ export function useCreditRiskTransfer() {
   return useQuery({
     queryKey: ['credit-risk-transfer'],
     queryFn: () => api.get<any>('/credit-risk-transfer'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

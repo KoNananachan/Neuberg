@@ -43,7 +43,7 @@ export function useDispersion() {
   return useQuery<DispersionData>({
     queryKey: ['dispersion'],
     queryFn: () => api.get<DispersionData>('/dispersion'),
-    staleTime: 3 * 60_000,
-    refetchInterval: 5 * 60_000,
+    staleTime: 10 * 60_000,
+    refetchInterval: 30 * 60_000,
   });
 }

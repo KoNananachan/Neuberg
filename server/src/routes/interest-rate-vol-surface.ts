@@ -64,7 +64,7 @@ const BASE_CAP_FLOOR_VOLS: Record<string, number> = {
   '1Y': 58, '2Y': 64, '3Y': 70, '5Y': 78, '7Y': 84, '10Y': 90,
 };
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

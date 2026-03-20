@@ -42,7 +42,7 @@ export function useFactorExposure() {
   return useQuery({
     queryKey: ['factor-exposure'],
     queryFn: () => api.get<FactorExposureData>('/factor-exposure'),
-    staleTime: 3 * 60 * 1000, // 3 minutes
-    refetchInterval: 5 * 60 * 1000, // 5 minutes
+    staleTime: 10 * 60 * 1000, // 3 minutes
+    refetchInterval: 30 * 60 * 1000, // 5 minutes
   });
 }

@@ -146,7 +146,7 @@ const TERM_YEARS = ['2026', '2027', '2028', '2029', '2030'] as const;
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cacheData: DividendSwapResponse | null = null;
 let cacheTime = 0;
 

@@ -6,7 +6,7 @@ export function useTradeRecap() {
   return useQuery({
     queryKey: ['trade-recap'],
     queryFn: () => api.get<any>('/trade-recap'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

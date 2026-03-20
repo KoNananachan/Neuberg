@@ -5,8 +5,8 @@ export function useCyberRiskInsurance() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['cyber-risk-insurance'],
     queryFn: () => api.get<any>('/cyber-risk-insurance'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   return { data, isLoading, refetch };
 }

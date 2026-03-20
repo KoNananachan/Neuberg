@@ -6,7 +6,7 @@ const router = Router();
 
 let cacheData: unknown = null;
 let cacheTime = 0;
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 // ── Deterministic seeded PRNG ──
 

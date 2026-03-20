@@ -76,7 +76,7 @@ interface SwapCurveMonitorResponse {
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cacheData: SwapCurveMonitorResponse | null = null;
 let cacheTime = 0;
 

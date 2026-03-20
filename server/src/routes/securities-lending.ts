@@ -50,7 +50,7 @@ const SECURITIES = [
   { ticker: 'PENN', name: 'Penn Entertainment', sector: 'Consumer Discretionary', baseBps: 70, baseUtil: 38 },
 ];
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function classifyAvailability(bps: number): 'Easy' | 'Medium' | 'Hard' | 'Special' {

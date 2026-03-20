@@ -6,7 +6,7 @@ export function useCommodityFundamental() {
   return useQuery({
     queryKey: ['commodity-fundamental'],
     queryFn: () => api.get<any>('/commodity-fundamental'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

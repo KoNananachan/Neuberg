@@ -6,7 +6,7 @@ export function useInsiderSentiment() {
     queryKey: ['insider-sentiment'],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     queryFn: () => api.get<any>('/insider-sentiment'),
-    refetchInterval: 5 * 60_000,
-    staleTime: 3 * 60_000,
+    refetchInterval: 30 * 60_000,
+    staleTime: 10 * 60_000,
   });
 }

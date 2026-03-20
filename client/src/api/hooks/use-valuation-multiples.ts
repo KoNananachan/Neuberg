@@ -6,7 +6,7 @@ export function useValuationMultiples() {
     queryKey: ['valuation-multiples'],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     queryFn: () => api.get<any>('/valuation-multiples'),
-    refetchInterval: 5 * 60_000,
-    staleTime: 3 * 60_000,
+    refetchInterval: 30 * 60_000,
+    staleTime: 10 * 60_000,
   });
 }

@@ -41,7 +41,7 @@ const INDICES = [
   { id: 'CS-LLI', name: 'CS Leveraged Loan Index', baseLevel: 97.2, baseSpread: 350 },
 ];
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

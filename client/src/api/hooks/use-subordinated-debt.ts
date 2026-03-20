@@ -5,7 +5,7 @@ export function useSubordinatedDebt() {
   return useQuery({
     queryKey: ['subordinated-debt'],
     queryFn: () => api.get<any>('/subordinated-debt'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

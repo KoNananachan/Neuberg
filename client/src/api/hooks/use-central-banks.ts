@@ -37,7 +37,7 @@ export function useCentralBanks() {
   return useQuery<CentralBankResponse>({
     queryKey: ['central-banks'],
     queryFn: () => api.get<CentralBankResponse>('/central-banks'),
-    refetchInterval: 5 * 60_000,
+    refetchInterval: 30 * 60_000,
     staleTime: 2 * 60_000,
   });
 }

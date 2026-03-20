@@ -74,7 +74,7 @@ export function useRegressionAnalysis() {
   return useQuery({
     queryKey: ['regression-analysis'],
     queryFn: () => api.get<RegressionAnalysisData>('/regression-analysis'),
-    refetchInterval: 5 * 60_000,
-    staleTime: 3 * 60_000,
+    refetchInterval: 30 * 60_000,
+    staleTime: 10 * 60_000,
   });
 }

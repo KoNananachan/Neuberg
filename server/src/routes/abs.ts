@@ -98,7 +98,7 @@ interface ABSResponse {
 // ── Cache (5 min TTL, stale fallback) ──
 
 let cache: { data: ABSResponse | null; expiresAt: number } = { data: null, expiresAt: 0 };
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 // ── Data generation ──
 

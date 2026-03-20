@@ -44,7 +44,7 @@ export function useCarryTrade() {
   return useQuery<CarryTradeData>({
     queryKey: ['carry-trade'],
     queryFn: () => api.get<CarryTradeData>('/carry-trade'),
-    staleTime: 3 * 60_000,
-    refetchInterval: 5 * 60_000,
+    staleTime: 10 * 60_000,
+    refetchInterval: 30 * 60_000,
   });
 }

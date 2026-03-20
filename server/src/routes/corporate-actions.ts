@@ -407,7 +407,7 @@ function buildCorporateActionsData(): CorporateActionsResponse {
 
 let cachedData: { data: CorporateActionsResponse; ts: number } | null = null;
 let staleData: CorporateActionsResponse | null = null;
-const CACHE_TTL = 5 * 60_000; // 5 minutes
+const CACHE_TTL = 60 * 60_000; // 5 minutes
 
 // ── Route ──
 

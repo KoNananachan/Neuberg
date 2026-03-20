@@ -37,7 +37,7 @@ const EM_INDICES = [
   { id: 'NEXGEM', name: 'JPM NEXGEM', baseSpread: 550, baseReturn: 3.0 },
 ];
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

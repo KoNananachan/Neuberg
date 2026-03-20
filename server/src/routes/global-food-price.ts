@@ -202,7 +202,7 @@ const ALERT_LEVELS: ('watch' | 'crisis' | 'emergency' | 'famine')[] = ['watch', 
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: GlobalFoodPriceData; ts: number } | null = null;
 
 // -- Helpers --

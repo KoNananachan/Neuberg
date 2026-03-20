@@ -5,8 +5,8 @@ export function useSovereignDebtMaturity() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['sovereign-debt-maturity'],
     queryFn: () => api.get<any>('/sovereign-debt-maturity'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   return { data, isLoading, refetch };
 }

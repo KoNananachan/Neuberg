@@ -6,7 +6,7 @@ export function useRepoRate() {
   return useQuery({
     queryKey: ['repo-rate'],
     queryFn: () => api.get<any>('/repo-rate'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

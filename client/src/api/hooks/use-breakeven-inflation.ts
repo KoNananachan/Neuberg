@@ -5,7 +5,7 @@ export function useBreakevenInflation() {
   return useQuery({
     queryKey: ['breakeven-inflation'],
     queryFn: () => api.get<any>('/breakeven-inflation'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

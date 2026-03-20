@@ -5,7 +5,7 @@ export function useFiscalPolicy() {
   return useQuery({
     queryKey: ['fiscal-policy'],
     queryFn: () => api.get<any>('/fiscal-policy'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

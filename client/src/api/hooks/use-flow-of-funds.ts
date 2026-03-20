@@ -6,7 +6,7 @@ export function useFlowOfFunds() {
   return useQuery({
     queryKey: ['flow-of-funds'],
     queryFn: () => api.get<any>('/flow-of-funds'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

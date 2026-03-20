@@ -64,7 +64,7 @@ interface SwapValuationResponse {
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: SwapValuationResponse | null; ts: number } = { data: null, ts: 0 };
 
 // ── Static configs ──

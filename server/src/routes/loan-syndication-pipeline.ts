@@ -67,7 +67,7 @@ const STATUSES: ('launched' | 'priced' | 'allocated' | 'closed')[] = ['launched'
 const RATINGS_B = ['B3/B-', 'B2/B', 'B1/B+'];
 const RATINGS_BB = ['Ba3/BB-', 'Ba2/BB', 'Ba1/BB+'];
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

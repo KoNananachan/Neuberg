@@ -140,7 +140,7 @@ const EVENT_TEMPLATES: Array<{ event: string; baseMove: number; baseIv: number; 
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 60 * 60 * 1000; // 5 minutes
 let cache: { data: VolatilityDashboardData | null; expiresAt: number } = { data: null, expiresAt: 0 };
 
 // ── Helpers ──

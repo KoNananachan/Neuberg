@@ -69,7 +69,7 @@ interface FuturesCurveResponse {
 
 // ── In-memory cache (5-minute TTL) ──
 const cache = new Map<string, { data: FuturesCurveResponse; expiresAt: number }>();
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 /**
  * Generate 12 monthly futures ticker symbols starting from next month.

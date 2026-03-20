@@ -171,7 +171,7 @@ function formatDate(d: Date): string {
 
 // ── Cache ────────────────────────────────────────────────────────────────────
 
-const CACHE_TTL = 5 * 60_000; // 5 minutes
+const CACHE_TTL = 60 * 60_000; // 5 minutes
 let cacheKey = '';
 let cacheData: InflationBreakevenDashboard | null = null;
 let cacheTime = 0;

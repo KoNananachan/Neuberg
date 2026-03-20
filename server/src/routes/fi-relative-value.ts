@@ -156,7 +156,7 @@ const CONVICTION_LEVELS: readonly ('High' | 'Medium' | 'Low')[] = ['High', 'Medi
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: FIRelativeValueResponse | null; ts: number } = { data: null, ts: 0 };
 
 // ── Helpers ──

@@ -6,7 +6,7 @@ export function useBondLadder() {
   return useQuery({
     queryKey: ['bond-ladder'],
     queryFn: () => api.get<any>('/bond-ladder'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

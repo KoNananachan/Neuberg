@@ -37,7 +37,7 @@ export function useSwapRates() {
   return useQuery<SwapRatesData>({
     queryKey: ['swap-rates'],
     queryFn: () => api.get<SwapRatesData>('/swap-rates'),
-    refetchInterval: 5 * 60_000,
+    refetchInterval: 30 * 60_000,
     staleTime: 2 * 60_000,
   });
 }

@@ -171,7 +171,7 @@ const VOL_CONFIGS: VolConfig[] = [
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: InterestRateSwapResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,

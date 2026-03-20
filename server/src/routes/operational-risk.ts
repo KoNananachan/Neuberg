@@ -107,7 +107,7 @@ const CAPITAL_ALLOCATION_BASE: Record<string, { allocated: number; used: number 
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // -- Generator --

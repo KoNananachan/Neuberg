@@ -5,7 +5,7 @@ export function useShippingFreight() {
   return useQuery({
     queryKey: ['shipping-freight'],
     queryFn: () => api.get<any>('/shipping-freight'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

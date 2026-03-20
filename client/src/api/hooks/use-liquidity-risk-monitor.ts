@@ -6,7 +6,7 @@ export function useLiquidityRiskMonitor() {
   return useQuery({
     queryKey: ['liquidity-risk-monitor'],
     queryFn: () => api.get<any>('/liquidity-risk-monitor'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

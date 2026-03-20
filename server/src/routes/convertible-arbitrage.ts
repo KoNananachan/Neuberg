@@ -50,7 +50,7 @@ const STRATEGIES = ['delta hedge', 'gamma trade', 'credit play', 'busted CB'] as
 const CONVICTIONS = ['high', 'medium', 'low'] as const;
 const RICH_CHEAP = ['rich', 'fair', 'cheap'] as const;
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

@@ -45,7 +45,7 @@ export function useCreditRatings() {
   return useQuery({
     queryKey: ['credit-ratings'],
     queryFn: () => api.get<CreditRatingsResponse>('/credit-ratings'),
-    refetchInterval: 5 * 60_000,
-    staleTime: 3 * 60_000,
+    refetchInterval: 30 * 60_000,
+    staleTime: 10 * 60_000,
   });
 }

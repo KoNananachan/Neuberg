@@ -51,6 +51,6 @@ export function useEarningsRevisions() {
     queryKey: ['earnings-revisions'],
     queryFn: () => api.get('/earnings-revisions'),
     staleTime: 2 * 60_000,
-    refetchInterval: 5 * 60_000,
+    refetchInterval: 30 * 60_000,
   });
 }

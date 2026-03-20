@@ -6,7 +6,7 @@ const router = Router();
 
 interface CacheEntry { data: unknown; ts: number }
 const cache = new Map<string, CacheEntry>();
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let staleData: unknown = null;
 
 function cached<T>(key: string, fn: () => T): T {

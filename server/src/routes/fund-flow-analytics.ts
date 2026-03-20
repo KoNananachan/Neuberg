@@ -25,7 +25,7 @@ function mulberry32(a: number): () => number {
 
 // --- Cache ---
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cacheData: unknown = null;
 let cacheTime = 0;
 

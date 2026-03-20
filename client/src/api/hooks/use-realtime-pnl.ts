@@ -6,7 +6,7 @@ export function useRealtimePnl() {
   return useQuery({
     queryKey: ['realtime-pnl'],
     queryFn: () => api.get<any>('/realtime-pnl'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

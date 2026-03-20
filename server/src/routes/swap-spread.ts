@@ -149,7 +149,7 @@ const FRA_BASES: Record<string, { rate: number; impliedChange: number }> = {
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: SwapSpreadResponse | null; ts: number } = { data: null, ts: 0 };
 
 // ── Helpers ──

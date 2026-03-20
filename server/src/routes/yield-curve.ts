@@ -52,7 +52,7 @@ const ALL_MATURITIES = [
 
 // Cache for current yield curve (5 min TTL)
 let curveCache: { data: YieldCurveResponse; expiresAt: number } | null = null;
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 // Cache for historical data (30 min TTL)
 let historyCache: { data: YieldCurveHistoryResponse; expiresAt: number } | null = null;

@@ -53,7 +53,7 @@ const VINTAGE_BASES: Record<string, { wac: number; wam: number; fico: number; lt
   'All':  { wac: 4.8, wam: 320, fico: 746, ltv: 76, dq60: 1.1, cl: 0.18, factor: 0.75 },
 };
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

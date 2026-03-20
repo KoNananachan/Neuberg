@@ -98,7 +98,7 @@ interface CLOResponse {
 // ── Cache (5 min TTL, stale fallback) ──
 
 let cache: { data: CLOResponse | null; expiresAt: number } = { data: null, expiresAt: 0 };
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 // ── Data generation ──
 

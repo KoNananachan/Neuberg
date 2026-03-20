@@ -6,7 +6,7 @@ export function useSwapValuation() {
   return useQuery({
     queryKey: ['swap-valuation'],
     queryFn: () => api.get<any>('/swap-valuation'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

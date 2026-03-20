@@ -178,7 +178,7 @@ function round4(n: number): number {
 // ── Cache ──
 
 let cache: { data: FactorExposureData | null; expiresAt: number } = { data: null, expiresAt: 0 };
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 60 * 60 * 1000; // 5 minutes
 
 // ── Route ──
 

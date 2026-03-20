@@ -38,7 +38,7 @@ interface ComparisonData {
 
 // In-memory cache (5 min TTL)
 const cache = new Map<string, { data: ComparisonData; ts: number }>();
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 const router = Router();
 

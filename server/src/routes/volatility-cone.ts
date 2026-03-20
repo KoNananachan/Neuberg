@@ -183,7 +183,7 @@ function round2(v: number): number {
 // ── Cache ──
 
 let cache: { data: VolatilityConeResponse; expiresAt: number } | null = null;
-const CACHE_TTL = 5 * 60_000; // 5 minutes
+const CACHE_TTL = 60 * 60_000; // 5 minutes
 
 // ── Route ──
 

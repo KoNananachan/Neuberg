@@ -5,7 +5,7 @@ export function useFamilyOffice() {
   return useQuery({
     queryKey: ['family-office'],
     queryFn: () => api.get<any>('/family-office'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

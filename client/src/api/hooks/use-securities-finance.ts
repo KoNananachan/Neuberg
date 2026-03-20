@@ -58,7 +58,7 @@ export function useSecuritiesFinance() {
   return useQuery<SecuritiesFinanceData>({
     queryKey: ['securities-finance'],
     queryFn: () => api.get<SecuritiesFinanceData>('/securities-finance'),
-    staleTime: 3 * 60_000,
-    refetchInterval: 5 * 60_000,
+    staleTime: 10 * 60_000,
+    refetchInterval: 30 * 60_000,
   });
 }

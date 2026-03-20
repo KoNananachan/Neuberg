@@ -6,7 +6,7 @@ export function useEquityBasketSwaps() {
   return useQuery({
     queryKey: ['equity-basket-swaps'],
     queryFn: () => api.get<any>('/equity-basket-swaps'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

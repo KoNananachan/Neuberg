@@ -50,7 +50,7 @@ const HEDGING_TENORS = ['1Y', '3Y', '5Y'];
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // ── Data generation ──

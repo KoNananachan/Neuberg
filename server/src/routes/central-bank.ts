@@ -27,7 +27,7 @@ const round1 = (v: number) => Math.round(v * 10) / 10;
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cacheData: unknown = null;
 let cacheTime = 0;
 

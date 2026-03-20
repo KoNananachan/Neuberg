@@ -279,7 +279,7 @@ function buildCorporateBuybackData(): CorporateBuybackResponse {
 
 let cachedData: { data: CorporateBuybackResponse; ts: number } | null = null;
 let staleData: CorporateBuybackResponse | null = null;
-const CACHE_TTL = 5 * 60_000; // 5 minutes
+const CACHE_TTL = 60 * 60_000; // 5 minutes
 
 // ── Route ──
 

@@ -34,7 +34,7 @@ export function useXccyBasis() {
   return useQuery<XccyBasisData>({
     queryKey: ['xccy-basis'],
     queryFn: () => api.get<XccyBasisData>('/xccy-basis'),
-    refetchInterval: 5 * 60_000,
+    refetchInterval: 30 * 60_000,
     staleTime: 2 * 60_000,
   });
 }

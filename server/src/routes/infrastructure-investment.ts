@@ -93,7 +93,7 @@ interface InfrastructureInvestmentData {
 
 // -- Cache --
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cacheData: InfrastructureInvestmentData | null = null;
 let cacheTime = 0;
 

@@ -36,7 +36,7 @@ export function useTermStructure() {
   return useQuery<TermStructureData>({
     queryKey: ['term-structure'],
     queryFn: () => api.get<TermStructureData>('/term-structure'),
-    refetchInterval: 5 * 60_000,
-    staleTime: 3 * 60_000,
+    refetchInterval: 30 * 60_000,
+    staleTime: 10 * 60_000,
   });
 }

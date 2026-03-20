@@ -8,7 +8,9 @@ import '@rainbow-me/rainbowkit/styles.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
+      staleTime: 10 * 60_000,       // 10 min — most data is date-seeded, changes daily
+      gcTime: 30 * 60_000,          // Keep unused cache 30 min before GC
+      refetchOnWindowFocus: false,   // Don't refetch on tab switch (saves Cloud Run calls)
       retry: 2,
     },
   },

@@ -124,7 +124,7 @@ const CENTRAL_BANK_COUNTERPARTIES = ['ECB', 'BOJ', 'BOE', 'SNB', 'BOC', 'RBA'] a
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: CrossCurrencyBasisResponse | null; ts: number } = { data: null, ts: 0 };
 
 // ── Helpers ──

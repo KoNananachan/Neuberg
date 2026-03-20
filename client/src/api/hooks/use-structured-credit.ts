@@ -6,7 +6,7 @@ export function useStructuredCredit() {
   return useQuery({
     queryKey: ['structured-credit'],
     queryFn: () => api.get<any>('/structured-credit'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

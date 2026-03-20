@@ -47,6 +47,6 @@ export function useRepoRateHeatmap() {
     queryKey: ['repo-rate-heatmap'],
     queryFn: () => api.get<RepoRateHeatmapData>('/repo-rate-heatmap'),
     staleTime: 2 * 60_000,
-    refetchInterval: 5 * 60_000,
+    refetchInterval: 30 * 60_000,
   });
 }

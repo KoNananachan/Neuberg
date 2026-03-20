@@ -78,7 +78,7 @@ export function useEarningsQuality() {
   return useQuery({
     queryKey: ['earnings-quality'],
     queryFn: () => api.get<EarningsQualityResponse>('/earnings-quality'),
-    refetchInterval: 5 * 60_000,
-    staleTime: 3 * 60_000,
+    refetchInterval: 30 * 60_000,
+    staleTime: 10 * 60_000,
   });
 }

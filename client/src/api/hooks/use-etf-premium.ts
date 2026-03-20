@@ -6,7 +6,7 @@ export function useEtfPremium() {
   return useQuery({
     queryKey: ['etf-premium'],
     queryFn: () => api.get<any>('/etf-premium'),
-    refetchInterval: 5 * 60 * 1000,
-    staleTime: 3 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 }

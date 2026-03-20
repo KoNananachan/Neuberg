@@ -58,7 +58,7 @@ const SIGNALS_TREND = ['Strong Buy', 'Buy', 'Neutral', 'Sell', 'Strong Sell'] as
 const PAIR_SIGNALS = ['Enter', 'Hold', 'Exit', 'Monitor'] as const;
 const MOMENTUM_REGIMES = ['Risk-On', 'Risk-Off', 'Mixed'] as const;
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

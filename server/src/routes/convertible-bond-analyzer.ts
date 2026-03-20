@@ -135,7 +135,7 @@ const ISSUANCE_STATUSES: Array<'priced' | 'launched' | 'expected'> = ['priced', 
 
 // ── Cache ───────────────────────────────────────────────────────────────────
 
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 let cache: { data: ConvertibleBondAnalyzerResponse; ts: number } | null = null;
 
 // ── Generator ───────────────────────────────────────────────────────────────

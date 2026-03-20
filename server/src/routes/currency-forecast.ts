@@ -52,7 +52,7 @@ interface CurrencyForecastResponse {
 
 // ── Cache ──
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
 let cache: { data: CurrencyForecastResponse; ts: number } | null = null;
 
 // ── Static pair configurations (realistic 2024-2025 era) ──

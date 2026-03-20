@@ -290,7 +290,7 @@ let cache: { data: FlowOfFundsResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,
 };
-const CACHE_TTL = 5 * 60_000;
+const CACHE_TTL = 60 * 60_000;
 
 // ── Route ──
 
