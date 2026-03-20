@@ -41,7 +41,7 @@ export function usePortfolioOptimizer(symbols: string[], riskFree = 0.05) {
         `/portfolio-optimizer?symbols=${encodeURIComponent(key)}&riskFree=${riskFree}`,
       ),
     enabled: symbols.length >= 2,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
     refetchInterval: 15 * 60_000,
   });
 }

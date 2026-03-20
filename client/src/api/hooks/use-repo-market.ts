@@ -6,7 +6,6 @@ export function useRepoMarket() {
   return useQuery({
     queryKey: ['repo-market'],
     queryFn: () => api.get<any>('/repo-market'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

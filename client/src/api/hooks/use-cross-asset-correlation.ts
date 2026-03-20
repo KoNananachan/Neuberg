@@ -6,7 +6,6 @@ export function useCrossAssetCorrelation() {
   return useQuery({
     queryKey: ['cross-asset-correlation'],
     queryFn: () => api.get<any>('/cross-asset-correlation'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

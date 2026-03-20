@@ -6,7 +6,6 @@ export function useGlobalPmiDashboard() {
   return useQuery({
     queryKey: ['global-pmi-dashboard'],
     queryFn: () => api.get<any>('/global-pmi-dashboard'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

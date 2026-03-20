@@ -5,8 +5,7 @@ export function useCreditIndexTranches() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['credit-index-tranches'],
     queryFn: () => api.get<any>('/credit-index-tranches'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
   return { data, isLoading, refetch };
 }

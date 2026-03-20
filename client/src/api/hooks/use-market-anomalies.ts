@@ -30,6 +30,5 @@ export function useMarketAnomalies() {
     queryKey: ['market-anomalies'],
     queryFn: () => api.get<MarketAnomaliesData>('/market-anomalies'),
     staleTime: 15 * 60_000,
-    refetchInterval: 30 * 60_000,
   });
 }

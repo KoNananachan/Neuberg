@@ -6,7 +6,6 @@ export function useSettlementRisk() {
   return useQuery({
     queryKey: ['settlement-risk'],
     queryFn: () => api.get<any>('/settlement-risk'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

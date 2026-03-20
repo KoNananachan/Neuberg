@@ -6,7 +6,6 @@ export function useSpacMonitor() {
   return useQuery({
     queryKey: ['spac-monitor'],
     queryFn: () => api.get<any>('/spac-monitor'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -5,7 +5,6 @@ export function useTradeSettlement() {
   return useQuery({
     queryKey: ['trade-settlement'],
     queryFn: () => api.get<any>('/trade-settlement'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

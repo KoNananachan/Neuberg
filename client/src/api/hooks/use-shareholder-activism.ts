@@ -6,7 +6,6 @@ export function useShareholderActivism() {
   return useQuery({
     queryKey: ['shareholder-activism'],
     queryFn: () => api.get<any>('/shareholder-activism'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -6,7 +6,6 @@ export function useVarianceSwaps() {
   return useQuery({
     queryKey: ['variance-swaps'],
     queryFn: () => api.get<any>('/variance-swaps'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -6,7 +6,6 @@ export function useRealEstateAnalytics() {
   return useQuery({
     queryKey: ['real-estate-analytics'],
     queryFn: () => api.get<any>('/real-estate-analytics'),
-    refetchInterval: 30 * 60_000,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

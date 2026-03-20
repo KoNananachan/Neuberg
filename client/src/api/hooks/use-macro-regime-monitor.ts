@@ -6,7 +6,6 @@ export function useMacroRegimeMonitor() {
   return useQuery({
     queryKey: ['macro-regime-monitor'],
     queryFn: () => api.get<any>('/macro-regime-monitor'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

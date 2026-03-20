@@ -42,6 +42,6 @@ export function useDrawdown(symbol: string, period: string) {
     queryFn: () => api.get<DrawdownData>(`/drawdown/${encodeURIComponent(symbol)}?period=${period}`),
     enabled: !!symbol,
     refetchInterval: 15 * 60_000,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

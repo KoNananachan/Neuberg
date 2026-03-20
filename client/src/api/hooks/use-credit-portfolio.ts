@@ -6,7 +6,6 @@ export function useCreditPortfolio() {
   return useQuery({
     queryKey: ['credit-portfolio'],
     queryFn: () => api.get<any>('/credit-portfolio'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

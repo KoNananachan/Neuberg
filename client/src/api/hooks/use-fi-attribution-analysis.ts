@@ -6,7 +6,6 @@ export function useFiAttributionAnalysis() {
   return useQuery({
     queryKey: ['fi-attribution-analysis'],
     queryFn: () => api.get<any>('/fi-attribution-analysis'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

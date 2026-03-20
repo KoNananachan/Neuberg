@@ -6,7 +6,6 @@ export function useRateCapsFloors() {
   return useQuery({
     queryKey: ['rate-caps-floors'],
     queryFn: () => api.get<any>('/rate-caps-floors'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

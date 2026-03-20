@@ -6,7 +6,6 @@ export function useCurrencyForecast() {
   return useQuery({
     queryKey: ['currency-forecast'],
     queryFn: () => api.get<any>('/currency-forecast'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

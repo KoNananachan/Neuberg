@@ -6,7 +6,6 @@ export function useTotalReturnSwaps() {
   return useQuery({
     queryKey: ['total-return-swaps'],
     queryFn: () => api.get<any>('/total-return-swaps'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

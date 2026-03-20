@@ -53,7 +53,6 @@ export function useVolSurface() {
   return useQuery<VolSurfaceResponse>({
     queryKey: ['vol-surface'],
     queryFn: () => api.get<VolSurfaceResponse>('/vol-surface'),
-    refetchInterval: 30 * 60_000,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

@@ -45,7 +45,6 @@ export function useImpliedCorrelation() {
   return useQuery<ImpliedCorrelationData>({
     queryKey: ['implied-correlation'],
     queryFn: () => api.get<ImpliedCorrelationData>('/implied-correlation'),
-    refetchInterval: 30 * 60_000,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

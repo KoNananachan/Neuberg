@@ -5,7 +5,6 @@ export function useGlobalIndexMonitor() {
   return useQuery({
     queryKey: ['global-index-monitor'],
     queryFn: () => api.get<any>('/global-index-monitor'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -6,7 +6,6 @@ export function useDarkPool() {
   return useQuery({
     queryKey: ['dark-pool'],
     queryFn: () => api.get<any>('/dark-pool'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

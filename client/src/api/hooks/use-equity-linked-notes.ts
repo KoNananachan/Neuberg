@@ -6,7 +6,6 @@ export function useEquityLinkedNotes() {
   return useQuery({
     queryKey: ['equity-linked-notes'],
     queryFn: () => api.get<any>('/equity-linked-notes'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

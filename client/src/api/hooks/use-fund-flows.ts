@@ -40,7 +40,6 @@ export function useFundFlows() {
   return useQuery<FundFlowsData>({
     queryKey: ['fund-flows'],
     queryFn: () => api.get<FundFlowsData>('/fund-flows'),
-    staleTime: 10 * 60 * 1000,
-    refetchInterval: 30 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

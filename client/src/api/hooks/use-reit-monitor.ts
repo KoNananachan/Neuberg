@@ -6,7 +6,6 @@ export function useReitMonitor() {
   return useQuery({
     queryKey: ['reit-monitor'],
     queryFn: () => api.get<any>('/reit-monitor'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

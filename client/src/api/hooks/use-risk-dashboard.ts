@@ -6,7 +6,6 @@ export function useRiskDashboard() {
   return useQuery({
     queryKey: ['risk-dashboard'],
     queryFn: () => api.get<any>('/risk-dashboard'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

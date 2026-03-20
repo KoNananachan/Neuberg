@@ -6,7 +6,6 @@ export function useCommodityOptions() {
   return useQuery({
     queryKey: ['commodity-options'],
     queryFn: () => api.get<any>('/commodity-options'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

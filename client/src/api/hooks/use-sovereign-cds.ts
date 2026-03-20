@@ -6,7 +6,6 @@ export function useSovereignCds() {
   return useQuery({
     queryKey: ['sovereign-cds'],
     queryFn: () => api.get<any>('/sovereign-cds'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

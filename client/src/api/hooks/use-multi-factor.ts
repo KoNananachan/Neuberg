@@ -6,7 +6,6 @@ export function useMultiFactor() {
   return useQuery({
     queryKey: ['multi-factor'],
     queryFn: () => api.get<any>('/multi-factor'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

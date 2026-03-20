@@ -5,8 +5,7 @@ export function useEquityAnalystRevisions() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['equity-analyst-revisions'],
     queryFn: () => api.get<any>('/equity-analyst-revisions'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
   return { data, isLoading, refetch };
 }

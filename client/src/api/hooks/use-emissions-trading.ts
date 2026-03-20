@@ -6,7 +6,6 @@ export function useEmissionsTrading() {
   return useQuery({
     queryKey: ['emissions-trading'],
     queryFn: () => api.get<any>('/emissions-trading'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

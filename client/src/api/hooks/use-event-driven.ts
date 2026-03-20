@@ -55,6 +55,5 @@ export function useEventDriven() {
     queryKey: ['event-driven'],
     queryFn: () => api.get<EventDrivenData>('/event-driven'),
     staleTime: 2 * 60 * 1000,
-    refetchInterval: 30 * 60 * 1000,
   });
 }

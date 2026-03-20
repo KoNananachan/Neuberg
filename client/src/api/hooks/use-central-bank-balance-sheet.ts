@@ -49,7 +49,6 @@ export function useCentralBankBalanceSheet() {
   return useQuery<CentralBankBalanceSheetData>({
     queryKey: ['central-bank-balance-sheet'],
     queryFn: () => api.get<CentralBankBalanceSheetData>('/central-bank-balance-sheet'),
-    refetchInterval: 30 * 60_000,
     staleTime: 2 * 60_000,
   });
 }

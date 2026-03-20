@@ -6,7 +6,6 @@ export function useAlgoExecution() {
   return useQuery({
     queryKey: ['algo-execution'],
     queryFn: () => api.get<any>('/algo-execution'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

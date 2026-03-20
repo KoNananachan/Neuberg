@@ -5,7 +5,6 @@ export function useLiquidityStressTest() {
   return useQuery({
     queryKey: ['liquidity-stress-test'],
     queryFn: () => api.get<any>('/liquidity-stress-test'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

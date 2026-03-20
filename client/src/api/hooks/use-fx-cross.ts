@@ -11,7 +11,6 @@ export function useFxCross() {
   return useQuery({
     queryKey: ['fx-cross', 'matrix'],
     queryFn: () => api.get<FxCrossData>('/fx-cross'),
-    refetchInterval: 30 * 60_000, // 5 min to match server cache
     staleTime: 2 * 60_000,
   });
 }

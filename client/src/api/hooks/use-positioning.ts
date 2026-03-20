@@ -42,7 +42,6 @@ export function usePositioning() {
   return useQuery({
     queryKey: ['positioning'],
     queryFn: () => api.get<PositioningResponse>('/positioning'),
-    refetchInterval: 30 * 60_000, // 5 minutes
     staleTime: 2 * 60_000, // 2 minutes
   });
 }

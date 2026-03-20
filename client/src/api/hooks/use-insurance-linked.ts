@@ -6,7 +6,6 @@ export function useInsuranceLinked() {
   return useQuery({
     queryKey: ['insurance-linked'],
     queryFn: () => api.get<any>('/insurance-linked'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

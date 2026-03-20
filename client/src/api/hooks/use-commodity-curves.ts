@@ -6,7 +6,6 @@ export function useCommodityCurves() {
   return useQuery({
     queryKey: ['commodity-curves'],
     queryFn: () => api.get<any>('/commodity-curves'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

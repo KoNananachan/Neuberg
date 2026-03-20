@@ -6,7 +6,6 @@ export function useCrossBorderMa() {
   return useQuery({
     queryKey: ['cross-border-ma'],
     queryFn: () => api.get<any>('/cross-border-ma'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

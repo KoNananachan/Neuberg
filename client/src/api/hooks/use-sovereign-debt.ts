@@ -6,7 +6,6 @@ export function useSovereignDebt() {
   return useQuery({
     queryKey: ['sovereign-debt'],
     queryFn: () => api.get<any>('/sovereign-debt'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

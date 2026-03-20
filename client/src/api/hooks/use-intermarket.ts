@@ -37,7 +37,6 @@ export function useIntermarket() {
   return useQuery<IntermarketData>({
     queryKey: ['intermarket'],
     queryFn: () => api.get<IntermarketData>('/intermarket'),
-    staleTime: 10 * 60_000,
-    refetchInterval: 30 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

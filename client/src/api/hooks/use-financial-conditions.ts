@@ -5,7 +5,6 @@ export function useFinancialConditions() {
   return useQuery({
     queryKey: ['financial-conditions'],
     queryFn: () => api.get<any>('/financial-conditions'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

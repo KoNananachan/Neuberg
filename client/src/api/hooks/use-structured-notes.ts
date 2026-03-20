@@ -6,7 +6,6 @@ export function useStructuredNotes() {
   return useQuery({
     queryKey: ['structured-notes'],
     queryFn: () => api.get<any>('/structured-notes'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

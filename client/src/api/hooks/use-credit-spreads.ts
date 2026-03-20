@@ -48,7 +48,6 @@ export function useCreditSpreads() {
   return useQuery({
     queryKey: ['credit-spreads'],
     queryFn: () => api.get<CreditSpreadsData>('/credit-spreads'),
-    staleTime: 10 * 60_000,
-    refetchInterval: 30 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

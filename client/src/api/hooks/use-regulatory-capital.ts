@@ -6,7 +6,6 @@ export function useRegulatoryCapital() {
   return useQuery({
     queryKey: ['regulatory-capital'],
     queryFn: () => api.get<any>('/regulatory-capital'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

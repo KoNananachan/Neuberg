@@ -6,7 +6,6 @@ export function useMarketBreadthAdvanced() {
   return useQuery({
     queryKey: ['market-breadth-advanced'],
     queryFn: () => api.get<any>('/market-breadth-advanced'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

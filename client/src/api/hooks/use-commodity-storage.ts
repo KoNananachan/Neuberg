@@ -6,7 +6,6 @@ export function useCommodityStorage() {
   return useQuery({
     queryKey: ['commodity-storage'],
     queryFn: () => api.get<any>('/commodity-storage'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

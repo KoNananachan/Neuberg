@@ -46,7 +46,6 @@ export function useCapitalFlows() {
   return useQuery<CapitalFlowsData>({
     queryKey: ['capital-flows'],
     queryFn: () => api.get<CapitalFlowsData>('/capital-flows'),
-    staleTime: 10 * 60 * 1000,
-    refetchInterval: 30 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

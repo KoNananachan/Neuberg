@@ -62,6 +62,6 @@ export function useBacktest(config: BacktestParams | null) {
     queryKey: ['backtest', config],
     queryFn: () => api.post<BacktestResult>('/backtest', config),
     enabled: !!config,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

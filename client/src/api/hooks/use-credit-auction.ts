@@ -6,7 +6,6 @@ export function useCreditAuction() {
   return useQuery({
     queryKey: ['credit-auction'],
     queryFn: () => api.get<any>('/credit-auction'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

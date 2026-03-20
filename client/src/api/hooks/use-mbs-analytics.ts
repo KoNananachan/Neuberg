@@ -7,7 +7,6 @@ export function useMbsAnalytics() {
     queryKey: ['mbs-analytics'],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     queryFn: () => api.get<any>('/mbs-analytics'),
-    refetchInterval: 30 * 60_000,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

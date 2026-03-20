@@ -5,7 +5,6 @@ export function useSecuritiesValuation() {
   return useQuery({
     queryKey: ['securities-valuation'],
     queryFn: () => api.get<any>('/securities-valuation'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -6,7 +6,6 @@ export function useIndexRebalance() {
   return useQuery({
     queryKey: ['index-rebalance'],
     queryFn: () => api.get<any>('/index-rebalance'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

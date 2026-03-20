@@ -5,7 +5,6 @@ export function useSovereignDefault() {
   return useQuery({
     queryKey: ['sovereign-default'],
     queryFn: () => api.get<any>('/sovereign-default'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

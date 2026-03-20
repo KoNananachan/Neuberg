@@ -6,7 +6,6 @@ export function useSovereignWealth() {
   return useQuery({
     queryKey: ['sovereign-wealth'],
     queryFn: () => api.get<any>('/sovereign-wealth'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

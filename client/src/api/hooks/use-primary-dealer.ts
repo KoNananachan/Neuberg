@@ -6,7 +6,6 @@ export function usePrimaryDealer() {
   return useQuery({
     queryKey: ['primary-dealer'],
     queryFn: () => api.get<any>('/primary-dealer'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

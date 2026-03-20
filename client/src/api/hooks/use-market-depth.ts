@@ -6,7 +6,6 @@ export function useMarketDepth() {
   return useQuery({
     queryKey: ['market-depth'],
     queryFn: () => api.get<any>('/market-depth'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

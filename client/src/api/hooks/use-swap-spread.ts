@@ -5,7 +5,6 @@ export function useSwapSpread() {
   return useQuery({
     queryKey: ['swap-spread'],
     queryFn: () => api.get<any>('/swap-spread'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

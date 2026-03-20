@@ -6,7 +6,6 @@ export function useInflationSwap() {
   return useQuery({
     queryKey: ['inflation-swap'],
     queryFn: () => api.get<any>('/inflation-swap'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

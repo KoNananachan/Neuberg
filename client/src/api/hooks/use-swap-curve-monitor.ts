@@ -6,7 +6,6 @@ export function useSwapCurveMonitor() {
   return useQuery({
     queryKey: ['swap-curve-monitor'],
     queryFn: () => api.get<any>('/swap-curve-monitor'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

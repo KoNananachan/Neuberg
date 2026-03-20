@@ -5,8 +5,7 @@ export function useEquityPairsTrading() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['equity-pairs-trading'],
     queryFn: () => api.get<any>('/equity-pairs-trading'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
   return { data, isLoading, refetch };
 }

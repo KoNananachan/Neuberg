@@ -6,7 +6,6 @@ export function useTreasuryAnalytics() {
   return useQuery({
     queryKey: ['treasury-analytics'],
     queryFn: () => api.get<any>('/treasury-analytics'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

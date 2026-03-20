@@ -6,7 +6,6 @@ export function useLoanCds() {
   return useQuery({
     queryKey: ['loan-cds'],
     queryFn: () => api.get<any>('/loan-cds'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

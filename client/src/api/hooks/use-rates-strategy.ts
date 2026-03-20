@@ -6,7 +6,6 @@ export function useRatesStrategy() {
   return useQuery({
     queryKey: ['rates-strategy'],
     queryFn: () => api.get<any>('/rates-strategy'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

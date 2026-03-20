@@ -80,7 +80,6 @@ export function useCreditCurveBuilder() {
   return useQuery({
     queryKey: ['credit-curve-builder'],
     queryFn: () => api.get<CreditCurveBuilderData>('/credit-curve-builder'),
-    staleTime: 10 * 60_000,
-    refetchInterval: 30 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

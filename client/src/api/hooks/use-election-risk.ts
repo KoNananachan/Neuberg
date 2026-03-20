@@ -6,7 +6,6 @@ export function useElectionRisk() {
   return useQuery({
     queryKey: ['election-risk'],
     queryFn: () => api.get<any>('/election-risk'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

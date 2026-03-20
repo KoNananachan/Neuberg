@@ -5,7 +5,6 @@ export function useTreasuryBill() {
   return useQuery({
     queryKey: ['treasury-bill'],
     queryFn: () => api.get<any>('/treasury-bill'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

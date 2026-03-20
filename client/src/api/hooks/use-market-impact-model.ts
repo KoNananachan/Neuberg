@@ -6,7 +6,6 @@ export function useMarketImpactModel() {
   return useQuery({
     queryKey: ['market-impact-model'],
     queryFn: () => api.get<any>('/market-impact-model'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -22,7 +22,7 @@ export function useMissedOpportunities() {
   return useQuery({
     queryKey: ['missed-opportunities'],
     queryFn: () => api.get<MissedOpportunity[]>('/missed-opportunities'),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchInterval: 15 * 60 * 1000,
     refetchOnWindowFocus: false,

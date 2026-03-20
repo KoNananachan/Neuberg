@@ -6,7 +6,6 @@ export function useRealEstateCapital() {
   return useQuery({
     queryKey: ['real-estate-capital'],
     queryFn: () => api.get<any>('/real-estate-capital'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

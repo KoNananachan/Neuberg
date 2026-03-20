@@ -5,7 +5,6 @@ export function useClimateRisk() {
   return useQuery({
     queryKey: ['climate-risk'],
     queryFn: () => api.get<any>('/climate-risk'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

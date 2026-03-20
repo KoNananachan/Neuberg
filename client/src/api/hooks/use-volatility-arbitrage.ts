@@ -6,7 +6,6 @@ export function useVolatilityArbitrage() {
   return useQuery({
     queryKey: ['volatility-arbitrage'],
     queryFn: () => api.get<any>('/volatility-arbitrage'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

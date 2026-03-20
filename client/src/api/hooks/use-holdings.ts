@@ -52,6 +52,5 @@ export function useHoldings(symbol: string) {
     queryFn: () => api.get<HoldingsData>(`/holdings/${encodeURIComponent(symbol)}`),
     enabled: !!symbol,
     staleTime: 30 * 60_000, // 30 min
-    refetchInterval: 30 * 60_000,
   });
 }

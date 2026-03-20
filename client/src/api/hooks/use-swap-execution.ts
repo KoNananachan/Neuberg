@@ -6,7 +6,6 @@ export function useSwapExecution() {
   return useQuery({
     queryKey: ['swap-execution'],
     queryFn: () => api.get<any>('/swap-execution'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -5,7 +5,6 @@ export function useInflationLinkedBond() {
   return useQuery({
     queryKey: ['inflation-linked-bond'],
     queryFn: () => api.get<any>('/inflation-linked-bond'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

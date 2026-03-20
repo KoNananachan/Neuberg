@@ -6,7 +6,6 @@ export function useFreightIndices() {
   return useQuery({
     queryKey: ['freight-indices'],
     queryFn: () => api.get<any>('/freight-indices'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -43,7 +43,6 @@ export function useStyleBox() {
   return useQuery<StyleBoxResponse>({
     queryKey: ['style-box'],
     queryFn: () => api.get('/style-box'),
-    refetchInterval: 30 * 60_000,
     staleTime: 2 * 60_000,
   });
 }

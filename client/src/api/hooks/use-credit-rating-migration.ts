@@ -6,7 +6,6 @@ export function useCreditRatingMigration() {
   return useQuery({
     queryKey: ['credit-rating-migration'],
     queryFn: () => api.get<any>('/credit-rating-migration'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

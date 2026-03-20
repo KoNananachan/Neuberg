@@ -5,8 +5,7 @@ export function useInterestRateVolSurface() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['interest-rate-vol-surface'],
     queryFn: () => api.get<any>('/interest-rate-vol-surface'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
   return { data, isLoading, refetch };
 }

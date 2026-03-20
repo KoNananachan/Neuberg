@@ -6,7 +6,6 @@ export function useEtfFlows() {
   return useQuery({
     queryKey: ['etf-flows'],
     queryFn: () => api.get<any>('/etf-flows'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

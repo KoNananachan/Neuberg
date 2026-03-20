@@ -6,7 +6,6 @@ export function useWarrantConvertible() {
   return useQuery({
     queryKey: ['warrant-convertible'],
     queryFn: () => api.get<any>('/warrant-convertible'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

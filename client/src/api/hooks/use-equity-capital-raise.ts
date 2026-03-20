@@ -6,7 +6,6 @@ export function useEquityCapitalRaise() {
   return useQuery({
     queryKey: ['equity-capital-raise'],
     queryFn: () => api.get<any>('/equity-capital-raise'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

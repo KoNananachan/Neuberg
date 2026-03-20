@@ -6,7 +6,6 @@ export function useAgencyMbsTba() {
   return useQuery({
     queryKey: ['agency-mbs-tba'],
     queryFn: () => api.get<any>('/agency-mbs-tba'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

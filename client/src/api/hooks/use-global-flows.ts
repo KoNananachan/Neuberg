@@ -43,7 +43,6 @@ export function useGlobalFlows() {
   return useQuery<GlobalFlowsData>({
     queryKey: ['global-flows'],
     queryFn: () => api.get<GlobalFlowsData>('/global-flows'),
-    refetchInterval: 30 * 60_000,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

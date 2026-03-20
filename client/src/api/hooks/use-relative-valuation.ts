@@ -36,7 +36,7 @@ export function useRelativeValuation(symbol: string) {
     queryKey: ['relative-valuation', symbol],
     queryFn: () => api.get<RelativeValuationData>(`/relative-valuation/${encodeURIComponent(symbol)}`),
     enabled: !!symbol,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
     refetchInterval: 15 * 60_000,
   });
 }

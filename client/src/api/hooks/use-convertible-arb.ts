@@ -6,7 +6,6 @@ export function useConvertibleArb() {
   return useQuery({
     queryKey: ['convertible-arb'],
     queryFn: () => api.get<any>('/convertible-arb'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

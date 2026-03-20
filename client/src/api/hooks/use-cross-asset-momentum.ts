@@ -6,7 +6,6 @@ export function useCrossAssetMomentum() {
   return useQuery({
     queryKey: ['cross-asset-momentum'],
     queryFn: () => api.get<any>('/cross-asset-momentum'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

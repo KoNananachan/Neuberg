@@ -6,7 +6,6 @@ export function useMarginDebt() {
   return useQuery({
     queryKey: ['margin-debt'],
     queryFn: () => api.get<any>('/margin-debt'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

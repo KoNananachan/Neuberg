@@ -6,7 +6,6 @@ export function useSecuritization() {
   return useQuery({
     queryKey: ['securitization'],
     queryFn: () => api.get<any>('/securitization'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

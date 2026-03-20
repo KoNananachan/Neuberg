@@ -6,7 +6,6 @@ export function useShortSqueeze() {
   return useQuery({
     queryKey: ['short-squeeze'],
     queryFn: () => api.get<any>('/short-squeeze'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

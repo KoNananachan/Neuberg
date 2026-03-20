@@ -5,7 +5,6 @@ export function useSemiconductor() {
   return useQuery({
     queryKey: ['semiconductor'],
     queryFn: () => api.get<any>('/semiconductor'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -6,7 +6,6 @@ export function useSecuritiesClassAction() {
   return useQuery({
     queryKey: ['securities-class-action'],
     queryFn: () => api.get<any>('/securities-class-action'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

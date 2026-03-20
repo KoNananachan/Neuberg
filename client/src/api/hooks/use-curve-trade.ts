@@ -6,7 +6,6 @@ export function useCurveTrade() {
   return useQuery({
     queryKey: ['curve-trade'],
     queryFn: () => api.get<any>('/curve-trade'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

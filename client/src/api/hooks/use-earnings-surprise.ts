@@ -45,6 +45,5 @@ export function useEarningsSurprise(symbol: string) {
     queryFn: () => api.get(`/earnings-surprise/${encodeURIComponent(symbol)}`),
     enabled: !!symbol && symbol.length > 0,
     staleTime: 15 * 60_000,
-    refetchInterval: 30 * 60_000,
   });
 }

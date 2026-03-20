@@ -36,7 +36,6 @@ export function useCotReport() {
   return useQuery<CotResponse>({
     queryKey: ['cot-report'],
     queryFn: () => api.get<CotResponse>('/cot-report'),
-    refetchInterval: 30 * 60_000,
     staleTime: 2 * 60_000,
   });
 }

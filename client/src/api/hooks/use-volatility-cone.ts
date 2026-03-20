@@ -36,7 +36,6 @@ export function useVolatilityCone() {
   return useQuery<VolatilityConeResponse>({
     queryKey: ['volatility-cone'],
     queryFn: () => api.get<VolatilityConeResponse>('/volatility-cone'),
-    refetchInterval: 30 * 60_000,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

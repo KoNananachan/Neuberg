@@ -6,7 +6,6 @@ export function useEquityScreenResults() {
   return useQuery({
     queryKey: ['equity-screen-results'],
     queryFn: () => api.get<any>('/equity-screen-results'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

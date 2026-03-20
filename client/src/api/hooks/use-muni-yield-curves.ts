@@ -6,7 +6,6 @@ export function useMuniYieldCurves() {
   return useQuery({
     queryKey: ['muni-yield-curves'],
     queryFn: () => api.get<any>('/muni-yield-curves'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

@@ -6,7 +6,6 @@ export function useFixedIncomeAnalytics() {
     queryKey: ['fixed-income-analytics'],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     queryFn: () => api.get<any>('/fixed-income-analytics'),
-    refetchInterval: 30 * 60_000,
-    staleTime: 10 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

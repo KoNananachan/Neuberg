@@ -5,7 +5,6 @@ export function useAssetAllocation() {
   return useQuery({
     queryKey: ['asset-allocation'],
     queryFn: () => api.get<any>('/asset-allocation'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

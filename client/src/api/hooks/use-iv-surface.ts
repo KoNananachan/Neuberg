@@ -35,7 +35,6 @@ export function useIVSurface(symbol: string) {
     queryKey: ['iv-surface', symbol],
     queryFn: () => api.get<IVSurfaceData>(`/iv-surface/${encodeURIComponent(symbol)}`),
     enabled: !!symbol,
-    staleTime: 10 * 60_000,
-    refetchInterval: 30 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

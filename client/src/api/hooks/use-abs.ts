@@ -5,7 +5,6 @@ export function useABS() {
   return useQuery({
     queryKey: ['abs'],
     queryFn: () => api.get<any>('/abs'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

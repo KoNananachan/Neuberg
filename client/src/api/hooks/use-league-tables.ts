@@ -5,7 +5,6 @@ export function useLeagueTables() {
   return useQuery({
     queryKey: ['league-tables'],
     queryFn: () => api.get<any>('/league-tables'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

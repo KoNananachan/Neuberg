@@ -5,7 +5,6 @@ export function useVentureCapital() {
   return useQuery({
     queryKey: ['venture-capital'],
     queryFn: () => api.get<any>('/venture-capital'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

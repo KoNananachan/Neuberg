@@ -42,8 +42,7 @@ export function useFuturesCurve(commodity: string) {
     queryKey: ['futures-curve', commodity],
     queryFn: () => api.get<FuturesCurveData>(`/futures-curve/${commodity}`),
     enabled: !!commodity,
-    staleTime: 10 * 60_000,
-    refetchInterval: 30 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }
 

@@ -5,8 +5,7 @@ export function useSukukMonitor() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['sukuk-monitor'],
     queryFn: () => api.get<any>('/sukuk-monitor'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
   return { data, isLoading, refetch };
 }

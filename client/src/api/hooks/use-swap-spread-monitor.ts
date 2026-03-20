@@ -6,7 +6,6 @@ export function useSwapSpreadMonitor() {
   return useQuery({
     queryKey: ['swap-spread-monitor'],
     queryFn: () => api.get<any>('/swap-spread-monitor'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

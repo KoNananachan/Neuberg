@@ -5,8 +5,7 @@ export function useIndustrialMetals() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['industrial-metals'],
     queryFn: () => api.get<any>('/industrial-metals'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
   return { data, isLoading, refetch };
 }

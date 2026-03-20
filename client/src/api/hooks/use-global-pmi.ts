@@ -6,7 +6,6 @@ export function useGlobalPmi() {
   return useQuery({
     queryKey: ['global-pmi'],
     queryFn: () => api.get<any>('/global-pmi'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

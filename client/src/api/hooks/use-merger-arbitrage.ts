@@ -6,7 +6,6 @@ export function useMergerArbitrage() {
   return useQuery({
     queryKey: ['merger-arbitrage'],
     queryFn: () => api.get<any>('/merger-arbitrage'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

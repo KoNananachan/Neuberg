@@ -47,7 +47,6 @@ export function useConfluence(symbols?: string[]) {
   return useQuery({
     queryKey: ['confluence', query],
     queryFn: () => fetchConfluence(symbols),
-    staleTime: 10 * 60_000,
-    refetchInterval: 30 * 60_000,
+    staleTime: 60 * 60_000,
   });
 }

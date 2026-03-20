@@ -6,7 +6,6 @@ export function useConvertibleArbitrage() {
   return useQuery({
     queryKey: ['convertible-arbitrage'],
     queryFn: () => api.get<any>('/convertible-arbitrage'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

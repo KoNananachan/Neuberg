@@ -5,7 +5,6 @@ export function useConsumerConfidence() {
   return useQuery({
     queryKey: ['consumer-confidence'],
     queryFn: () => api.get<any>('/consumer-confidence'),
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }
