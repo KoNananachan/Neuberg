@@ -3,7 +3,7 @@ import { analyzeUnprocessedArticles } from '../ai/news-analyzer.js';
 import { clusterRecentNews } from '../ai/news-clusterer.js';
 import type { NewsSource } from './news-source.js';
 
-const POLL_INTERVAL_MS = 30_000; // 30 seconds
+const POLL_INTERVAL_MS = 60_000; // 60 seconds (halved API calls vs 30s)
 const CLUSTER_INTERVAL_MS = 10 * 60_000; // 10 minutes
 let lastClusterTime = 0;
 let newsSource: NewsSource | null = null;
