@@ -20,6 +20,7 @@ export default defineConfig({
           'flexlayout': ['flexlayout-react'],
           'icons': ['lucide-react'],
           'state': ['zustand'],
+          'motion': ['framer-motion'],
         },
       },
     },
