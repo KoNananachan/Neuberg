@@ -24,14 +24,17 @@ async function pollCalendar() {
     for (const event of events) {
       const externalId = `${event.event}-${event.country}-${event.date}`;
       const eventDate = new Date(event.date);
-
-      // Check if this event already exists
-      const existing = await prisma.economicEvent.findUnique({
-        where: { externalId },
-      });
-
-      const hasNewActual = !existing?.released && event.actual != null && event.actual !== '';
       const released = event.actual != null && event.actual !== '';
+
+      // Only check previous state for events with actual values (skip query for unreleased)
+      let hasNewActual = false;
+      if (released) {
+        const existing = await prisma.economicEvent.findUnique({
+          where: { externalId },
+          select: { released: true },
+        });
+        hasNewActual = !existing?.released;
+      }
 
       await prisma.economicEvent.upsert({
         where: { externalId },
@@ -54,7 +57,6 @@ async function pollCalendar() {
         },
       });
 
-      // Broadcast when an event gets a new actual value
       if (hasNewActual) {
         broadcastCalendarRelease({
           externalId,

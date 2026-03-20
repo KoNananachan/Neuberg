@@ -37,6 +37,7 @@ async function pollInsiderTrades() {
             shares: t.shares,
             transactionType: t.transactionType,
           },
+          select: { id: true },
         });
         if (existing) continue;
 
