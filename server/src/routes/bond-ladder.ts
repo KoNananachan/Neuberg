@@ -1,12 +1,7 @@
 import { Router, Request, Response } from 'express';
 
+import { mulberry32, hashSeed, seededRandom, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-// ── Seeded PRNG ──
-
-function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; } return h >>> 0; }
-function mulberry32(a: number) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-function seededRandom(tag: string) { const d = new Date().toISOString().slice(0, 10); return mulberry32(hashSeed(tag + d)); }
 
 // ── Types ──
 
@@ -106,10 +101,6 @@ const RATING_NUMERIC: Record<string, number> = {
   'AAA': 1, 'AA+': 2, 'AA': 3, 'AA-': 4,
   'A+': 5, 'A': 6, 'A-': 7, 'BBB+': 8,
 };
-
-// ── Cache ──
-
-const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: LadderData; ts: number } | null = null;
 
 // ── Helpers ──

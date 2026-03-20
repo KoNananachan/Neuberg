@@ -1,16 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-  return h >>> 0;
-}
-function mulberry32(seed: number) {
-  let s = seed | 0;
-  return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
 
 const TENORS = ['1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '15Y', '20Y', '25Y', '30Y'] as const;
 const TENOR_YEARS: Record<string, number> = { '1Y': 1, '2Y': 2, '3Y': 3, '5Y': 5, '7Y': 7, '10Y': 10, '15Y': 15, '20Y': 20, '25Y': 25, '30Y': 30 };
@@ -44,7 +35,7 @@ const SECTORS = [
 
 const TAX_STATUSES = ['Tax-Exempt', 'Taxable', 'AMT'] as const;
 
-const CACHE_TTL = 12 * 60 * 60 * 1000;
+
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

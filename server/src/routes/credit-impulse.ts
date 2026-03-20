@@ -1,23 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-function mulberry32(a: number) {
-  return function () {
-    let t = (a += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hashSeed(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
-  }
-  return h >>> 0;
-}
 
 // ── Seed Data ──
 
@@ -85,10 +69,6 @@ const SLOOS_LOAN_TYPES = [
   { loanType: 'Credit Card', baseTightening: 12, baseDemand: 8 },
   { loanType: 'Other Consumer', baseTightening: 14, baseDemand: -3 },
 ] as const;
-
-// ── Cache ──
-
-const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // ── Generator ──

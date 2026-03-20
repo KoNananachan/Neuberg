@@ -1,9 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-function mulberry32(a: number) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = Math.imul(31, h) + str.charCodeAt(i) | 0; } return h; }
 
 // -- Static reference data --
 
@@ -77,7 +75,7 @@ const RELEASE_TIMES = ['08:30', '09:00', '09:45', '10:00', '13:00', '14:00', '02
 
 // -- Cache --
 
-const CACHE_TTL = 12 * 60 * 60 * 1000;
+
 let cache: { data: unknown; ts: number } | null = null;
 
 // -- Data generation --

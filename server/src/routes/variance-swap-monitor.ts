@@ -1,26 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-// ── Deterministic seeded PRNG ──
-
-function mulberry32(a: number) {
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  }
-  return h;
-}
 
 // ── Helpers ──
 
@@ -171,10 +152,6 @@ const GEX_CONFIGS = [
   { index: 'NKY', baseGex: 2800, zeroDtePct: 0.18, spotBase: 39800, putWallPct: 0.045, callWallPct: 0.025 },
   { index: 'FTSE', baseGex: 1900, zeroDtePct: 0.12, spotBase: 8350, putWallPct: 0.03, callWallPct: 0.02 },
 ];
-
-// ── Cache ──
-
-const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: VarianceSwapMonitorResponse; ts: number } | null = null;
 
 // ── Data generation ──

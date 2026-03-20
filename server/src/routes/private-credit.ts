@@ -1,25 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-function hashSeed(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-function mulberry32(a: number): () => number {
-  return function() {
-    let t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
 
 const DIRECT_LENDING_SEGMENTS = [
   { segment: 'Upper Middle Market', baseSpread: 475, baseYield: 10.08, baseOID: 98.0, baseLeverage: 5.2, baseUnitranche: 62, baseFirstLien: 30, baseSecondLien: 8, baseDealSize: 425 },
@@ -57,7 +39,7 @@ const DEAL_PIPELINE_BORROWERS = [
 ];
 const DEAL_PIPELINE_ARRANGERS = ['Ares Management', 'Owl Rock', 'Golub Capital', 'HPS Investment', 'Blue Owl', 'KKR Credit'];
 
-const CACHE_TTL = 12 * 60 * 60 * 1000;
+
 let cacheData: unknown = null;
 let cacheTime = 0;
 

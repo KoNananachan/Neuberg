@@ -1,16 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-  return h >>> 0;
-}
-function mulberry32(seed: number) {
-  let s = seed | 0;
-  return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
 
 const BONDS = [
   { name: '2Y US Treasury', ticker: 'UST2Y', coupon: 4.25, maturity: '2028-03-15', rating: 'AAA', sector: 'Treasury', baseYield: 4.3, baseDur: 1.95 },
@@ -35,7 +26,7 @@ const BONDS = [
   { name: 'iShares IG Corporate', ticker: 'LQD', coupon: 3.8, maturity: '2033-06-01', rating: 'A-', sector: 'ETF', baseYield: 5.1, baseDur: 8.2 },
 ];
 
-const CACHE_TTL = 12 * 60 * 60 * 1000;
+
 let cache: { data: unknown; ts: number } | null = null;
 
 function generate() {

@@ -1,12 +1,13 @@
 import { Router } from 'express';
 
+import { mulberry32, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
 
 // ── In-memory cache (5 min TTL) with stale fallback ──
 
 interface CacheEntry { data: unknown; ts: number }
 const cache = new Map<string, CacheEntry>();
-const CACHE_TTL = 12 * 60 * 60_000;
+
 let staleData: unknown = null;
 
 function cached<T>(key: string, fn: () => T): T {
@@ -16,18 +17,6 @@ function cached<T>(key: string, fn: () => T): T {
   cache.set(key, { data, ts: Date.now() });
   staleData = data;
   return data;
-}
-
-// ── Seeded PRNG (mulberry32) ──
-
-function mulberry32(seed: number): () => number {
-  let s = seed | 0;
-  return () => {
-    s = (s + 0x6D2B79F5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 function dateSeed(): number {

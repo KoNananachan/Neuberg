@@ -1,23 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-// ── PRNG ────────────────────────────────────────────────────────────────────
-
-function mulberry32(a: number) {
-  return function () {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = Math.imul(31, h) + s.charCodeAt(i) | 0; }
-  return h;
-}
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const round = (v: number, d = 2) => Math.round(v * 10 ** d) / 10 ** d;
@@ -132,10 +116,6 @@ const PIPELINE_ISSUERS = [
 ];
 
 const ISSUANCE_STATUSES: Array<'priced' | 'launched' | 'expected'> = ['priced', 'launched', 'expected'];
-
-// ── Cache ───────────────────────────────────────────────────────────────────
-
-const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: ConvertibleBondAnalyzerResponse; ts: number } | null = null;
 
 // ── Generator ───────────────────────────────────────────────────────────────

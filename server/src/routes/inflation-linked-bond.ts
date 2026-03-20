@@ -1,24 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-// ── Seeded PRNG ──────────────────────────────────────────────────────────────
-
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-  return h >>> 0;
-}
-
-function mulberry32(seed: number): () => number {
-  let s = seed | 0;
-  return () => {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -191,10 +174,6 @@ const ETF_BASES: EtfBase[] = [
 function round2(v: number): number { return Math.round(v * 100) / 100; }
 function round3(v: number): number { return Math.round(v * 1000) / 1000; }
 function round4(v: number): number { return Math.round(v * 10000) / 10000; }
-
-// ── Cache ────────────────────────────────────────────────────────────────────
-
-const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: InflationLinkedBondResponse; ts: number } | null = null;
 
 // ── Data generation ──────────────────────────────────────────────────────────

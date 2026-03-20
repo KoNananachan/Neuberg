@@ -1,23 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-function mulberry32(a: number) {
-  return function () {
-    let t = (a += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hashSeed(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (Math.imul(31, hash) + str.charCodeAt(i)) | 0;
-  }
-  return hash >>> 0;
-}
 
 // --- Types ---
 
@@ -212,7 +196,7 @@ const REDEMPTION_DEFS: CreationRedemptionDef[] = [
 
 // --- Cache ---
 
-const CACHE_TTL = 12 * 60 * 60 * 1000;
+
 let cache: { data: ETFFlowData; ts: number } | null = null;
 
 // --- Generator ---

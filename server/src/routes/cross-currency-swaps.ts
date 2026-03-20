@@ -1,16 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-  return h >>> 0;
-}
-function mulberry32(seed: number) {
-  let s = seed | 0;
-  return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
 
 // ── Currency pair configurations ──
 
@@ -47,10 +38,6 @@ const FLOATING_INDICES = ['SOFR', 'EURIBOR', 'TONA', 'SONIA', 'SARON', 'BBSW', '
 const SWAP_PAIRS_FOR_BLOTTER = ['USD/EUR', 'USD/JPY', 'USD/GBP', 'USD/CHF', 'USD/AUD', 'USD/CAD', 'EUR/GBP', 'EUR/JPY', 'USD/EUR', 'USD/JPY', 'USD/GBP', 'USD/EUR'];
 const HEDGING_PAIRS = ['USD/EUR', 'USD/JPY', 'USD/GBP'];
 const HEDGING_TENORS = ['1Y', '3Y', '5Y'];
-
-// ── Cache ──
-
-const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 
 // ── Data generation ──

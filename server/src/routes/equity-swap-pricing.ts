@@ -1,27 +1,9 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
 
 // -- Deterministic seeded RNG --
-
-function hashSeed(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-function mulberry32(a: number): () => number {
-  return function () {
-    let t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
 
 function round(value: number, decimals: number): number {
   const factor = Math.pow(10, decimals);
@@ -130,7 +112,7 @@ const COLLATERAL_TYPES = [
 
 // -- Cache --
 
-const CACHE_TTL = 12 * 60 * 60_000;
+
 let cache: { data: EquitySwapPricingResponse | null; expiresAt: number } = {
   data: null,
   expiresAt: 0,

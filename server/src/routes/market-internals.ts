@@ -1,16 +1,6 @@
 import { Router } from 'express';
 
-// ── Seeded PRNG (Mulberry32) ──────────────────────────────────────────────────
-function mulberry32(seed: number): () => number {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
+import { mulberry32, CACHE_TTL } from '../lib/seeded-data';
 function dateSeed(date: Date): number {
   return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
 }
@@ -257,9 +247,6 @@ function generateMarketInternals(): MarketInternalsResponse {
     generatedAt: today.toISOString(),
   };
 }
-
-// ── Cache ─────────────────────────────────────────────────────────────────────
-const CACHE_TTL = 12 * 60 * 60_000; // 5 minutes
 let cache: MarketInternalsResponse | null = null;
 let cacheTime = 0;
 

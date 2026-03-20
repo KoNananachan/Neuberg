@@ -1,26 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-// ── Seeded PRNG ──
-
-function mulberry32(a: number) {
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  }
-  return h;
-}
 
 // ── Helpers ──
 
@@ -107,10 +88,6 @@ const FUND_COMPARISON_STATIC = [
   { fund: 'TCG BDC Senior Secured Fund', vintage: 2023, strategy: 'Senior Secured', baseIrr: 11.8, baseMoic: 1.10, baseYield: 10.2, baseDPI: 0.12, sizeB: 5.4 },
   { fund: 'Oaktree Specialty Lending', vintage: 2020, strategy: 'Opportunistic Credit', baseIrr: 17.1, baseMoic: 1.55, baseYield: 13.2, baseDPI: 0.82, sizeB: 4.8 },
 ];
-
-// ── Cache ──
-
-const CACHE_TTL = 12 * 60 * 60 * 1000;
 let cache: { data: unknown; ts: number } | null = null;
 let staleData: unknown = null;
 

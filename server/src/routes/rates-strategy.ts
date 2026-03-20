@@ -1,11 +1,8 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
 
-// ── Seeded PRNG ──
-
-function mulberry32(a: number) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = Math.imul(31, h) + str.charCodeAt(i) | 0; } return h; }
 
 // ── Types ──
 
@@ -106,10 +103,6 @@ const TENOR_DURATION: Record<string, number> = {
   '2Y': 1.9, '3Y': 2.8, '5Y': 4.5, '7Y': 6.1,
   '10Y': 8.2, '15Y': 11.0, '20Y': 13.5, '25Y': 15.2, '30Y': 16.8,
 };
-
-// ── Cache ──
-
-const CACHE_TTL = 12 * 60 * 60_000;
 let cache: { data: RatesStrategyResponse | null; ts: number } = { data: null, ts: 0 };
 
 // ── Helpers ──

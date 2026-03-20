@@ -1,31 +1,12 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
 
 // ── In-memory cache (5 min TTL) with stale fallback ──
 
 let cacheData: unknown = null;
 let cacheTime = 0;
-const CACHE_TTL = 12 * 60 * 60 * 1000;
-
-// ── Seeded PRNG ──
-
-function mulberry32(a: number) {
-  return function() {
-    let t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-function hashSeed(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = Math.imul(31, h) + str.charCodeAt(i) | 0;
-  }
-  return h >>> 0;
-}
 
 // ── Helpers ──
 

@@ -1,12 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, seededRandom, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-// ── Seeded PRNG ──
-
-function hashSeed(str: string): number { let h = 0; for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; } return h >>> 0; }
-function mulberry32(a: number) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-function seededRandom(tag: string) { const d = new Date().toISOString().slice(0, 10); return mulberry32(hashSeed(tag + d)); }
 
 // ── Types ──
 
@@ -447,7 +442,7 @@ function buildTradeSettlementData(): TradeSettlementResponse {
 
 let cachedData: { data: TradeSettlementResponse; ts: number } | null = null;
 let staleData: TradeSettlementResponse | null = null;
-const CACHE_TTL = 12 * 60 * 60_000; // 5 minutes
+
 
 // ── Route ──
 

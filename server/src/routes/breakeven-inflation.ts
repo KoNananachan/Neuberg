@@ -1,24 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-// ── Seeded PRNG ──────────────────────────────────────────────────────────────
-
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-  return h >>> 0;
-}
-
-function mulberry32(seed: number): () => number {
-  let s = seed | 0;
-  return () => {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -199,10 +182,6 @@ function jitter(rng: () => number, base: number, bps: number): number {
 function bpsJitter(rng: () => number, base: number, halfRange: number): number {
   return round2(base + (rng() - 0.5) * 2 * halfRange);
 }
-
-// ── Cache ────────────────────────────────────────────────────────────────────
-
-const CACHE_TTL = 12 * 60 * 60_000; // 5 minutes
 let cacheKey = '';
 let cacheData: BreakevenInflationResponse | null = null;
 let cacheTime = 0;

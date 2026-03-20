@@ -1,25 +1,7 @@
 import { Router } from 'express';
 
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
 const router = Router();
-
-function hashSeed(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-function mulberry32(a: number): () => number {
-  return function() {
-    let t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
 
 const CB_ISSUERS = [
   { issuer: 'Tesla', ticker: 'TSLA', coupon: 2.0, maturity: '2027-10-15', convPrice: 280, stockBase: 248, rating: 'BB+', sizeM: 1800 },
@@ -47,7 +29,7 @@ const WARRANT_ISSUERS = [
   { issuer: 'Ginkgo Bioworks', ticker: 'DNA', strikeBase: 10, stockBase: 2.8, expiry: '2028-03-15' },
 ];
 
-const CACHE_TTL = 12 * 60 * 60 * 1000;
+
 let cacheData: unknown = null;
 let cacheTime = 0;
 
