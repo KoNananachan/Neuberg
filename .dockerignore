@@ -2,5 +2,12 @@ node_modules
 server/dist
 client/dist
 server/prisma/dev.db
+server/prisma/prod.db
 .git
+.github
 .env
+.env.*
+*.md
+*.log
+.claude
+.vscode

@@ -18,6 +18,7 @@ export default defineConfig({
           'web3': ['wagmi', 'viem', '@rainbow-me/rainbowkit'],
           'charts': ['lightweight-charts'],
           'flexlayout': ['flexlayout-react'],
+          'icons': ['lucide-react'],
           'state': ['zustand'],
         },
       },
