@@ -52,7 +52,6 @@ async function refreshQuotes() {
     );
 
     broadcastQuotes(quotes);
-    console.log(`[StockTracker] Refreshed ${quotes.length} quotes`);
 
     // Evaluate price/volume alerts after quote refresh (fire-and-forget)
     evaluateAlerts(quotes.map(q => ({

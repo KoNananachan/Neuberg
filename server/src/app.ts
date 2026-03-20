@@ -79,7 +79,7 @@ const ALLOWED_ORIGINS: (string | RegExp)[] = isProd
 // ── Rate limiters ──
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,  // 1 minute
-  max: 300,              // 300 requests per minute
+  max: 120,              // 120 requests per minute (matches CLAUDE.md spec)
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },

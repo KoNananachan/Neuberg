@@ -62,7 +62,7 @@ async function pollInsiderTrades() {
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    console.log('[InsiderTracker] Insider trade poll complete');
+    // Omit success log to reduce Cloud Logging costs
   } catch (err) {
     console.error('[InsiderTracker] Error polling insider trades:', err instanceof Error ? err.message : err);
   }

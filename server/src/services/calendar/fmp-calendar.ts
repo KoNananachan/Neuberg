@@ -62,8 +62,6 @@ export async function fetchEconomicCalendar(_from: string, _to: string): Promise
       }
     }
 
-    console.log(`[Calendar] Fetched ${allEvents.length} events from Forex Factory`);
-
     cache = { data: allEvents, expiresAt: Date.now() + 30 * 60_000 }; // 30 min cache
     return allEvents;
   } catch (err) {

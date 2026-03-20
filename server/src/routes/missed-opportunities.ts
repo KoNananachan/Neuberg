@@ -151,7 +151,6 @@ router.get('/', async (_req, res) => {
     const top100 = opportunities.slice(0, 100);
 
     cache = { data: top100, expiresAt: Date.now() + CACHE_TTL };
-    console.log(`[MissedOpp] Computed ${opportunities.length} opportunities, returning top ${top100.length}`);
     res.json(top100);
   } catch (err) {
     console.error('[MissedOpp] Error:', err);

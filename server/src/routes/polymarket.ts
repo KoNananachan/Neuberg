@@ -45,7 +45,6 @@ async function getSearchPool(): Promise<any[]> {
   }
   if (allMarkets.length > 0) {
     searchPool = { markets: allMarkets, expiresAt: Date.now() + SEARCH_POOL_TTL };
-    console.log(`[Polymarket] Search pool refreshed: ${allMarkets.length} markets`);
   }
   return searchPool.markets;
 }

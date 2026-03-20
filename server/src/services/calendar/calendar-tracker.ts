@@ -21,8 +21,6 @@ async function pollCalendar() {
     const events = await fetchEconomicCalendar(from, to);
     if (events.length === 0) return;
 
-    console.log(`[CalendarTracker] Fetched ${events.length} events`);
-
     for (const event of events) {
       const externalId = `${event.event}-${event.country}-${event.date}`;
       const eventDate = new Date(event.date);
