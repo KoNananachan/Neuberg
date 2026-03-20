@@ -85,3 +85,7 @@ export function broadcastAlertTriggered(alert: unknown) {
 export function broadcastHyperliquidUpdate(data: unknown) {
   broadcast('hyperliquid-update', data);
 }
+
+export function getClientCount(): number {
+  return wss ? wss.clients.size : 0;
+}

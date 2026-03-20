@@ -4,10 +4,10 @@
  * caches in memory, and broadcasts updates via WebSocket.
  */
 
-import { broadcastHyperliquidUpdate } from '../websocket/ws-server.js';
+import { broadcastHyperliquidUpdate, getClientCount } from '../websocket/ws-server.js';
 
 const HL_API = 'https://api.hyperliquid.xyz/info';
-const REFRESH_INTERVAL = 10_000; // 10 seconds
+const REFRESH_INTERVAL = 30_000; // 30 seconds (reduced from 10s to save API calls)
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isRefreshing = false;
@@ -116,6 +116,8 @@ function parseAssets(
 
 async function refresh() {
   if (isRefreshing) return;
+  // Skip refresh when no WebSocket clients are connected
+  if (getClientCount() === 0 && lastUpdated > 0) return;
   isRefreshing = true;
   try {
     const [perpData, stockData] = await Promise.all([

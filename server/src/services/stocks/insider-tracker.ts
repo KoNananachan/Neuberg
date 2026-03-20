@@ -1,10 +1,13 @@
 import { prisma } from '../../lib/prisma.js';
 import { getInsiderTransactions } from './yahoo-finance.js';
+import { getClientCount } from '../websocket/ws-server.js';
 
 const POLL_INTERVAL = 30 * 60_000; // 30 minutes
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
 async function pollInsiderTrades() {
+  // Skip when no clients are connected
+  if (getClientCount() === 0) return;
   try {
     const trackedStocks = await prisma.trackedStock.findMany({
       select: { symbol: true },
