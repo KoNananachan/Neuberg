@@ -14,5 +14,7 @@ export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
     queryFn: () => api.get<Category[]>('/categories'),
+    staleTime: 60 * 60_000,
+    gcTime: 60 * 60_000,
   });
 }

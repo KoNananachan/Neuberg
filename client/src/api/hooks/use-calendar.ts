@@ -24,6 +24,7 @@ export function useEconomicCalendar(from?: string, to?: string, country?: string
   return useQuery<EconomicEvent[]>({
     queryKey: ['calendar', from, to, country, impact],
     queryFn: () => api.get(`/calendar?${params.toString()}`),
+    staleTime: 30_000,
     refetchInterval: 60_000,
   });
 }
@@ -32,6 +33,7 @@ export function useUpcomingEvents() {
   return useQuery<EconomicEvent[]>({
     queryKey: ['calendar', 'upcoming'],
     queryFn: () => api.get('/calendar/upcoming'),
+    staleTime: 15_000,
     refetchInterval: 30_000,
   });
 }

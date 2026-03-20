@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
+import { invalidateAlertCache } from '../services/alerts/alert-evaluator.js';
 
 const router = Router();
 
@@ -78,6 +79,7 @@ router.post('/', async (req, res) => {
       },
     });
 
+    invalidateAlertCache();
     res.status(201).json(alert);
   } catch (err) {
     console.error('[Alerts] Error creating alert:', err);
@@ -124,6 +126,7 @@ router.put('/:id', async (req, res) => {
       data: parsed.data,
     });
 
+    invalidateAlertCache();
     res.json(alert);
   } catch (err) {
     console.error('[Alerts] Error updating alert:', err);
@@ -152,6 +155,7 @@ router.delete('/:id', async (req, res) => {
 
     await prisma.alert.delete({ where: { id } });
 
+    invalidateAlertCache();
     res.json({ message: 'Alert deleted' });
   } catch (err) {
     console.error('[Alerts] Error deleting alert:', err);

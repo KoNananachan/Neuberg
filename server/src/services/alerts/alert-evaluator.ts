@@ -16,11 +16,29 @@ interface QuoteData {
   avgVolume: number | null;
 }
 
+// Cache enabled alerts to avoid DB query every 60s
+let alertCache: Awaited<ReturnType<typeof prisma.alert.findMany>> | null = null;
+let alertCacheTime = 0;
+const ALERT_CACHE_TTL = 60_000; // 1 minute
+
+/** Call when alerts are created/updated/deleted to force cache refresh */
+export function invalidateAlertCache() {
+  alertCache = null;
+  alertCacheTime = 0;
+}
+
 export async function evaluateAlerts(quotes: QuoteData[]) {
   try {
-    const alerts = await prisma.alert.findMany({
-      where: { enabled: true },
-    });
+    let alerts: NonNullable<typeof alertCache>;
+    if (alertCache && Date.now() - alertCacheTime < ALERT_CACHE_TTL) {
+      alerts = alertCache;
+    } else {
+      alerts = await prisma.alert.findMany({
+        where: { enabled: true },
+      });
+      alertCache = alerts;
+      alertCacheTime = Date.now();
+    }
 
     if (alerts.length === 0) return;
 

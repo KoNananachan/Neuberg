@@ -52,6 +52,7 @@ router.get('/', async (_req, res) => {
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: 2000,
     });
 
     if (recs.length === 0) {

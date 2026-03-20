@@ -16,6 +16,8 @@ export function useAlerts() {
   return useQuery<Alert[]>({
     queryKey: ['alerts'],
     queryFn: () => api.get('/alerts'),
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
   });
 }
 

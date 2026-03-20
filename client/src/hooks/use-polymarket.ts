@@ -74,7 +74,7 @@ export function useCLOBBook(tokenId: string | null) {
       api.get<CLOBBook>(`/polymarket/clob/book?token_id=${encodeURIComponent(tokenId!)}`),
     enabled: !!tokenId,
     staleTime: 10_000,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -85,7 +85,7 @@ export function useCLOBMidpoint(tokenId: string | null) {
       api.get<{ mid: string }>(`/polymarket/clob/midpoint?token_id=${encodeURIComponent(tokenId!)}`),
     enabled: !!tokenId,
     staleTime: 10_000,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -122,6 +122,6 @@ export function useCLOBPositions(
       ),
     enabled: !!address && !!conditionId,
     staleTime: 15_000,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   });
 }
