@@ -541,7 +541,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 25; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 26; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -2115,28 +2115,26 @@ export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
 
 /** Panel IDs that exist in the DEFAULT_LAYOUT (core panels shown on first load) */
 const DEFAULT_PANEL_IDS: Set<string> = new Set([
-  PANEL_IDS.TECHNICAL_CHART, PANEL_IDS.CROSS_ASSET, PANEL_IDS.SECTOR_PERFORMANCE,
-  PANEL_IDS.HEAT_MAP, PANEL_IDS.YIELD_CURVE, PANEL_IDS.MONEY_FLOW,
-  PANEL_IDS.CURRENCY_STRENGTH, PANEL_IDS.HOLDINGS, PANEL_IDS.EARNINGS_ESTIMATES,
-  PANEL_IDS.STOCKS, PANEL_IDS.NEWS, PANEL_IDS.FEAR_GREED,
-  PANEL_IDS.FX_CROSS, PANEL_IDS.WORLD_ECONOMY,
+  PANEL_IDS.NEWS, PANEL_IDS.MAP, PANEL_IDS.TRADING, PANEL_IDS.PREDICTION,
+  PANEL_IDS.TECHNICAL_CHART, PANEL_IDS.HEAT_MAP, PANEL_IDS.MACRO_HEATMAP,
+  PANEL_IDS.FEAR_GREED, PANEL_IDS.MARKET_MOVERS, PANEL_IDS.CRYPTO,
+  PANEL_IDS.SENTIMENT,
 ]);
 
 /*
- * Pro layout — maximum information density, showcasing advanced analytics:
+ * Trading-first layout — action center with market intelligence:
  *
- * +------ 30% ------+---------- 40% ----------+------- 30% --------+
- * |                  | SECTOR PERF  (tab)      | CROSS-ASSET  (tab) |
- * | TECHNICAL CHART  | HEAT MAP     (tab)      | CURRENCY STR (tab) |
- * | (55%)            | YIELD CURVE  (tab)      | WORLD ECONOMY(tab) |
- * |                  | FX CROSS     (tab)      | (45%)              |
- * |                  |         (55%)           +--------------------+
- * +------------------+                         | HOLDINGS     (tab) |
- * | MARKET WATCH     +---------+---------------+ EARNINGS EST (tab) |
- * | (tab)            | MONEY   | FEAR &        | (55%)              |
- * | NEWS FEED  (tab) | FLOW    | GREED         |                    |
- * | (45%)            | (45%)   | (45%)         |                    |
- * +------------------+---------+---------------+--------------------+
+ * +------ 25% ------+---------- 50% ----------+------- 25% --------+
+ * |                  |                          | HEAT MAP     (tab) |
+ * | NEWS FEED        | STOCK TRADING  (default) | MACRO HEATMAP(tab) |
+ * |                  | PREDICTION     (tab)     | (45%)              |
+ * | (50%)            |                (55%)     +--------------------+
+ * +------------------+                          | FEAR & GREED (tab) |
+ * |                  +--------------------------+ MARKET MOVERS(tab) |
+ * | WORLD MAP        |                          | CRYPTO       (tab) |
+ * |                  | TECHNICAL CHART           | SENTIMENT    (tab) |
+ * | (50%)            |                (45%)     | (55%)              |
+ * +------------------+--------------------------+--------------------+
  */
 const DEFAULT_LAYOUT: IJsonModel = {
   global: {
@@ -2154,85 +2152,70 @@ const DEFAULT_LAYOUT: IJsonModel = {
     type: 'row',
     weight: 100,
     children: [
-      // Left column: Technical Chart on top, Market Watch + News on bottom
+      // Left column: News Feed on top, World Map on bottom
       {
         type: 'row',
-        weight: 30,
+        weight: 25,
+        children: [
+          {
+            type: 'tabset',
+            weight: 50,
+            children: [
+              { type: 'tab', name: 'NEWS FEED', component: PANEL_IDS.NEWS, id: PANEL_IDS.NEWS },
+            ],
+          },
+          {
+            type: 'tabset',
+            weight: 50,
+            children: [
+              { type: 'tab', name: 'WORLD MAP', component: PANEL_IDS.MAP, id: PANEL_IDS.MAP },
+            ],
+          },
+        ],
+      },
+      // Center column: Trading (Stock/Prediction) on top, Technical Chart on bottom
+      {
+        type: 'row',
+        weight: 50,
         children: [
           {
             type: 'tabset',
             weight: 55,
+            children: [
+              { type: 'tab', name: 'STOCK TRADING', component: PANEL_IDS.TRADING, id: PANEL_IDS.TRADING },
+              { type: 'tab', name: 'PREDICTION TRADING', component: PANEL_IDS.PREDICTION, id: PANEL_IDS.PREDICTION },
+            ],
+          },
+          {
+            type: 'tabset',
+            weight: 45,
             children: [
               { type: 'tab', name: 'TECHNICAL CHART', component: PANEL_IDS.TECHNICAL_CHART, id: PANEL_IDS.TECHNICAL_CHART },
             ],
           },
+        ],
+      },
+      // Right column: Heatmaps on top, Market pulse on bottom
+      {
+        type: 'row',
+        weight: 25,
+        children: [
           {
             type: 'tabset',
             weight: 45,
             children: [
-              { type: 'tab', name: 'MARKET WATCH', component: PANEL_IDS.STOCKS, id: PANEL_IDS.STOCKS },
-              { type: 'tab', name: 'NEWS FEED', component: PANEL_IDS.NEWS, id: PANEL_IDS.NEWS },
-            ],
-          },
-        ],
-      },
-      // Center column: Sector Perf/Heat Map/Yield Curve/FX Cross on top, Money Flow + Fear&Greed on bottom
-      {
-        type: 'row',
-        weight: 40,
-        children: [
-          {
-            type: 'tabset',
-            weight: 55,
-            children: [
-              { type: 'tab', name: 'SECTOR PERFORMANCE', component: PANEL_IDS.SECTOR_PERFORMANCE, id: PANEL_IDS.SECTOR_PERFORMANCE },
               { type: 'tab', name: 'HEAT MAP', component: PANEL_IDS.HEAT_MAP, id: PANEL_IDS.HEAT_MAP },
-              { type: 'tab', name: 'YIELD CURVE', component: PANEL_IDS.YIELD_CURVE, id: PANEL_IDS.YIELD_CURVE },
-              { type: 'tab', name: 'FX CROSS RATES', component: PANEL_IDS.FX_CROSS, id: PANEL_IDS.FX_CROSS },
-            ],
-          },
-          {
-            type: 'row',
-            weight: 45,
-            children: [
-              {
-                type: 'tabset',
-                weight: 55,
-                children: [
-                  { type: 'tab', name: 'MONEY FLOW', component: PANEL_IDS.MONEY_FLOW, id: PANEL_IDS.MONEY_FLOW },
-                ],
-              },
-              {
-                type: 'tabset',
-                weight: 45,
-                children: [
-                  { type: 'tab', name: 'FEAR & GREED', component: PANEL_IDS.FEAR_GREED, id: PANEL_IDS.FEAR_GREED },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      // Right column: Cross-Asset/Currency/World on top, Holdings/Earnings on bottom
-      {
-        type: 'row',
-        weight: 30,
-        children: [
-          {
-            type: 'tabset',
-            weight: 45,
-            children: [
-              { type: 'tab', name: 'CROSS-ASSET', component: PANEL_IDS.CROSS_ASSET, id: PANEL_IDS.CROSS_ASSET },
-              { type: 'tab', name: 'CURRENCY STRENGTH', component: PANEL_IDS.CURRENCY_STRENGTH, id: PANEL_IDS.CURRENCY_STRENGTH },
-              { type: 'tab', name: 'WORLD ECONOMY', component: PANEL_IDS.WORLD_ECONOMY, id: PANEL_IDS.WORLD_ECONOMY },
+              { type: 'tab', name: 'GLOBAL MACRO HEATMAP', component: PANEL_IDS.MACRO_HEATMAP, id: PANEL_IDS.MACRO_HEATMAP },
             ],
           },
           {
             type: 'tabset',
             weight: 55,
             children: [
-              { type: 'tab', name: 'INSTITUTIONAL HOLDINGS', component: PANEL_IDS.HOLDINGS, id: PANEL_IDS.HOLDINGS },
-              { type: 'tab', name: 'EARNINGS ESTIMATES', component: PANEL_IDS.EARNINGS_ESTIMATES, id: PANEL_IDS.EARNINGS_ESTIMATES },
+              { type: 'tab', name: 'FEAR & GREED', component: PANEL_IDS.FEAR_GREED, id: PANEL_IDS.FEAR_GREED },
+              { type: 'tab', name: 'MARKET MOVERS', component: PANEL_IDS.MARKET_MOVERS, id: PANEL_IDS.MARKET_MOVERS },
+              { type: 'tab', name: 'CRYPTO OVERVIEW', component: PANEL_IDS.CRYPTO, id: PANEL_IDS.CRYPTO },
+              { type: 'tab', name: 'SENTIMENT', component: PANEL_IDS.SENTIMENT, id: PANEL_IDS.SENTIMENT },
             ],
           },
         ],
