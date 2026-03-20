@@ -738,11 +738,14 @@ export function createApp() {
   const clientDist = path.resolve(__dirname, '..', '..', 'client', 'dist');
   app.use(express.static(clientDist, {
     maxAge: isProd ? '1y' : 0,
+    immutable: isProd, // Content-hashed filenames never change
     etag: true,
   }));
 
   // SPA fallback — serve index.html for all non-API routes
+  // index.html must NOT be cached long-term (it references hashed JS/CSS bundles)
   app.get('/{*splat}', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 
