@@ -30,8 +30,9 @@ RUN addgroup -g 1001 -S appuser && adduser -S appuser -u 1001 -G appuser
 
 COPY package.json package-lock.json ./
 COPY server/package.json server/
-COPY client/package.json client/
 
+# Dummy client package.json (no deps) — client is pre-built, skip installing its dependencies
+RUN mkdir -p client && echo '{"name":"client","version":"1.0.0","private":true}' > client/package.json
 RUN npm ci --omit=dev
 
 # Prisma: generated client + CLI (for db push at startup) + schema
