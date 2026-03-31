@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { mulberry32, hashSeed, seededRandom, CACHE_TTL } from '../lib/seeded-data';
+import { mulberry32, hashSeed, seededRandom, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
 // ── Types ──

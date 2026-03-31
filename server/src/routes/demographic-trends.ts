@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 
-import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
 // ── In-memory cache (5 min TTL) ──

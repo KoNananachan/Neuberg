@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));

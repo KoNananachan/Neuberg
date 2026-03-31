@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
 const TENORS = ['1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '15Y', '20Y', '30Y'] as const;

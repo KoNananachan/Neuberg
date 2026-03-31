@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { mulberry32, hashSeed } from '../lib/seeded-data';
+import { mulberry32, hashSeed } from '../lib/seeded-data.js';
 const router = Router();
 
 let cache: { data: any; ts: number } | null = null;

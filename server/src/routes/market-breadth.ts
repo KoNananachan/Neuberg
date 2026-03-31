@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data';
+import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data.js';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function randRange(rng: () => number, min: number, max: number): number {
   return min + rng() * (max - min);

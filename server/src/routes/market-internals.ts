@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { mulberry32, CACHE_TTL } from '../lib/seeded-data';
+import { mulberry32, CACHE_TTL } from '../lib/seeded-data.js';
 function dateSeed(date: Date): number {
   return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
 }
