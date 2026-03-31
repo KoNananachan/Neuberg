@@ -8,7 +8,7 @@ import { api } from '../../api/client';
 import { useAppStore } from '../../stores/use-app-store';
 import { GlassCard } from '../common/glass-card';
 import { cleanTitle } from '../../utils/clean-title';
-import { Crosshair, Zap, Maximize2, Minimize2, Flame, TrendingUp, Radio } from 'lucide-react';
+import { Crosshair, Maximize2, Minimize2, Flame, TrendingUp, Radio } from 'lucide-react';
 import { useT } from '../../i18n';
 import { translations } from '../../i18n/translations';
 import { getLocalizedTitle } from '../../api/hooks/use-news';
@@ -165,8 +165,8 @@ export function WorldMapPanel() {
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: BASEMAP_STYLE,
-      center: [20, 20],
-      zoom: 1.2,
+      center: [20, 15],
+      zoom: 0,
       attributionControl: false,
     });
 
@@ -837,11 +837,7 @@ export function WorldMapPanel() {
         .action-hint { font-size: 9px; color: #22c55e; font-weight: 900; margin-top: 10px; align-self: flex-end; }
       `}</style>
 
-      <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-black/80 backdrop-blur-md rounded border border-accent/20 text-[9px] font-black text-accent uppercase tracking-[0.2em] shadow-2xl">
-          <Zap className="w-3 h-3 text-accent animate-pulse" /> {t('intelligenceGrid')}
-        </div>
-      </div>
+      {/* Intelligence Grid label removed for cleaner look */}
 
       <div className="flex-1 min-h-0 relative">
         <div ref={mapContainerRef} className="w-full h-full bg-black z-10" />

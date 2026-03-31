@@ -5,7 +5,6 @@ import { Search, Bell, Settings, LayoutGrid, Maximize2, Minimize2, Globe } from 
 import { NotificationPanel } from '../common/notification-panel';
 import { SettingsPanel } from '../common/settings-panel';
 import { PanelToggleMenu } from '../common/panel-toggle-menu';
-import { OnboardingTooltip } from '../common/onboarding-tooltip';
 import { UserMenu } from '../auth/user-menu';
 import { WalletButton } from '../common/wallet-button';
 import { useAuthStore } from '../../stores/use-auth-store';
@@ -81,16 +80,16 @@ export function TopBar() {
           <div className="relative" ref={panelMenuRef}>
             <button
               onClick={() => setPanelMenuOpen(!panelMenuOpen)}
-              className={`text-neutral hover:text-accent transition-colors p-1.5 border border-transparent hover:border-border bg-black ${
+              className={`flex items-center gap-1.5 text-neutral hover:text-accent transition-colors px-2 py-1 border border-transparent hover:border-border bg-black ${
                 panelMenuOpen ? 'text-accent border-border' : ''
               }`}
               title={t('togglePanels')}
               aria-label={t('togglePanels')}
             >
-              <LayoutGrid className="w-4 h-4" />
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[9px] font-mono font-black tracking-widest uppercase">DIY with 500+ Panels</span>
             </button>
             <PanelToggleMenu open={panelMenuOpen} onClose={() => setPanelMenuOpen(false)} containerRef={panelMenuRef} />
-            <OnboardingTooltip />
           </div>
 
           {/* Fullscreen */}

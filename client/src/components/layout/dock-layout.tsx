@@ -541,7 +541,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 26; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 28; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -2115,26 +2115,28 @@ export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
 
 /** Panel IDs that exist in the DEFAULT_LAYOUT (core panels shown on first load) */
 const DEFAULT_PANEL_IDS: Set<string> = new Set([
-  PANEL_IDS.NEWS, PANEL_IDS.MAP, PANEL_IDS.TRADING, PANEL_IDS.PREDICTION,
-  PANEL_IDS.TECHNICAL_CHART, PANEL_IDS.HEAT_MAP, PANEL_IDS.MACRO_HEATMAP,
-  PANEL_IDS.FEAR_GREED, PANEL_IDS.MARKET_MOVERS, PANEL_IDS.CRYPTO,
-  PANEL_IDS.SENTIMENT,
+  PANEL_IDS.NEWS, PANEL_IDS.MAP, PANEL_IDS.TECHNICAL_CHART,
+  PANEL_IDS.STOCKS, PANEL_IDS.INSIDERS, PANEL_IDS.MARKET_MOVERS,
+  PANEL_IDS.HEAT_MAP, PANEL_IDS.MACRO_HEATMAP,
+  PANEL_IDS.ECON_CALENDAR,
+  PANEL_IDS.TRADING, PANEL_IDS.PREDICTION,
 ]);
 
 /*
- * Trading-first layout — action center with market intelligence:
+ * Bloomberg-style data-first layout — 10 panels across 7 visible areas:
  *
- * +------ 25% ------+---------- 50% ----------+------- 25% --------+
- * |                  |                          | HEAT MAP     (tab) |
- * | NEWS FEED        | STOCK TRADING  (default) | MACRO HEATMAP(tab) |
- * |                  | PREDICTION     (tab)     | (45%)              |
- * | (50%)            |                (55%)     +--------------------+
- * +------------------+                          | FEAR & GREED (tab) |
- * |                  +--------------------------+ MARKET MOVERS(tab) |
- * | WORLD MAP        |                          | CRYPTO       (tab) |
- * |                  | TECHNICAL CHART           | SENTIMENT    (tab) |
- * | (50%)            |                (45%)     | (55%)              |
- * +------------------+--------------------------+--------------------+
+ * +-- 16% ---+------------ 52% --------------------+--------- 32% ---------+
+ * |           |                                      |                       |
+ * | NEWS      | TECHNICAL CHART                      | HEAT MAP              |
+ * | FEED      |                                      | (tab: MACRO HEATMAP)  |
+ * |           |                                      |                       |
+ * | (60%)     | (55%)                                | (55%)                 |
+ * |           +-------------------+-----------------++                       |
+ * +-----------+ MARKET WATCH      | ECON CALENDAR   |                       |
+ * | WORLD MAP | (tab: INSIDERS)   |                  | STOCK TRADING         |
+ * |           | (tab: MOVERS)     |                  | (tab: PREDICTION)     |
+ * | (40%)     | (55%)             | (45%)     (45%) | (45%)                 |
+ * +-----------+-------------------+-----------------+-----------------------+
  */
 const DEFAULT_LAYOUT: IJsonModel = {
   global: {
@@ -2152,70 +2154,86 @@ const DEFAULT_LAYOUT: IJsonModel = {
     type: 'row',
     weight: 100,
     children: [
-      // Left column: News Feed on top, World Map on bottom
+      // Left column (16%): News Feed + World Map
       {
         type: 'row',
-        weight: 25,
+        weight: 16,
         children: [
           {
             type: 'tabset',
-            weight: 50,
+            weight: 60,
             children: [
               { type: 'tab', name: 'NEWS FEED', component: PANEL_IDS.NEWS, id: PANEL_IDS.NEWS },
             ],
           },
           {
             type: 'tabset',
-            weight: 50,
+            weight: 40,
             children: [
               { type: 'tab', name: 'WORLD MAP', component: PANEL_IDS.MAP, id: PANEL_IDS.MAP },
             ],
           },
         ],
       },
-      // Center column: Trading (Stock/Prediction) on top, Technical Chart on bottom
+      // Center column (52%): Chart on top, Market data on bottom
       {
         type: 'row',
-        weight: 50,
+        weight: 52,
         children: [
+          // Top: Technical Chart (hero panel)
           {
             type: 'tabset',
             weight: 55,
             children: [
-              { type: 'tab', name: 'STOCK TRADING', component: PANEL_IDS.TRADING, id: PANEL_IDS.TRADING },
-              { type: 'tab', name: 'PREDICTION TRADING', component: PANEL_IDS.PREDICTION, id: PANEL_IDS.PREDICTION },
+              { type: 'tab', name: 'TECHNICAL CHART', component: PANEL_IDS.TECHNICAL_CHART, id: PANEL_IDS.TECHNICAL_CHART },
             ],
           },
+          // Bottom: Market Watch | Economic Calendar
           {
-            type: 'tabset',
+            type: 'row',
             weight: 45,
             children: [
-              { type: 'tab', name: 'TECHNICAL CHART', component: PANEL_IDS.TECHNICAL_CHART, id: PANEL_IDS.TECHNICAL_CHART },
+              {
+                type: 'tabset',
+                weight: 55,
+                children: [
+                  { type: 'tab', name: 'MARKET WATCH', component: PANEL_IDS.STOCKS, id: PANEL_IDS.STOCKS },
+                  { type: 'tab', name: 'INSIDER TRADES', component: PANEL_IDS.INSIDERS, id: PANEL_IDS.INSIDERS },
+                  { type: 'tab', name: 'MARKET MOVERS', component: PANEL_IDS.MARKET_MOVERS, id: PANEL_IDS.MARKET_MOVERS },
+                ],
+              },
+              {
+                type: 'tabset',
+                weight: 45,
+                children: [
+                  { type: 'tab', name: 'ECONOMIC CALENDAR', component: PANEL_IDS.ECON_CALENDAR, id: PANEL_IDS.ECON_CALENDAR },
+                ],
+              },
             ],
           },
         ],
       },
-      // Right column: Heatmaps on top, Market pulse on bottom
+      // Right column (32%): Heatmaps on top, Trading on bottom
       {
         type: 'row',
-        weight: 25,
+        weight: 32,
         children: [
+          // Top: Heat Map (visual hero)
           {
             type: 'tabset',
-            weight: 45,
+            weight: 55,
             children: [
               { type: 'tab', name: 'HEAT MAP', component: PANEL_IDS.HEAT_MAP, id: PANEL_IDS.HEAT_MAP },
               { type: 'tab', name: 'GLOBAL MACRO HEATMAP', component: PANEL_IDS.MACRO_HEATMAP, id: PANEL_IDS.MACRO_HEATMAP },
             ],
           },
+          // Bottom: Trading
           {
             type: 'tabset',
-            weight: 55,
+            weight: 45,
             children: [
-              { type: 'tab', name: 'FEAR & GREED', component: PANEL_IDS.FEAR_GREED, id: PANEL_IDS.FEAR_GREED },
-              { type: 'tab', name: 'MARKET MOVERS', component: PANEL_IDS.MARKET_MOVERS, id: PANEL_IDS.MARKET_MOVERS },
-              { type: 'tab', name: 'CRYPTO OVERVIEW', component: PANEL_IDS.CRYPTO, id: PANEL_IDS.CRYPTO },
-              { type: 'tab', name: 'SENTIMENT', component: PANEL_IDS.SENTIMENT, id: PANEL_IDS.SENTIMENT },
+              { type: 'tab', name: 'STOCK TRADING', component: PANEL_IDS.TRADING, id: PANEL_IDS.TRADING },
+              { type: 'tab', name: 'PREDICTION TRADING', component: PANEL_IDS.PREDICTION, id: PANEL_IDS.PREDICTION },
             ],
           },
         ],

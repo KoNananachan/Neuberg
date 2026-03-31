@@ -67,11 +67,11 @@ function GaugeDisplay({ data }: { data: FearGreedData }) {
   const { value, classification } = data.current;
   const zone = getZoneColor(value);
 
-  // SVG arc gauge: 180-degree semicircle
+  // SVG arc gauge: 180-degree semicircle (centered in viewBox)
   const CX = 100;
-  const CY = 90;
-  const R = 70;
-  const STROKE_W = 10;
+  const CY = 80;
+  const R = 55;
+  const STROKE_W = 8;
 
   // Arc from 180deg (left) to 0deg (right) = PI to 0
   const startAngle = Math.PI; // left
@@ -107,14 +107,31 @@ function GaugeDisplay({ data }: { data: FearGreedData }) {
   const prevValue = data.history.length > 1 ? data.history[1].value : null;
   const delta = prevValue !== null ? value - prevValue : null;
 
+  // Tick marks around the arc
+  const ticks = [];
+  for (let i = 0; i <= 20; i++) {
+    const pct = (i / 20) * 100;
+    const angle = startAngle - (pct / 100) * totalAngle;
+    const isMajor = i % 5 === 0;
+    const outerR = R + STROKE_W / 2 + 1;
+    const innerR = R + STROKE_W / 2 - (isMajor ? 6 : 3);
+    ticks.push({
+      x1: CX + outerR * Math.cos(angle),
+      y1: CY - outerR * Math.sin(angle),
+      x2: CX + innerR * Math.cos(angle),
+      y2: CY - innerR * Math.sin(angle),
+      major: isMajor,
+    });
+  }
+
   return (
     <div className="px-3 py-3 border-b border-border/20 flex flex-col items-center">
-      <svg viewBox="0 0 200 110" className="w-full" style={{ maxWidth: 260, maxHeight: 150 }}>
+      <svg viewBox="0 0 200 105" className="w-full" style={{ maxWidth: 200 }}>
         {/* Background track */}
         <path
           d={arcPath(0, 100)}
           fill="none"
-          stroke="rgba(255,255,255,0.05)"
+          stroke="rgba(255,255,255,0.06)"
           strokeWidth={STROKE_W}
           strokeLinecap="round"
         />
@@ -128,30 +145,38 @@ function GaugeDisplay({ data }: { data: FearGreedData }) {
             stroke={z.color}
             strokeWidth={STROKE_W}
             strokeLinecap="butt"
-            opacity={0.5}
+            opacity={0.6}
           />
         ))}
 
-        {/* Needle */}
-        <line
-          x1={CX}
-          y1={CY}
-          x2={needleX}
-          y2={needleY}
-          stroke={zone.fill}
-          strokeWidth={2.5}
-          strokeLinecap="round"
+        {/* Tick marks */}
+        {ticks.map((tick, i) => (
+          <line
+            key={i}
+            x1={tick.x1} y1={tick.y1}
+            x2={tick.x2} y2={tick.y2}
+            stroke={tick.major ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)'}
+            strokeWidth={tick.major ? 1.2 : 0.6}
+          />
+        ))}
+
+        {/* Needle - tapered triangle */}
+        <polygon
+          points={`${CX + 3 * Math.cos(needleAngle + Math.PI / 2)},${CY - 3 * Math.sin(needleAngle + Math.PI / 2)} ${CX + 3 * Math.cos(needleAngle - Math.PI / 2)},${CY - 3 * Math.sin(needleAngle - Math.PI / 2)} ${needleX},${needleY}`}
+          fill={zone.fill}
+          opacity={0.9}
         />
-        <circle cx={CX} cy={CY} r={4} fill={zone.fill} />
-        <circle cx={CX} cy={CY} r={2} fill="#000" />
+        {/* Center dot */}
+        <circle cx={CX} cy={CY} r={3} fill={zone.fill} />
+        <circle cx={CX} cy={CY} r={1.5} fill="#111" />
 
         {/* Value text */}
         <text
           x={CX}
-          y={CY + 2}
+          y={CY + 4}
           textAnchor="middle"
           fill="white"
-          fontSize={28}
+          fontSize={26}
           fontFamily="monospace"
           fontWeight="900"
           dominantBaseline="hanging"
@@ -160,8 +185,8 @@ function GaugeDisplay({ data }: { data: FearGreedData }) {
         </text>
 
         {/* Labels at ends */}
-        <text x={CX - R - 5} y={CY + 10} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize={7} fontFamily="monospace">0</text>
-        <text x={CX + R + 5} y={CY + 10} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize={7} fontFamily="monospace">100</text>
+        <text x={CX - R - 8} y={CY + 10} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize={7} fontFamily="monospace">0</text>
+        <text x={CX + R + 8} y={CY + 10} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize={7} fontFamily="monospace">100</text>
       </svg>
 
       {/* Classification + delta */}

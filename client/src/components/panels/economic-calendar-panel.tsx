@@ -100,7 +100,7 @@ function EventRow({ event, flash, t }: { event: EconomicEvent; flash: boolean; t
 
 function CalendarView() {
   const t = useT();
-  const [country, setCountry] = useState<string>('all');
+  const [country, setCountry] = useState<string>('US');
   const [impact, setImpact] = useState<string>('all');
   const [prevActualMap, setPrevActualMap] = useState<Record<string, string | null>>({});
 
