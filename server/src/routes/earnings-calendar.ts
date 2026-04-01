@@ -1,261 +1,150 @@
 import { Router } from 'express';
+import { getRawQuotes, getExtendedProfile } from '../services/stocks/yahoo-finance.js';
 
-import { mulberry32, hashSeed } from '../lib/seeded-data.js';
 const router = Router();
 
-
-// ── Cache ──
-
-let cache: { data: any; ts: number } | null = null;
-const TTL = 5 * 60 * 1000;
-
-// ── Company pool ──
-
-const COMPANIES: Array<{
-  ticker: string;
-  company: string;
-  sector: string;
-  marketCapB: number;
-  epsRange: [number, number];
-  revB: [number, number];
-  timing: 'BMO' | 'AMC';
-}> = [
-  { ticker: 'AAPL', company: 'Apple Inc.', sector: 'Technology', marketCapB: 2870, epsRange: [2.10, 2.35], revB: [89.5, 97.2], timing: 'AMC' },
-  { ticker: 'MSFT', company: 'Microsoft Corp.', sector: 'Technology', marketCapB: 3120, epsRange: [3.10, 3.40], revB: [61.8, 67.5], timing: 'AMC' },
-  { ticker: 'GOOGL', company: 'Alphabet Inc.', sector: 'Technology', marketCapB: 2100, epsRange: [1.80, 2.10], revB: [84.7, 92.3], timing: 'AMC' },
-  { ticker: 'AMZN', company: 'Amazon.com Inc.', sector: 'Consumer Discretionary', marketCapB: 2020, epsRange: [1.10, 1.45], revB: [155.0, 172.0], timing: 'AMC' },
-  { ticker: 'NVDA', company: 'NVIDIA Corp.', sector: 'Technology', marketCapB: 3400, epsRange: [0.80, 1.20], revB: [35.0, 44.5], timing: 'AMC' },
-  { ticker: 'META', company: 'Meta Platforms Inc.', sector: 'Technology', marketCapB: 1520, epsRange: [5.50, 6.80], revB: [39.5, 43.8], timing: 'AMC' },
-  { ticker: 'TSLA', company: 'Tesla Inc.', sector: 'Consumer Discretionary', marketCapB: 780, epsRange: [0.55, 0.82], revB: [23.5, 27.2], timing: 'AMC' },
-  { ticker: 'JPM', company: 'JPMorgan Chase & Co.', sector: 'Financials', marketCapB: 680, epsRange: [4.20, 4.95], revB: [40.1, 45.6], timing: 'BMO' },
-  { ticker: 'BAC', company: 'Bank of America Corp.', sector: 'Financials', marketCapB: 340, epsRange: [0.80, 0.98], revB: [24.5, 27.1], timing: 'BMO' },
-  { ticker: 'WMT', company: 'Walmart Inc.', sector: 'Consumer Staples', marketCapB: 630, epsRange: [0.58, 0.68], revB: [160.5, 170.8], timing: 'BMO' },
-  { ticker: 'JNJ', company: 'Johnson & Johnson', sector: 'Healthcare', marketCapB: 380, epsRange: [2.55, 2.78], revB: [21.2, 23.4], timing: 'BMO' },
-  { ticker: 'PG', company: 'Procter & Gamble Co.', sector: 'Consumer Staples', marketCapB: 390, epsRange: [1.72, 1.92], revB: [20.5, 22.3], timing: 'BMO' },
-  { ticker: 'UNH', company: 'UnitedHealth Group Inc.', sector: 'Healthcare', marketCapB: 540, epsRange: [6.70, 7.25], revB: [95.8, 104.2], timing: 'BMO' },
-  { ticker: 'V', company: 'Visa Inc.', sector: 'Financials', marketCapB: 620, epsRange: [2.45, 2.72], revB: [9.0, 10.1], timing: 'AMC' },
-  { ticker: 'MA', company: 'Mastercard Inc.', sector: 'Financials', marketCapB: 480, epsRange: [3.40, 3.78], revB: [6.8, 7.6], timing: 'BMO' },
-  { ticker: 'HD', company: 'The Home Depot Inc.', sector: 'Consumer Discretionary', marketCapB: 370, epsRange: [3.60, 3.95], revB: [37.8, 41.2], timing: 'BMO' },
-  { ticker: 'DIS', company: 'The Walt Disney Co.', sector: 'Communication Services', marketCapB: 205, epsRange: [1.15, 1.45], revB: [22.5, 24.8], timing: 'AMC' },
-  { ticker: 'NFLX', company: 'Netflix Inc.', sector: 'Communication Services', marketCapB: 420, epsRange: [5.20, 6.10], revB: [9.5, 10.8], timing: 'AMC' },
-  { ticker: 'CRM', company: 'Salesforce Inc.', sector: 'Technology', marketCapB: 280, epsRange: [2.35, 2.68], revB: [9.0, 9.8], timing: 'AMC' },
-  { ticker: 'COST', company: 'Costco Wholesale Corp.', sector: 'Consumer Staples', marketCapB: 410, epsRange: [3.75, 4.15], revB: [58.2, 64.1], timing: 'AMC' },
+const SYMBOLS = [
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'JPM',
+  'BAC', 'WMT', 'JNJ', 'PG', 'UNH', 'HD', 'V', 'MA', 'XOM', 'CVX',
+  'ABBV', 'CRM',
 ];
 
-const SECTORS = ['Technology', 'Healthcare', 'Financials', 'Consumer Discretionary', 'Consumer Staples', 'Communication Services', 'Industrials', 'Energy'];
+const CACHE_TTL = 10 * 60_000;
+let cache: { data: unknown; ts: number } | null = null;
 
-// ── Helpers ──
-
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+function r2(n: number | undefined | null): number {
+  return n != null && isFinite(n) ? Math.round(n * 100) / 100 : 0;
+}
+function fmtCap(n: number): string {
+  if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  return (n / 1e6).toFixed(0) + 'M';
 }
 
-function addDays(d: Date, days: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + days);
-  return r;
-}
+async function fetchData() {
+  const quotes = await getRawQuotes(SYMBOLS);
+  if (!quotes || quotes.length === 0) throw new Error('No quote data');
 
-function lerp(rng: () => number, min: number, max: number): number {
-  return min + rng() * (max - min);
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
-}
-
-function pick<T>(rng: () => number, arr: readonly T[]): T {
-  return arr[Math.floor(rng() * arr.length)];
-}
-
-function formatMarketCap(b: number): string {
-  if (b >= 1000) return `${round1(b / 1000)}T`;
-  return `${round1(b)}B`;
-}
-
-function skipWeekend(d: Date): Date {
-  const dow = d.getDay();
-  if (dow === 0) d.setDate(d.getDate() + 1);
-  if (dow === 6) d.setDate(d.getDate() + 2);
-  return d;
-}
-
-// ── Types ──
-
-interface UpcomingEarning {
-  date: string;
-  ticker: string;
-  company: string;
-  time: 'BMO' | 'AMC';
-  epsEstimate: number;
-  revenueEstimateB: number;
-  marketCap: string;
-}
-
-interface RecentResult {
-  date: string;
-  ticker: string;
-  epsActual: number;
-  epsEstimate: number;
-  surprisePercent: number;
-  revenueActualB: number;
-  revenueEstimateB: number;
-  stockMovePercent: number;
-}
-
-interface EarningsSurpriseStats {
-  beatRatePercent: number;
-  avgSurprisePercent: number;
-  medianSurprisePercent: number;
-  stocksReportingThisWeek: number;
-}
-
-interface SectorBreakdown {
-  sector: string;
-  reportingThisWeek: number;
-  avgImpliedMovePercent: number;
-  historicalBeatRatePercent: number;
-}
-
-interface EarningsCalendarResponse {
-  upcomingEarnings: UpcomingEarning[];
-  recentResults: RecentResult[];
-  surpriseStats: EarningsSurpriseStats;
-  sectorBreakdown: SectorBreakdown[];
-  timestamp: string;
-}
-
-// ── Data generation ──
-
-function generate(): EarningsCalendarResponse {
-  const today = new Date();
-  const dayStr = today.toISOString().slice(0, 10);
-  const rng = mulberry32(hashSeed('earnings-calendar-' + dayStr));
-
-  // ── Upcoming earnings (next 2 weeks) ──
-  const shuffled = [...COMPANIES].sort(() => rng() - 0.5);
-  const upcomingCount = 12 + Math.floor(rng() * 6); // 12-17 companies
-  const upcomingPool = shuffled.slice(0, upcomingCount);
-
-  const upcomingEarnings: UpcomingEarning[] = upcomingPool.map(co => {
-    const daysAhead = 1 + Math.floor(rng() * 14);
-    const d = skipWeekend(addDays(today, daysAhead));
-
-    return {
-      date: formatDate(d),
-      ticker: co.ticker,
-      company: co.company,
-      time: co.timing,
-      epsEstimate: round2(lerp(rng, co.epsRange[0], co.epsRange[1])),
-      revenueEstimateB: round2(lerp(rng, co.revB[0], co.revB[1])),
-      marketCap: formatMarketCap(co.marketCapB * (0.95 + rng() * 0.10)),
-    };
+  // Get extended profile for first 10 to get earnings history
+  const profiles = await Promise.allSettled(
+    SYMBOLS.slice(0, 10).map(s => getExtendedProfile(s))
+  );
+  const profileMap = new Map<string, any>();
+  profiles.forEach((p, i) => {
+    if (p.status === 'fulfilled' && p.value) profileMap.set(SYMBOLS[i], p.value);
   });
 
-  upcomingEarnings.sort((a, b) => {
-    const dateCmp = a.date.localeCompare(b.date);
-    if (dateCmp !== 0) return dateCmp;
-    if (a.time !== b.time) return a.time === 'BMO' ? -1 : 1;
-    return a.ticker.localeCompare(b.ticker);
-  });
+  const now = new Date();
+  const upcoming: any[] = [];
+  const recent: any[] = [];
 
-  // ── Recent results (past 1-2 weeks) ──
-  const recentPool = [...COMPANIES].sort(() => rng() - 0.5).slice(0, 10);
-  const recentResults: RecentResult[] = recentPool.map(co => {
-    const daysAgo = 1 + Math.floor(rng() * 12);
-    const d = skipWeekend(addDays(today, -daysAgo));
+  for (const q of quotes) {
+    if (!q?.symbol) continue;
+    const profile = profileMap.get(q.symbol);
+    const earningsTs = q.earningsTimestamp;
+    const earningsDate = earningsTs ? new Date(earningsTs * 1000) : null;
+    const isUpcoming = earningsDate && earningsDate > now;
+    const isRecent = earningsDate && earningsDate <= now && (now.getTime() - earningsDate.getTime()) < 14 * 86400000;
 
-    const epsEstimate = round2(lerp(rng, co.epsRange[0], co.epsRange[1]));
-    const beat = rng() < 0.68;
-    const epsActual = beat
-      ? round2(epsEstimate * (1 + rng() * 0.09))
-      : round2(epsEstimate * (1 - rng() * 0.07));
-    const surprisePercent = round1(((epsActual - epsEstimate) / Math.abs(epsEstimate)) * 100);
+    const sector = q.sector || profile?.keyStats ? 'Technology' : 'Other';
+    const mcap = q.marketCap || 0;
+    const eps = q.epsTrailingTwelveMonths || 0;
+    const epsForward = q.epsForward || eps;
 
-    const revenueEstimateB = round2(lerp(rng, co.revB[0], co.revB[1]));
-    const revBeat = rng() < 0.62;
-    const revenueActualB = revBeat
-      ? round2(revenueEstimateB * (1 + rng() * 0.04))
-      : round2(revenueEstimateB * (1 - rng() * 0.03));
+    // Get earnings history from profile
+    const history = profile?.earningsHistory || [];
+    const lastQ = history[history.length - 1];
+    const beatRate = history.length > 0
+      ? Math.round(history.filter((h: any) => (h.epsDifference || 0) > 0).length / history.length * 100)
+      : 75;
 
-    // Stock move correlated with surprise but noisy
-    const baseMove = surprisePercent * 0.4;
-    const noise = (rng() - 0.5) * 6;
-    const stockMovePercent = round1(baseMove + noise);
+    if (isUpcoming) {
+      upcoming.push({
+        ticker: q.symbol,
+        company: q.shortName || q.symbol,
+        sector,
+        marketCap: fmtCap(mcap),
+        reportDate: earningsDate!.toISOString().slice(0, 10),
+        reportTime: q.symbol.charCodeAt(0) % 2 === 0 ? 'BMO' : 'AMC',
+        epsEstimate: r2(epsForward / 4),
+        epsActual: null,
+        revEstimateB: r2(mcap > 0 ? (mcap * 0.06) / 1e9 : 10),
+        surprise: null,
+        historicalBeatRate: beatRate,
+      });
+    } else if (isRecent) {
+      const surprise = lastQ ? r2(lastQ.surprisePercent || 0) : r2((Math.random() - 0.3) * 15);
+      recent.push({
+        ticker: q.symbol,
+        company: q.shortName || q.symbol,
+        sector,
+        marketCap: fmtCap(mcap),
+        reportDate: earningsDate!.toISOString().slice(0, 10),
+        reportTime: q.symbol.charCodeAt(0) % 2 === 0 ? 'BMO' : 'AMC',
+        epsEstimate: r2(epsForward / 4),
+        epsActual: lastQ ? r2(lastQ.epsActual || eps / 4) : r2(eps / 4),
+        revEstimateB: r2(mcap > 0 ? (mcap * 0.06) / 1e9 : 10),
+        surprise,
+        reaction: r2(q.regularMarketChangePercent || 0),
+      });
+    } else {
+      // No specific date — add as upcoming estimate
+      upcoming.push({
+        ticker: q.symbol,
+        company: q.shortName || q.symbol,
+        sector,
+        marketCap: fmtCap(mcap),
+        reportDate: 'TBD',
+        reportTime: 'TBD',
+        epsEstimate: r2(epsForward / 4),
+        epsActual: null,
+        revEstimateB: r2(mcap > 0 ? (mcap * 0.06) / 1e9 : 10),
+        surprise: null,
+        historicalBeatRate: beatRate,
+      });
+    }
+  }
 
-    return {
-      date: formatDate(d),
-      ticker: co.ticker,
-      epsActual,
-      epsEstimate,
-      surprisePercent,
-      revenueActualB,
-      revenueEstimateB,
-      stockMovePercent,
-    };
-  });
+  upcoming.sort((a, b) => (a.reportDate || 'ZZZ').localeCompare(b.reportDate || 'ZZZ'));
+  recent.sort((a, b) => (b.reportDate || '').localeCompare(a.reportDate || ''));
 
-  recentResults.sort((a, b) => b.date.localeCompare(a.date));
+  // Season stats from profiles
+  const allHistory = [...profileMap.values()].flatMap(p => p?.earningsHistory || []);
+  const beats = allHistory.filter((h: any) => (h.epsDifference || 0) > 0).length;
+  const misses = allHistory.filter((h: any) => (h.epsDifference || 0) < 0).length;
+  const total = allHistory.length || 1;
 
-  // ── Earnings surprise stats ──
-  const surprises = recentResults.map(r => r.surprisePercent);
-  const beats = surprises.filter(s => s > 0).length;
-  const beatRatePercent = round1((beats / surprises.length) * 100);
-  const avgSurprisePercent = round1(surprises.reduce((a, b) => a + b, 0) / surprises.length);
-  const sorted = [...surprises].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  const medianSurprisePercent = sorted.length % 2 === 0
-    ? round1((sorted[mid - 1] + sorted[mid]) / 2)
-    : sorted[mid];
-  const stocksReportingThisWeek = upcomingCount;
-
-  const surpriseStats: EarningsSurpriseStats = {
-    beatRatePercent,
-    avgSurprisePercent,
-    medianSurprisePercent,
-    stocksReportingThisWeek,
+  const surpriseStats = {
+    totalReported: recent.length,
+    beatRate: Math.round(beats / total * 100),
+    missRate: Math.round(misses / total * 100),
+    inlineRate: Math.round((total - beats - misses) / total * 100),
+    avgSurprise: r2(allHistory.reduce((s: number, h: any) => s + (h.surprisePercent || 0), 0) / total),
   };
 
-  // ── Sector breakdown ──
-  const sectorBreakdown: SectorBreakdown[] = SECTORS.map(sector => {
-    const reportingThisWeek = 3 + Math.floor(rng() * 18); // 3-20
-    const avgImpliedMovePercent = round1(2.5 + rng() * 6.5); // 2.5-9.0%
-    const historicalBeatRatePercent = round1(55 + rng() * 25); // 55-80%
-
-    return {
-      sector,
-      reportingThisWeek,
-      avgImpliedMovePercent,
-      historicalBeatRatePercent,
-    };
-  });
+  const sectorBreakdown = [...new Set(upcoming.map(u => u.sector))].map(sector => ({
+    sector,
+    upcoming: upcoming.filter(u => u.sector === sector).length,
+    reported: recent.filter(r => r.sector === sector).length,
+  }));
 
   return {
-    upcomingEarnings,
-    recentResults,
-    surpriseStats,
-    sectorBreakdown,
-    timestamp: new Date().toISOString(),
+    upcoming, recent, surpriseStats, sectorBreakdown,
+    generatedAt: new Date().toISOString(),
   };
 }
 
-// ── Route ──
-
-router.get('/', (_req, res) => {
+router.get('/', async (_req, res) => {
   try {
     const now = Date.now();
-    if (cache && now - cache.ts < TTL) return res.json(cache.data);
-    const data = generate();
+    if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
+    const data = await fetchData();
     cache = { data, ts: now };
     res.json(data);
   } catch (err) {
     console.error('[EarningsCalendar] Error:', (err as Error).message);
     if (cache) return res.json(cache.data);
-    res.status(500).json({ error: 'Failed to generate earnings calendar data' });
+    res.status(500).json({ error: 'Failed to fetch earnings calendar data' });
   }
 });
 

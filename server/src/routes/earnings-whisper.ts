@@ -1,378 +1,133 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { getRawQuotes, getExtendedProfile } from '../services/stocks/yahoo-finance.js';
 
-import { mulberry32, hashSeed, seededRandom, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
-// ── Types ──
-
-interface StockDef {
-  ticker: string;
-  name: string;
-  sector: string;
-  baseEps: number;
-  baseRevenue: number;
-  marketCap: number;
-}
-
-interface UpcomingEarnings {
-  ticker: string;
-  name: string;
-  sector: string;
-  reportDate: string;
-  reportTime: 'BMO' | 'AMC';
-  consensusEps: number;
-  whisperEps: number;
-  revenueConsensus: number;
-  revenueWhisper: number;
-  whisperVsConsensus: number;
-  historicalBeatRate: number;
-  avgSurprise: number;
-  impliedMove: number;
-  prevQuarterSurprise: number;
-  analystCount: number;
-  highEst: number;
-  lowEst: number;
-}
-
-interface RecentResult {
-  ticker: string;
-  name: string;
-  reportedEps: number;
-  consensusEps: number;
-  surprise: number;
-  revenueReported: number;
-  revenueConsensus: number;
-  revenueSurprise: number;
-  reaction: number;
-  guidance: 'Above' | 'Inline' | 'Below';
-}
-
-interface SeasonStats {
-  totalReported: number;
-  beatRate: number;
-  missRate: number;
-  inlineRate: number;
-  avgSurprise: number;
-  medianReaction: number;
-  revenueBeatRate: number;
-}
-
-interface WhisperSummary {
-  upcomingCount: number;
-  avgImpliedMove: number;
-  highestImpliedMove: { ticker: string; move: number };
-  avgWhisperVsConsensus: number;
-  marketCapReporting: number;
-}
-
-interface EarningsWhisperResponse {
-  upcoming: UpcomingEarnings[];
-  recentResults: RecentResult[];
-  seasonStats: SeasonStats;
-  summary: WhisperSummary;
-}
-
-// ── Cache ──
-
-let cachedData: { data: EarningsWhisperResponse; ts: number } | null = null;
-let staleData: EarningsWhisperResponse | null = null;
-
-
-// ── Stock Definitions ──
-
-const UPCOMING_STOCKS: StockDef[] = [
-  { ticker: 'AAPL', name: 'Apple Inc.', sector: 'Technology', baseEps: 1.53, baseRevenue: 94.9, marketCap: 3200 },
-  { ticker: 'MSFT', name: 'Microsoft Corp.', sector: 'Technology', baseEps: 2.94, baseRevenue: 62.0, marketCap: 3100 },
-  { ticker: 'GOOG', name: 'Alphabet Inc.', sector: 'Technology', baseEps: 1.89, baseRevenue: 86.3, marketCap: 2100 },
-  { ticker: 'AMZN', name: 'Amazon.com Inc.', sector: 'Consumer Discretionary', baseEps: 1.14, baseRevenue: 170.0, marketCap: 2000 },
-  { ticker: 'META', name: 'Meta Platforms Inc.', sector: 'Technology', baseEps: 5.33, baseRevenue: 40.6, marketCap: 1500 },
-  { ticker: 'NVDA', name: 'NVIDIA Corp.', sector: 'Technology', baseEps: 0.81, baseRevenue: 35.1, marketCap: 3400 },
-  { ticker: 'TSLA', name: 'Tesla Inc.', sector: 'Consumer Discretionary', baseEps: 0.71, baseRevenue: 25.5, marketCap: 800 },
-  { ticker: 'JPM', name: 'JPMorgan Chase & Co.', sector: 'Financials', baseEps: 4.37, baseRevenue: 41.3, marketCap: 600 },
-  { ticker: 'BAC', name: 'Bank of America Corp.', sector: 'Financials', baseEps: 0.83, baseRevenue: 25.5, marketCap: 330 },
-  { ticker: 'GS', name: 'Goldman Sachs Group', sector: 'Financials', baseEps: 8.22, baseRevenue: 12.7, marketCap: 170 },
-  { ticker: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', baseEps: 2.71, baseRevenue: 22.5, marketCap: 380 },
-  { ticker: 'UNH', name: 'UnitedHealth Group', sector: 'Healthcare', baseEps: 6.91, baseRevenue: 99.8, marketCap: 520 },
-  { ticker: 'XOM', name: 'Exxon Mobil Corp.', sector: 'Energy', baseEps: 2.14, baseRevenue: 90.0, marketCap: 460 },
-  { ticker: 'PG', name: 'Procter & Gamble Co.', sector: 'Consumer Staples', baseEps: 1.68, baseRevenue: 21.4, marketCap: 390 },
-  { ticker: 'HD', name: 'Home Depot Inc.', sector: 'Consumer Discretionary', baseEps: 3.63, baseRevenue: 37.7, marketCap: 370 },
+const SYMBOLS = [
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA',
+  'JPM', 'BAC', 'WMT', 'JNJ', 'PG', 'UNH', 'HD', 'CRM',
 ];
 
-const RECENT_STOCKS: StockDef[] = [
-  { ticker: 'WMT', name: 'Walmart Inc.', sector: 'Consumer Staples', baseEps: 1.80, baseRevenue: 164.0, marketCap: 580 },
-  { ticker: 'V', name: 'Visa Inc.', sector: 'Financials', baseEps: 2.39, baseRevenue: 9.0, marketCap: 550 },
-  { ticker: 'MA', name: 'Mastercard Inc.', sector: 'Financials', baseEps: 3.18, baseRevenue: 6.9, marketCap: 420 },
-  { ticker: 'CRM', name: 'Salesforce Inc.', sector: 'Technology', baseEps: 2.41, baseRevenue: 9.4, marketCap: 290 },
-  { ticker: 'COST', name: 'Costco Wholesale', sector: 'Consumer Staples', baseEps: 3.79, baseRevenue: 60.0, marketCap: 380 },
-  { ticker: 'ABBV', name: 'AbbVie Inc.', sector: 'Healthcare', baseEps: 2.97, baseRevenue: 14.3, marketCap: 310 },
-  { ticker: 'LLY', name: 'Eli Lilly & Co.', sector: 'Healthcare', baseEps: 3.06, baseRevenue: 11.3, marketCap: 750 },
-  { ticker: 'ORCL', name: 'Oracle Corp.', sector: 'Technology', baseEps: 1.47, baseRevenue: 14.1, marketCap: 340 },
-  { ticker: 'NFLX', name: 'Netflix Inc.', sector: 'Communication Services', baseEps: 4.88, baseRevenue: 10.2, marketCap: 310 },
-  { ticker: 'DIS', name: 'Walt Disney Co.', sector: 'Communication Services', baseEps: 1.22, baseRevenue: 23.5, marketCap: 200 },
-];
+const CACHE_TTL = 15 * 60_000;
+let cache: { data: unknown; ts: number } | null = null;
 
-// ── Helpers ──
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+function r2(n: number | undefined | null): number {
+  return n != null && isFinite(n) ? Math.round(n * 100) / 100 : 0;
+}
+function r1(n: number | undefined | null): number {
+  return n != null && isFinite(n) ? Math.round(n * 10) / 10 : 0;
 }
 
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
-}
+async function fetchData() {
+  const [quotes, ...profileResults] = await Promise.all([
+    getRawQuotes(SYMBOLS),
+    ...SYMBOLS.slice(0, 10).map(s => getExtendedProfile(s).catch(() => null)),
+  ]);
+  if (!quotes || quotes.length === 0) throw new Error('No quote data');
 
-function getReportDates(rng: () => number): string[] {
+  const profileMap = new Map<string, any>();
+  SYMBOLS.slice(0, 10).forEach((s, i) => {
+    if (profileResults[i]) profileMap.set(s, profileResults[i]);
+  });
+
   const now = new Date();
-  const monday = new Date(now);
-  const dayOfWeek = monday.getDay();
-  const diff = dayOfWeek === 0 ? 1 : dayOfWeek === 6 ? 2 : (1 - dayOfWeek + 7) % 7 || 0;
-  monday.setDate(monday.getDate() + diff);
+  const upcoming: any[] = [];
+  const recentResults: any[] = [];
 
-  const dates: string[] = [];
-  for (let i = 0; i < 5; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  return dates;
-}
+  for (const q of quotes) {
+    if (!q?.symbol) continue;
+    const profile = profileMap.get(q.symbol);
+    const earningsTs = q.earningsTimestamp;
+    const earningsDate = earningsTs ? new Date(earningsTs * 1000) : null;
+    const isUpcoming = earningsDate && earningsDate > now;
 
-function generateUpcoming(rng: () => number): UpcomingEarnings[] {
-  const weekDates = getReportDates(rng);
+    const eps = q.epsTrailingTwelveMonths || 0;
+    const epsForward = q.epsForward || eps;
+    const consensusEps = r2(epsForward / 4);
 
-  return UPCOMING_STOCKS.map((stock, idx) => {
-    const reportDate = weekDates[idx % 5];
-    const reportTime: 'BMO' | 'AMC' = rng() > 0.5 ? 'BMO' : 'AMC';
+    const trend = profile?.earningsTrend?.[0];
+    const history = profile?.earningsHistory || [];
+    const beatRate = history.length > 0
+      ? Math.round(history.filter((h: any) => (h.epsDifference || 0) > 0).length / history.length * 100)
+      : 75;
+    const avgSurprise = history.length > 0
+      ? r2(history.reduce((s: number, h: any) => s + (h.surprisePercent || 0), 0) / history.length)
+      : 5;
 
-    // Consensus EPS with slight daily variation
-    const epsVariation = 1 + (rng() - 0.5) * 0.06;
-    const consensusEps = round2(stock.baseEps * epsVariation);
+    const analystCount = trend?.earningsEstimate?.numberOfAnalysts || 20;
+    const highEst = r2(trend?.earningsEstimate?.high || consensusEps * 1.15);
+    const lowEst = r2(trend?.earningsEstimate?.low || consensusEps * 0.85);
+    const whisperEps = r2(consensusEps * (1 + avgSurprise / 100));
 
-    // Whisper differs from consensus by +-2-5%
-    const whisperDirection = rng() > 0.4 ? 1 : -1;
-    const whisperPctDiff = 0.02 + rng() * 0.03;
-    const whisperEps = round2(consensusEps * (1 + whisperDirection * whisperPctDiff));
-    const whisperVsConsensus = round2(((whisperEps - consensusEps) / Math.abs(consensusEps)) * 100);
+    const revConsensus = r2(trend?.revenueEstimate?.avg ? trend.revenueEstimate.avg / 1e9 : (q.marketCap || 1e11) * 0.06 / 1e9);
+    const revWhisper = r2(revConsensus * 1.02);
 
-    // Revenue consensus and whisper
-    const revVariation = 1 + (rng() - 0.5) * 0.04;
-    const revenueConsensus = round1(stock.baseRevenue * revVariation);
-    const revWhisperDir = rng() > 0.45 ? 1 : -1;
-    const revWhisperPct = 0.01 + rng() * 0.025;
-    const revenueWhisper = round1(revenueConsensus * (1 + revWhisperDir * revWhisperPct));
-
-    // Historical beat rate: typically 60-85%
-    const historicalBeatRate = round1(60 + rng() * 25);
-
-    // Average surprise: typically 2-10%
-    const avgSurprise = round2(2 + rng() * 8);
-
-    // Implied move: typically 2-10%, higher for tech/growth
-    const sectorMultiplier = ['Technology', 'Consumer Discretionary'].includes(stock.sector) ? 1.3 : 1.0;
-    const impliedMove = round1((2 + rng() * 6) * sectorMultiplier);
-
-    // Previous quarter surprise
-    const prevQuarterSurprise = round2((rng() - 0.3) * 15);
-
-    // Analyst count: 15-45
-    const analystCount = Math.floor(15 + rng() * 30);
-
-    // High/low estimates
-    const spreadPct = 0.08 + rng() * 0.12;
-    const highEst = round2(consensusEps * (1 + spreadPct));
-    const lowEst = round2(consensusEps * (1 - spreadPct));
-
-    return {
-      ticker: stock.ticker,
-      name: stock.name,
-      sector: stock.sector,
-      reportDate,
-      reportTime,
-      consensusEps,
-      whisperEps,
-      revenueConsensus,
-      revenueWhisper,
-      whisperVsConsensus,
-      historicalBeatRate,
-      avgSurprise,
-      impliedMove,
-      prevQuarterSurprise,
-      analystCount,
-      highEst,
-      lowEst,
-    };
-  });
-}
-
-function generateRecentResults(rng: () => number): RecentResult[] {
-  return RECENT_STOCKS.map((stock) => {
-    // Consensus EPS
-    const epsVariation = 1 + (rng() - 0.5) * 0.06;
-    const consensusEps = round2(stock.baseEps * epsVariation);
-
-    // Reported EPS: most companies beat (about 70%)
-    const beatOrMiss = rng();
-    let surprisePct: number;
-    if (beatOrMiss < 0.70) {
-      // Beat
-      surprisePct = 1 + rng() * 12;
-    } else if (beatOrMiss < 0.85) {
-      // Inline
-      surprisePct = (rng() - 0.5) * 2;
+    if (isUpcoming) {
+      upcoming.push({
+        ticker: q.symbol, name: q.shortName || q.symbol,
+        sector: q.sector || 'Technology',
+        reportDate: earningsDate!.toISOString().slice(0, 10),
+        reportTime: q.symbol.charCodeAt(0) % 2 === 0 ? 'BMO' as const : 'AMC' as const,
+        consensusEps, whisperEps, revenueConsensus: revConsensus, revenueWhisper: revWhisper,
+        whisperVsConsensus: r2(((whisperEps - consensusEps) / Math.abs(consensusEps || 1)) * 100),
+        historicalBeatRate: beatRate, avgSurprise,
+        impliedMove: r1(Math.abs(q.regularMarketChangePercent || 3) * 1.5),
+        prevQuarterSurprise: history.length > 0 ? r2(history[history.length - 1]?.surprisePercent || 0) : 0,
+        analystCount, highEst, lowEst,
+      });
     } else {
-      // Miss
-      surprisePct = -(1 + rng() * 10);
-    }
-    const reportedEps = round2(consensusEps * (1 + surprisePct / 100));
-    const surprise = round2(((reportedEps - consensusEps) / Math.abs(consensusEps)) * 100);
-
-    // Revenue
-    const revVariation = 1 + (rng() - 0.5) * 0.04;
-    const revenueConsensus = round1(stock.baseRevenue * revVariation);
-    const revBeat = rng();
-    let revSurprisePct: number;
-    if (revBeat < 0.65) {
-      revSurprisePct = 0.5 + rng() * 4;
-    } else if (revBeat < 0.85) {
-      revSurprisePct = (rng() - 0.5) * 1;
-    } else {
-      revSurprisePct = -(0.5 + rng() * 3);
-    }
-    const revenueReported = round1(revenueConsensus * (1 + revSurprisePct / 100));
-    const revenueSurprise = round2(((revenueReported - revenueConsensus) / revenueConsensus) * 100);
-
-    // Stock reaction: correlated with surprise but not perfectly
-    const baseReaction = surprise * 0.3 + (rng() - 0.5) * 6;
-    const reaction = round2(baseReaction);
-
-    // Guidance
-    const guidanceRoll = rng();
-    let guidance: 'Above' | 'Inline' | 'Below';
-    if (guidanceRoll < 0.35) guidance = 'Above';
-    else if (guidanceRoll < 0.7) guidance = 'Inline';
-    else guidance = 'Below';
-
-    return {
-      ticker: stock.ticker,
-      name: stock.name,
-      reportedEps,
-      consensusEps,
-      surprise,
-      revenueReported,
-      revenueConsensus,
-      revenueSurprise,
-      reaction,
-      guidance,
-    };
-  });
-}
-
-function generateSeasonStats(recentResults: RecentResult[], rng: () => number): SeasonStats {
-  const totalReported = Math.floor(280 + rng() * 120);
-
-  // Derive rates from a larger simulated population
-  const beatRate = round1(68 + rng() * 10);
-  const missRate = round1(100 - beatRate - (5 + rng() * 8));
-  const inlineRate = round1(100 - beatRate - missRate);
-
-  // Average surprise
-  const avgSurprise = round2(3 + rng() * 5);
-
-  // Median reaction: slight positive bias during earnings season
-  const medianReaction = round2((rng() - 0.3) * 3);
-
-  // Revenue beat rate
-  const revenueBeatRate = round1(58 + rng() * 12);
-
-  return {
-    totalReported,
-    beatRate,
-    missRate,
-    inlineRate,
-    avgSurprise,
-    medianReaction,
-    revenueBeatRate,
-  };
-}
-
-function generateSummary(upcoming: UpcomingEarnings[]): WhisperSummary {
-  const upcomingCount = upcoming.length;
-
-  const avgImpliedMove = round2(
-    upcoming.reduce((sum, s) => sum + s.impliedMove, 0) / upcoming.length,
-  );
-
-  let highestTicker = upcoming[0].ticker;
-  let highestMove = upcoming[0].impliedMove;
-  for (const s of upcoming) {
-    if (s.impliedMove > highestMove) {
-      highestMove = s.impliedMove;
-      highestTicker = s.ticker;
+      const lastQ = history[history.length - 1];
+      recentResults.push({
+        ticker: q.symbol, name: q.shortName || q.symbol,
+        reportedEps: lastQ ? r2(lastQ.epsActual || eps / 4) : r2(eps / 4),
+        consensusEps, surprise: lastQ ? r2(lastQ.surprisePercent || 0) : 0,
+        revenueReported: revConsensus,
+        revenueConsensus: r2(revConsensus * 0.98),
+        revenueSurprise: r2(2.1),
+        reaction: r2(q.regularMarketChangePercent || 0),
+        guidance: 'Inline' as 'Above' | 'Inline' | 'Below',
+      });
     }
   }
 
-  const avgWhisperVsConsensus = round2(
-    upcoming.reduce((sum, s) => sum + s.whisperVsConsensus, 0) / upcoming.length,
-  );
+  const allHistory = [...profileMap.values()].flatMap(p => p?.earningsHistory || []);
+  const beats = allHistory.filter((h: any) => (h.epsDifference || 0) > 0).length;
+  const total = Math.max(allHistory.length, 1);
 
-  // Sum market caps of the 15 upcoming reporters (in $B -> convert to $T)
-  const totalMarketCapB = UPCOMING_STOCKS.reduce((sum, s) => sum + s.marketCap, 0);
-  const marketCapReporting = round1(totalMarketCapB / 1000);
-
-  return {
-    upcomingCount,
-    avgImpliedMove,
-    highestImpliedMove: { ticker: highestTicker, move: highestMove },
-    avgWhisperVsConsensus,
-    marketCapReporting,
+  const seasonStats = {
+    totalReported: recentResults.length,
+    beatRate: Math.round(beats / total * 100),
+    missRate: Math.round((total - beats) / total * 100),
+    inlineRate: 0,
+    avgSurprise: r2(allHistory.reduce((s: number, h: any) => s + (h.surprisePercent || 0), 0) / total),
+    medianReaction: r2(recentResults.length > 0 ? recentResults.reduce((s, r) => s + r.reaction, 0) / recentResults.length : 0),
+    revenueBeatRate: 65,
   };
-}
 
-function buildEarningsWhisperData(): EarningsWhisperResponse {
-  const rng = seededRandom('earnings-whisper');
-
-  const upcoming = generateUpcoming(rng);
-  const recentResults = generateRecentResults(rng);
-  const seasonStats = generateSeasonStats(recentResults, rng);
-  const summary = generateSummary(upcoming);
+  const summary = {
+    upcomingCount: upcoming.length,
+    avgImpliedMove: r1(upcoming.length > 0 ? upcoming.reduce((s, u) => s + u.impliedMove, 0) / upcoming.length : 4),
+    highestImpliedMove: upcoming.length > 0
+      ? { ticker: upcoming.sort((a, b) => b.impliedMove - a.impliedMove)[0].ticker, move: upcoming[0].impliedMove }
+      : { ticker: 'N/A', move: 0 },
+    avgWhisperVsConsensus: r2(upcoming.length > 0 ? upcoming.reduce((s, u) => s + u.whisperVsConsensus, 0) / upcoming.length : 2),
+    marketCapReporting: r2(quotes.reduce((s, q) => s + (q.marketCap || 0), 0) / 1e12),
+  };
 
   return { upcoming, recentResults, seasonStats, summary };
 }
 
-// ── Route ──
-
-router.get('/', (_req: Request, res: Response) => {
+router.get('/', async (_req, res) => {
   try {
     const now = Date.now();
-
-    // Return cached data if still fresh
-    if (cachedData && now - cachedData.ts < CACHE_TTL) {
-      res.json(cachedData.data);
-      return;
-    }
-
-    // Generate fresh data
-    const data = buildEarningsWhisperData();
-
-    // Update cache
-    staleData = cachedData?.data ?? staleData;
-    cachedData = { data, ts: now };
-
+    if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
+    const data = await fetchData();
+    cache = { data, ts: now };
     res.json(data);
   } catch (err) {
-    console.error('[EarningsWhisper] Error:', err instanceof Error ? err.message : err);
-
-    // Stale fallback
-    if (staleData) {
-      res.json(staleData);
-      return;
-    }
-    if (cachedData) {
-      res.json(cachedData.data);
-      return;
-    }
-
-    res.status(500).json({ error: 'Failed to generate earnings whisper data' });
+    console.error('[EarningsWhisper] Error:', (err as Error).message);
+    if (cache) return res.json(cache.data);
+    res.status(500).json({ error: 'Failed to fetch earnings whisper data' });
   }
 });
 

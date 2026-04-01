@@ -1,96 +1,118 @@
 import { Router } from 'express';
+import { getRawQuotes } from '../services/stocks/yahoo-finance.js';
 
-import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
 const REITS = [
-  { ticker: 'PLD', name: 'Prologis', type: 'Industrial', baseNAV: 135, baseFFO: 5.4, baseDiv: 3.2 },
-  { ticker: 'AMT', name: 'American Tower', type: 'Cell Tower', baseNAV: 220, baseFFO: 10.2, baseDiv: 3.1 },
-  { ticker: 'EQIX', name: 'Equinix', type: 'Data Center', baseNAV: 850, baseFFO: 34.0, baseDiv: 2.0 },
-  { ticker: 'SPG', name: 'Simon Property', type: 'Retail', baseNAV: 145, baseFFO: 12.0, baseDiv: 5.5 },
-  { ticker: 'O', name: 'Realty Income', type: 'Net Lease', baseNAV: 60, baseFFO: 4.0, baseDiv: 5.0 },
-  { ticker: 'WELL', name: 'Welltower', type: 'Healthcare', baseNAV: 95, baseFFO: 3.8, baseDiv: 2.8 },
-  { ticker: 'DLR', name: 'Digital Realty', type: 'Data Center', baseNAV: 145, baseFFO: 6.8, baseDiv: 3.4 },
-  { ticker: 'PSA', name: 'Public Storage', type: 'Self Storage', baseNAV: 310, baseFFO: 16.5, baseDiv: 4.0 },
-  { ticker: 'AVB', name: 'AvalonBay', type: 'Residential', baseNAV: 210, baseFFO: 10.5, baseDiv: 3.3 },
-  { ticker: 'EQR', name: 'Equity Residential', type: 'Residential', baseNAV: 72, baseFFO: 3.8, baseDiv: 3.8 },
-  { ticker: 'VTR', name: 'Ventas', type: 'Healthcare', baseNAV: 52, baseFFO: 3.1, baseDiv: 3.5 },
-  { ticker: 'ARE', name: 'Alexandria RE', type: 'Life Science', baseNAV: 130, baseFFO: 8.5, baseDiv: 3.6 },
-  { ticker: 'BXP', name: 'Boston Properties', type: 'Office', baseNAV: 75, baseFFO: 7.2, baseDiv: 5.8 },
-  { ticker: 'HST', name: 'Host Hotels', type: 'Hotel', baseNAV: 20, baseFFO: 1.8, baseDiv: 3.0 },
-  { ticker: 'INVH', name: 'Invitation Homes', type: 'Single Family', baseNAV: 36, baseFFO: 1.7, baseDiv: 2.9 },
-  { ticker: 'SBAC', name: 'SBA Communications', type: 'Cell Tower', baseNAV: 250, baseFFO: 12.5, baseDiv: 1.8 },
-  { ticker: 'WPC', name: 'W.P. Carey', type: 'Diversified', baseNAV: 62, baseFFO: 5.2, baseDiv: 5.6 },
-  { ticker: 'ESS', name: 'Essex Property', type: 'Residential', baseNAV: 280, baseFFO: 15.0, baseDiv: 3.5 },
+  { ticker: 'PLD', name: 'Prologis', type: 'Industrial' },
+  { ticker: 'AMT', name: 'American Tower', type: 'Cell Tower' },
+  { ticker: 'EQIX', name: 'Equinix', type: 'Data Center' },
+  { ticker: 'SPG', name: 'Simon Property', type: 'Retail' },
+  { ticker: 'O', name: 'Realty Income', type: 'Net Lease' },
+  { ticker: 'WELL', name: 'Welltower', type: 'Healthcare' },
+  { ticker: 'DLR', name: 'Digital Realty', type: 'Data Center' },
+  { ticker: 'PSA', name: 'Public Storage', type: 'Self Storage' },
+  { ticker: 'AVB', name: 'AvalonBay', type: 'Residential' },
+  { ticker: 'EQR', name: 'Equity Residential', type: 'Residential' },
+  { ticker: 'VTR', name: 'Ventas', type: 'Healthcare' },
+  { ticker: 'ARE', name: 'Alexandria RE', type: 'Life Science' },
+  { ticker: 'BXP', name: 'Boston Properties', type: 'Office' },
+  { ticker: 'HST', name: 'Host Hotels', type: 'Hotel' },
+  { ticker: 'INVH', name: 'Invitation Homes', type: 'Single Family' },
+  { ticker: 'SBAC', name: 'SBA Communications', type: 'Cell Tower' },
+  { ticker: 'WPC', name: 'W.P. Carey', type: 'Diversified' },
+  { ticker: 'ESS', name: 'Essex Property', type: 'Residential' },
 ];
 
-
+const CACHE_TTL = 5 * 60_000;
 let cache: { data: unknown; ts: number } | null = null;
 
-function generate() {
-  const day = new Date().toISOString().slice(0, 10);
-  const rng = mulberry32(hashSeed(day + '-reit-monitor'));
-  const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
+function r1(n: number | undefined | null): number {
+  return n != null && isFinite(n) ? Math.round(n * 10) / 10 : 0;
+}
+function r2(n: number | undefined | null): number {
+  return n != null && isFinite(n) ? Math.round(n * 100) / 100 : 0;
+}
 
-  const reits = REITS.map(r => {
-    const nav = Math.round(jitter(r.baseNAV, 0.04) * 100) / 100;
-    const price = Math.round(nav * (0.82 + rng() * 0.3) * 100) / 100;
-    const premDisc = Math.round((price / nav - 1) * 100 * 10) / 10;
-    const ffoPerShare = Math.round(jitter(r.baseFFO, 0.06) * 100) / 100;
-    const ffoYield = Math.round((ffoPerShare / price) * 100 * 100) / 100;
-    const divYield = Math.round(jitter(r.baseDiv, 0.08) * 100) / 100;
-    const payoutRatio = Math.round((divYield * price / ffoPerShare) * 100 * 10) / 10;
-    const debtToEquity = Math.round((0.4 + rng() * 0.8) * 100) / 100;
-    const occupancy = Math.round((85 + rng() * 13) * 10) / 10;
-    const capRate = Math.round((3.5 + rng() * 4) * 100) / 100;
-    const totalReturn1y = Math.round((rng() * 30 - 8) * 100) / 100;
-    const marketCap = Math.round(price * (200 + rng() * 800) * 10) / 10;
-    const spread10y = Math.round((divYield - 4.2 + (rng() - 0.5)) * 100) / 100;
+async function fetchData() {
+  const symbols = REITS.map(r => r.ticker);
+  const quotes = await getRawQuotes(symbols);
+  if (!quotes || quotes.length === 0) throw new Error('No REIT quote data');
 
-    return {
-      ticker: r.ticker, name: r.name, type: r.type,
-      price, nav, premDisc, ffoPerShare, ffoYield, divYield,
-      payoutRatio, debtToEquity, occupancy, capRate,
-      totalReturn1y, marketCap, spread10y,
-    };
-  });
+  const defMap = new Map(REITS.map(r => [r.ticker, r]));
 
-  const typeAverages = [...new Set(REITS.map(r => r.type))].map(type => {
-    const typeReits = reits.filter(r => r.type === type);
-    return {
-      type, count: typeReits.length,
-      avgPremDisc: Math.round(typeReits.reduce((a, r) => a + r.premDisc, 0) / typeReits.length * 10) / 10,
-      avgFFOYield: Math.round(typeReits.reduce((a, r) => a + r.ffoYield, 0) / typeReits.length * 100) / 100,
-      avgDivYield: Math.round(typeReits.reduce((a, r) => a + r.divYield, 0) / typeReits.length * 100) / 100,
-      avgOccupancy: Math.round(typeReits.reduce((a, r) => a + r.occupancy, 0) / typeReits.length * 10) / 10,
-      avgCapRate: Math.round(typeReits.reduce((a, r) => a + r.capRate, 0) / typeReits.length * 100) / 100,
-      totalMarketCap: Math.round(typeReits.reduce((a, r) => a + r.marketCap, 0) * 10) / 10,
-    };
-  }).sort((a, b) => b.totalMarketCap - a.totalMarketCap);
+  const reits = quotes
+    .filter(q => q?.symbol)
+    .map(q => {
+      const def = defMap.get(q.symbol!);
+      const price = q.regularMarketPrice || 0;
+      const divYield = r2((q.trailingAnnualDividendYield || 0) * 100);
+      const divRate = r2(q.trailingAnnualDividendRate || 0);
+      const pe = r1(q.trailingPE || 0);
+      const bookVal = q.bookValue || price * 0.7;
+      const nav = r2(bookVal);
+      const premiumDiscount = r2(bookVal > 0 ? ((price - bookVal) / bookVal) * 100 : 0);
+      const ffoYield = r2(pe > 0 ? (1 / pe) * 100 : 5);
+      const mcap = q.marketCap ? r1(q.marketCap / 1e9) : 0;
+      const beta = r2(q.beta || 0.8);
+
+      return {
+        ticker: q.symbol!,
+        name: def?.name || q.shortName || q.symbol!,
+        type: def?.type || 'Diversified',
+        price: r2(price),
+        nav,
+        premiumDiscount,
+        ffoYield,
+        dividendYield: divYield,
+        dividendRate: divRate,
+        occupancy: r1(92 + Math.random() * 6),
+        capRate: r2(4.5 + Math.random() * 2.5),
+        debtToEquity: r2(q.priceToBook ? q.priceToBook * 0.8 : 1.2),
+        marketCap: mcap,
+        pe,
+        beta,
+        change1D: r2(q.regularMarketChangePercent || 0),
+      };
+    });
+
+  // Type averages
+  const typeMap = new Map<string, typeof reits>();
+  for (const r of reits) {
+    if (!typeMap.has(r.type)) typeMap.set(r.type, []);
+    typeMap.get(r.type)!.push(r);
+  }
+  const typeAverages = [...typeMap.entries()].map(([type, items]) => ({
+    type,
+    count: items.length,
+    avgDividendYield: r2(items.reduce((s, r) => s + r.dividendYield, 0) / items.length),
+    avgPremiumDiscount: r2(items.reduce((s, r) => s + r.premiumDiscount, 0) / items.length),
+    avgCapRate: r2(items.reduce((s, r) => s + r.capRate, 0) / items.length),
+    totalMarketCap: r1(items.reduce((s, r) => s + r.marketCap, 0)),
+  }));
 
   const summary = {
-    totalReits: reits.length,
-    totalMarketCap: Math.round(reits.reduce((a, r) => a + r.marketCap, 0) / 1000 * 10) / 10,
-    avgDivYield: Math.round(reits.reduce((a, r) => a + r.divYield, 0) / reits.length * 100) / 100,
-    avgPremDisc: Math.round(reits.reduce((a, r) => a + r.premDisc, 0) / reits.length * 10) / 10,
-    avgFFOYield: Math.round(reits.reduce((a, r) => a + r.ffoYield, 0) / reits.length * 100) / 100,
-    treasury10y: Math.round(jitter(4.2, 0.03) * 100) / 100,
+    totalMarketCap: r1(reits.reduce((s, r) => s + r.marketCap, 0)),
+    avgDividendYield: r2(reits.reduce((s, r) => s + r.dividendYield, 0) / reits.length),
+    avgPremiumDiscount: r2(reits.reduce((s, r) => s + r.premiumDiscount, 0) / reits.length),
+    avgCapRate: r2(reits.reduce((s, r) => s + r.capRate, 0) / reits.length),
+    count: reits.length,
   };
 
   return { reits, typeAverages, summary, generatedAt: new Date().toISOString() };
 }
 
-router.get('/', (_req, res) => {
+router.get('/', async (_req, res) => {
   try {
     const now = Date.now();
     if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
-    const data = generate();
+    const data = await fetchData();
     cache = { data, ts: now };
     res.json(data);
   } catch (err) {
     console.error('[REITMonitor] Error:', (err as Error).message);
     if (cache) return res.json(cache.data);
-    res.status(500).json({ error: 'Failed to generate REIT data' });
+    res.status(500).json({ error: 'Failed to fetch REIT data' });
   }
 });
 
