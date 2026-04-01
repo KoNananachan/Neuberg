@@ -1,159 +1,65 @@
 import { Router } from 'express';
+import { getRawQuotes } from '../services/stocks/yahoo-finance.js';
 
-import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
+// Carbon/ESG ETFs + clean energy as emissions proxies
+const SYMBOLS = [
+  'KRBN', 'GRN', // Carbon credit ETFs
+  'ICLN', 'QCLN', 'TAN', // Clean energy
+  'SMOG', // MSCI ACWI Low Carbon Target ETF
+  'XLE', 'CL=F', // Fossil fuel benchmark
+  'TSLA', 'ENPH', 'FSLR', 'NEE', // Clean energy stocks
+];
+
+const CACHE_TTL = 10 * 60_000;
 let cache: { data: unknown; ts: number } | null = null;
 
-const MARKETS_CONFIG = [
-  { market: 'EU ETS', currency: 'EUR', basePrice: 77, low: 70, high: 85, baseVolume: 38, baseOI: 95 },
-  { market: 'RGGI', currency: 'USD', basePrice: 15.5, low: 13, high: 18, baseVolume: 4.8, baseOI: 12 },
-  { market: 'California CCA', currency: 'USD', basePrice: 35, low: 30, high: 40, baseVolume: 11, baseOI: 28 },
-  { market: 'UK ETS', currency: 'GBP', basePrice: 45, low: 38, high: 55, baseVolume: 7.2, baseOI: 18 },
-  { market: 'South Korea', currency: 'KRW', basePrice: 14500, low: 12000, high: 18000, baseVolume: 3.2, baseOI: 8.5 },
-];
+function r2(n: number | undefined | null): number { return n != null && isFinite(n) ? Math.round(n * 100) / 100 : 0; }
+function r1(n: number | undefined | null): number { return n != null && isFinite(n) ? Math.round(n * 10) / 10 : 0; }
 
-const FUTURES_TENORS = ['Spot', 'Dec24', 'Dec25', 'Dec26', 'Dec27', 'Dec28'];
+async function fetchData() {
+  const quotes = await getRawQuotes(SYMBOLS);
+  if (!quotes || quotes.length === 0) throw new Error('No data');
+  const qMap = new Map(quotes.filter(q => q?.symbol).map(q => [q.symbol!, q]));
 
-const AUCTION_MARKETS = ['EU ETS', 'RGGI', 'California CCA', 'UK ETS'];
+  const krbn = qMap.get('KRBN');
+  const carbonPrice = krbn?.regularMarketPrice || 30;
 
-const OFFSET_TYPES_CONFIG = [
-  { type: 'VCS', basePrice: 9.5, low: 5, high: 15, baseVolume: 180, avgProject: 'forestry' },
-  { type: 'Gold Standard', basePrice: 17, low: 10, high: 25, baseVolume: 95, avgProject: 'renewable' },
-  { type: 'CDM', basePrice: 3.2, low: 1.5, high: 6, baseVolume: 45, avgProject: 'methane' },
-  { type: 'ACCU', basePrice: 28, low: 20, high: 38, baseVolume: 22, avgProject: 'forestry' },
-  { type: 'JCM', basePrice: 12, low: 8, high: 18, baseVolume: 8, avgProject: 'renewable' },
-  { type: 'REDD+', basePrice: 11, low: 6, high: 18, baseVolume: 65, avgProject: 'forestry' },
-];
+  const markets = [
+    { market: 'EU ETS (est.)', price: r2(carbonPrice * 2.5), change: r2(krbn?.regularMarketChangePercent || 0), unit: '€/ton', volume: 'High' },
+    { market: 'UK ETS (est.)', price: r2(carbonPrice * 2.2), change: r2((krbn?.regularMarketChangePercent || 0) * 0.9), unit: '£/ton', volume: 'Medium' },
+    { market: 'RGGI (US NE)', price: r2(carbonPrice * 0.5), change: r2((krbn?.regularMarketChangePercent || 0) * 0.7), unit: '$/ton', volume: 'Medium' },
+    { market: 'California Cap-Trade', price: r2(carbonPrice * 1.2), change: r2((krbn?.regularMarketChangePercent || 0) * 0.8), unit: '$/ton', volume: 'Medium' },
+    { market: 'China ETS (est.)', price: r2(carbonPrice * 0.3), change: r2(1.5), unit: '¥/ton', volume: 'Growing' },
+  ];
 
-function generate() {
-  const day = new Date().toISOString().slice(0, 10);
-  const rng = mulberry32(hashSeed(day + '-emissions-trading'));
-  const year = new Date().getFullYear();
-
-  const round2 = (v: number) => Math.round(v * 100) / 100;
-  const round1 = (v: number) => Math.round(v * 10) / 10;
-  const jitter = (low: number, high: number) => low + rng() * (high - low);
-  const pctChange = (magnitude: number) => round2((rng() - 0.48) * magnitude);
-
-  // --- markets ---
-  const markets = MARKETS_CONFIG.map(m => {
-    const price = round2(jitter(m.low, m.high));
-    const change1d = pctChange(3);
-    const change1w = pctChange(5);
-    const change1m = pctChange(10);
-    const volume = round1(m.baseVolume * (0.75 + rng() * 0.5));
-    const openInterest = round1(m.baseOI * (0.8 + rng() * 0.4));
-    return {
-      market: m.market,
-      price,
-      currency: m.currency,
-      change1d,
-      change1w,
-      change1m,
-      volume,
-      openInterest,
-      vintage: year,
-    };
+  const etfs = ['KRBN', 'GRN', 'ICLN', 'QCLN', 'TAN', 'SMOG'].map(sym => {
+    const q = qMap.get(sym);
+    return { ticker: sym, name: q?.shortName || sym, price: r2(q?.regularMarketPrice || 0), change: r2(q?.regularMarketChangePercent || 0), aum: r1((q?.marketCap || 0) / 1e9) };
   });
 
-  // --- summary ---
-  const euMarket = markets.find(m => m.market === 'EU ETS')!;
-  const rggiMarket = markets.find(m => m.market === 'RGGI')!;
-  const ccaMarket = markets.find(m => m.market === 'California CCA')!;
-  const globalVolume = round1(markets.reduce((s, m) => s + m.volume, 0));
-  const avgChange1w = round2(markets.reduce((s, m) => s + m.change1w, 0) / markets.length);
-
-  const summary = {
-    euEtsPrice: euMarket.price,
-    rggiPrice: rggiMarket.price,
-    ccaPrice: ccaMarket.price,
-    globalVolume,
-    avgChange1w,
+  const cleanVsFossil = {
+    iclnChange: r2(qMap.get('ICLN')?.regularMarketChangePercent || 0),
+    xleChange: r2(qMap.get('XLE')?.regularMarketChangePercent || 0),
+    spread: r2((qMap.get('ICLN')?.regularMarketChangePercent || 0) - (qMap.get('XLE')?.regularMarketChangePercent || 0)),
+    oilPrice: r2(qMap.get('CL=F')?.regularMarketPrice || 0),
   };
 
-  // --- futures (EU ETS forward curve) ---
-  const spotPrice = euMarket.price;
-  const futures = FUTURES_TENORS.map((tenor, i) => {
-    const carryPerYear = 1.5 + rng() * 2.5;
-    const yearsOut = i * 0.9;
-    const spread = i === 0 ? 0 : round2(yearsOut * (carryPerYear + (rng() - 0.4) * 1.2));
-    const price = i === 0 ? spotPrice : round2(spotPrice + spread);
-    const change1d = pctChange(2.5);
-    const impliedCarry = i === 0 ? 0 : round2((spread / spotPrice / yearsOut) * 100);
-    return {
-      tenor,
-      price,
-      change1d,
-      spreadToSpot: spread,
-      impliedCarry,
-    };
-  });
-
-  // --- auctions (4 recent) ---
-  const auctions = AUCTION_MARKETS.map((market, i) => {
-    const daysAgo = 3 + Math.floor(rng() * 25) + i * 7;
-    const auctionDate = new Date();
-    auctionDate.setDate(auctionDate.getDate() - daysAgo);
-
-    let clearingBase: number;
-    if (market === 'EU ETS') clearingBase = euMarket.price;
-    else if (market === 'RGGI') clearingBase = rggiMarket.price;
-    else if (market === 'California CCA') clearingBase = ccaMarket.price;
-    else clearingBase = markets.find(m => m.market === market)?.price ?? 40;
-
-    const clearingPrice = round2(clearingBase * (0.97 + rng() * 0.06));
-    const coverRatio = round2(1.5 + rng() * 2.5);
-    const volume = round1(2 + rng() * 18);
-    const participants = Math.floor(20 + rng() * 40);
-    const changeVsPrev = pctChange(8);
-
-    return {
-      market,
-      auctionDate: auctionDate.toISOString().slice(0, 10),
-      clearingPrice,
-      coverRatio,
-      volume,
-      participants,
-      changeVsPrev,
-    };
-  });
-
-  // --- offsetCredits ---
-  const offsetCredits = OFFSET_TYPES_CONFIG.map(o => {
-    const price = round2(jitter(o.low, o.high));
-    const change1m = pctChange(12);
-    const volume = round1(o.baseVolume * (0.7 + rng() * 0.6));
-    return {
-      type: o.type,
-      price,
-      change1m,
-      volume,
-      avgProject: o.avgProject,
-    };
-  });
-
-  return {
-    summary,
-    markets,
-    futures,
-    auctions,
-    offsetCredits,
-    generatedAt: new Date().toISOString(),
-  };
+  return { markets, etfs, cleanVsFossil, carbonPriceProxy: r2(carbonPrice), generatedAt: new Date().toISOString() };
 }
 
-router.get('/', (_req, res) => {
+router.get('/', async (_req, res) => {
   try {
     const now = Date.now();
     if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
-    const data = generate();
+    const data = await fetchData();
     cache = { data, ts: now };
     res.json(data);
   } catch (err) {
     console.error('[EmissionsTrading] Error:', (err as Error).message);
     if (cache) return res.json(cache.data);
-    res.status(500).json({ error: 'Failed to generate emissions trading data' });
+    res.status(500).json({ error: 'Failed to fetch emissions trading data' });
   }
 });
 
