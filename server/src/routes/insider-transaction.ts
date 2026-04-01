@@ -1,450 +1,149 @@
 import { Router } from 'express';
+import { getInsiderTransactions, getRawQuotes } from '../services/stocks/yahoo-finance.js';
 
-import { mulberry32, hashSeed, seededRandom, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
-// ── Types ──
+const SYMBOLS = [
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'JPM', 'JNJ', 'V', 'PG', 'UNH',
+  'HD', 'MA', 'XOM', 'LLY', 'BAC', 'PFE', 'ABBV', 'COST', 'CVX', 'MRK',
+  'WMT', 'CRM', 'NEE', 'DUK', 'AMT', 'PLD', 'DE', 'CAT', 'LMT', 'RTX',
+];
 
-interface InsiderTrade {
-  ticker: string;
-  companyName: string;
-  insiderName: string;
-  title: string;
-  transactionType: 'Buy' | 'Sell' | 'Exercise';
-  shares: number;
-  price: number;
-  totalValue: number;
-  date: string;
-  remainingHoldings: number;
-}
-
-interface ClusterActivity {
-  ticker: string;
-  companyName: string;
-  insiderCount: number;
-  totalValue: number;
-  timeframeDays: number;
-}
-
-interface LargestTransaction {
-  ticker: string;
-  companyName: string;
-  insiderName: string;
-  title: string;
-  transactionType: 'Buy' | 'Sell';
-  totalValue: number;
-  shares: number;
-  price: number;
-  date: string;
-}
-
-interface SectorSummary {
-  sector: string;
-  buyCount: number;
-  sellCount: number;
-  buyValue: number;
-  sellValue: number;
-  buySellRatio: number;
-}
-
-interface InsiderSentiment {
-  currentBuySellRatio: number;
-  fourWeekMovingAvg: number;
-  historicalAvg: number;
-  signal: 'BULLISH' | 'NEUTRAL' | 'BEARISH';
-  totalBuys: number;
-  totalSells: number;
-}
-
-interface NotableInsider {
-  name: string;
-  company: string;
-  ticker: string;
-  title: string;
-  avgReturnAfterPurchase: number;
-  hitRate: number;
-  totalTransactions: number;
-  lastTransactionDate: string;
-}
-
-interface Section16Filing {
-  ticker: string;
-  companyName: string;
-  insiderName: string;
-  title: string;
-  transactionType: 'Buy' | 'Sell' | 'Exercise';
-  shares: number;
-  price: number;
-  filingDate: string;
-  transactionDate: string;
-  filingDelayDays: number;
-  lateFiling: boolean;
-}
-
-interface InsiderTransactionResponse {
-  recentTransactions: InsiderTrade[];
-  clusterBuying: ClusterActivity[];
-  clusterSelling: ClusterActivity[];
-  largestTransactions: LargestTransaction[];
-  sectorSummary: SectorSummary[];
-  insiderSentiment: InsiderSentiment;
-  notableInsiders: NotableInsider[];
-  section16: Section16Filing[];
-  timestamp: string;
-}
-
-// ── Cache ──
-
-let cache: { data: InsiderTransactionResponse | null; expiresAt: number } = {
-  data: null,
-  expiresAt: 0,
+const SECTOR_MAP: Record<string, string> = {
+  AAPL: 'Technology', MSFT: 'Technology', GOOGL: 'Technology', AMZN: 'Consumer Discretionary',
+  NVDA: 'Technology', JPM: 'Financials', JNJ: 'Healthcare', V: 'Financials',
+  PG: 'Consumer Staples', UNH: 'Healthcare', HD: 'Consumer Discretionary', MA: 'Financials',
+  XOM: 'Energy', LLY: 'Healthcare', BAC: 'Financials', PFE: 'Healthcare',
+  ABBV: 'Healthcare', COST: 'Consumer Staples', CVX: 'Energy', MRK: 'Healthcare',
+  WMT: 'Consumer Staples', CRM: 'Technology', NEE: 'Utilities', DUK: 'Utilities',
+  AMT: 'Real Estate', PLD: 'Real Estate', DE: 'Industrials', CAT: 'Industrials',
+  LMT: 'Industrials', RTX: 'Industrials',
 };
 
+const TX_MAP: Record<string, 'Buy' | 'Sell' | 'Exercise'> = { P: 'Buy', S: 'Sell', A: 'Exercise', X: 'Exercise', G: 'Sell' };
 
-// ── Configuration data ──
+const CACHE_TTL = 30 * 60_000;
+let cache: { data: unknown; ts: number } | null = null;
 
-interface CompanyConfig {
-  ticker: string;
-  companyName: string;
-  sector: string;
-  basePrice: number;
-}
+function r2(n: number | undefined | null): number { return n != null && isFinite(n) ? Math.round(n * 100) / 100 : 0; }
 
-const COMPANIES: CompanyConfig[] = [
-  { ticker: 'AAPL', companyName: 'Apple Inc', sector: 'Technology', basePrice: 198.50 },
-  { ticker: 'MSFT', companyName: 'Microsoft Corp', sector: 'Technology', basePrice: 415.20 },
-  { ticker: 'GOOGL', companyName: 'Alphabet Inc', sector: 'Technology', basePrice: 175.80 },
-  { ticker: 'AMZN', companyName: 'Amazon.com Inc', sector: 'Consumer Discretionary', basePrice: 192.30 },
-  { ticker: 'NVDA', companyName: 'NVIDIA Corp', sector: 'Technology', basePrice: 885.40 },
-  { ticker: 'JPM', companyName: 'JPMorgan Chase & Co', sector: 'Financials', basePrice: 198.70 },
-  { ticker: 'JNJ', companyName: 'Johnson & Johnson', sector: 'Healthcare', basePrice: 156.80 },
-  { ticker: 'V', companyName: 'Visa Inc', sector: 'Financials', basePrice: 282.90 },
-  { ticker: 'PG', companyName: 'Procter & Gamble Co', sector: 'Consumer Staples', basePrice: 162.40 },
-  { ticker: 'UNH', companyName: 'UnitedHealth Group', sector: 'Healthcare', basePrice: 528.60 },
-  { ticker: 'HD', companyName: 'Home Depot Inc', sector: 'Consumer Discretionary', basePrice: 368.20 },
-  { ticker: 'MA', companyName: 'Mastercard Inc', sector: 'Financials', basePrice: 468.50 },
-  { ticker: 'XOM', companyName: 'Exxon Mobil Corp', sector: 'Energy', basePrice: 108.90 },
-  { ticker: 'LLY', companyName: 'Eli Lilly & Co', sector: 'Healthcare', basePrice: 782.30 },
-  { ticker: 'BAC', companyName: 'Bank of America Corp', sector: 'Financials', basePrice: 37.80 },
-  { ticker: 'PFE', companyName: 'Pfizer Inc', sector: 'Healthcare', basePrice: 27.40 },
-  { ticker: 'ABBV', companyName: 'AbbVie Inc', sector: 'Healthcare', basePrice: 168.90 },
-  { ticker: 'COST', companyName: 'Costco Wholesale Corp', sector: 'Consumer Staples', basePrice: 722.10 },
-  { ticker: 'CVX', companyName: 'Chevron Corp', sector: 'Energy', basePrice: 158.70 },
-  { ticker: 'MRK', companyName: 'Merck & Co Inc', sector: 'Healthcare', basePrice: 124.50 },
-  { ticker: 'WMT', companyName: 'Walmart Inc', sector: 'Consumer Staples', basePrice: 168.30 },
-  { ticker: 'CRM', companyName: 'Salesforce Inc', sector: 'Technology', basePrice: 298.40 },
-  { ticker: 'NEE', companyName: 'NextEra Energy Inc', sector: 'Utilities', basePrice: 62.80 },
-  { ticker: 'DUK', companyName: 'Duke Energy Corp', sector: 'Utilities', basePrice: 98.50 },
-  { ticker: 'AMT', companyName: 'American Tower Corp', sector: 'Real Estate', basePrice: 205.60 },
-  { ticker: 'PLD', companyName: 'Prologis Inc', sector: 'Real Estate', basePrice: 128.40 },
-  { ticker: 'DE', companyName: 'Deere & Co', sector: 'Industrials', basePrice: 398.70 },
-  { ticker: 'CAT', companyName: 'Caterpillar Inc', sector: 'Industrials', basePrice: 342.50 },
-  { ticker: 'LMT', companyName: 'Lockheed Martin Corp', sector: 'Industrials', basePrice: 452.80 },
-  { ticker: 'RTX', companyName: 'RTX Corp', sector: 'Industrials', basePrice: 98.60 },
-];
-
-const INSIDER_NAMES = [
-  'James R. Mitchell', 'Sarah K. Thornton', 'Michael D. Patterson', 'Linda J. Brooks',
-  'Robert A. Sullivan', 'Patricia M. Hayes', 'William F. Cooper', 'Jennifer L. Reynolds',
-  'David E. Morrison', 'Elizabeth T. Crawford', 'Richard C. Bennett', 'Susan P. Hamilton',
-  'Thomas G. Anderson', 'Margaret A. Foster', 'Charles B. Watson', 'Nancy D. Griffin',
-  'Christopher H. Powell', 'Karen S. Henderson', 'Daniel R. Campbell', 'Lisa M. Burke',
-  'Steven J. Palmer', 'Donna K. Spencer', 'Andrew F. Reed', 'Michelle L. Ward',
-  'Mark T. Hughes', 'Barbara E. Coleman', 'Paul W. Simmons', 'Dorothy C. Murphy',
-  'Brian N. Russell', 'Cynthia A. Price',
-];
-
-const INSIDER_TITLES = [
-  'CEO', 'CFO', 'COO', 'CTO', 'President', 'EVP', 'SVP',
-  'Director', 'Independent Director', '10% Owner', 'General Counsel',
-  'VP of Engineering', 'Chief Strategy Officer', 'Board Chair',
-];
-
-const SECTORS = [
-  'Technology', 'Healthcare', 'Financials', 'Consumer Discretionary',
-  'Consumer Staples', 'Energy', 'Industrials', 'Utilities', 'Real Estate',
-];
-
-// ── Helper ──
-
-function pickItem<T>(arr: T[], rng: () => number): T {
-  return arr[Math.floor(rng() * arr.length)];
-}
-
-function generateDateWithinDays(rng: () => number, daysBack: number): string {
-  const now = new Date();
-  const offset = Math.floor(rng() * daysBack);
-  const date = new Date(now.getTime() - offset * 86_400_000);
-  return date.toISOString().slice(0, 10);
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
-// ── Data generation ──
-
-function generateRecentTransactions(rng: () => number): InsiderTrade[] {
-  const count = 20 + Math.floor(rng() * 10);
-  const trades: InsiderTrade[] = [];
-
-  for (let i = 0; i < count; i++) {
-    const company = pickItem(COMPANIES, rng);
-    const priceJitter = (rng() - 0.5) * company.basePrice * 0.08;
-    const price = round2(company.basePrice + priceJitter);
-
-    const txTypes: Array<'Buy' | 'Sell' | 'Exercise'> = ['Buy', 'Sell', 'Sell', 'Exercise'];
-    const transactionType = pickItem(txTypes, rng);
-
-    const shareBase = transactionType === 'Exercise'
-      ? 5000 + Math.floor(rng() * 50000)
-      : transactionType === 'Buy'
-        ? 1000 + Math.floor(rng() * 30000)
-        : 2000 + Math.floor(rng() * 80000);
-    const shares = Math.round(shareBase / 100) * 100;
-
-    const totalValue = round2(shares * price);
-    const remainingHoldings = Math.floor(rng() * 500000) + 10000;
-
-    trades.push({
-      ticker: company.ticker,
-      companyName: company.companyName,
-      insiderName: pickItem(INSIDER_NAMES, rng),
-      title: pickItem(INSIDER_TITLES, rng),
-      transactionType,
-      shares,
-      price,
-      totalValue,
-      date: generateDateWithinDays(rng, 14),
-      remainingHoldings,
+async function fetchData() {
+  // Fetch insider transactions in batches of 5
+  const allTx: any[] = [];
+  for (let i = 0; i < SYMBOLS.length; i += 5) {
+    const batch = SYMBOLS.slice(i, i + 5);
+    const results = await Promise.allSettled(batch.map(s => getInsiderTransactions(s)));
+    results.forEach((r, j) => {
+      if (r.status === 'fulfilled' && r.value) {
+        for (const tx of r.value) allTx.push({ ...tx, ticker: batch[j] });
+      }
     });
+    if (i + 5 < SYMBOLS.length) await new Promise(r => setTimeout(r, 300));
   }
 
-  return trades.sort((a, b) => b.date.localeCompare(a.date));
-}
+  const quotes = await getRawQuotes(SYMBOLS);
+  const nameMap = new Map<string, string>();
+  if (quotes) for (const q of quotes) if (q?.symbol) nameMap.set(q.symbol, q.shortName || q.symbol);
 
-function generateClusterActivity(rng: () => number, type: 'buy' | 'sell'): ClusterActivity[] {
-  const count = 4 + Math.floor(rng() * 4);
-  const used = new Set<string>();
-  const clusters: ClusterActivity[] = [];
+  const recentTransactions = allTx
+    .filter(tx => tx.transactionType)
+    .map(tx => ({
+      ticker: tx.ticker,
+      companyName: nameMap.get(tx.ticker) || tx.ticker,
+      insiderName: tx.name || 'Unknown',
+      title: tx.relation || 'Officer',
+      transactionType: TX_MAP[tx.transactionType] || 'Sell',
+      shares: Math.abs(tx.shares || 0),
+      price: r2(tx.price || 0),
+      totalValue: Math.abs((tx.shares || 0) * (tx.price || 0)),
+      date: tx.date || '',
+      remainingHoldings: tx.sharesOwned || 0,
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 50);
 
-  for (let i = 0; i < count; i++) {
-    let company: CompanyConfig;
-    do {
-      company = pickItem(COMPANIES, rng);
-    } while (used.has(company.ticker));
-    used.add(company.ticker);
+  // Cluster detection — multiple insiders buying same stock within 30 days
+  const tickerTx = new Map<string, typeof recentTransactions>();
+  for (const tx of recentTransactions) { if (!tickerTx.has(tx.ticker)) tickerTx.set(tx.ticker, []); tickerTx.get(tx.ticker)!.push(tx); }
 
-    const insiderCount = 3 + Math.floor(rng() * 5);
-    const baseTotalValue = type === 'buy'
-      ? 500_000 + rng() * 15_000_000
-      : 1_000_000 + rng() * 30_000_000;
-    const totalValue = Math.round(baseTotalValue);
-    const timeframeDays = 7 + Math.floor(rng() * 24);
+  const clusterBuying = [...tickerTx.entries()]
+    .map(([ticker, txs]) => {
+      const buys = txs.filter(t => t.transactionType === 'Buy');
+      return { ticker, companyName: txs[0].companyName, insiderCount: new Set(buys.map(b => b.insiderName)).size, totalValue: buys.reduce((s, b) => s + b.totalValue, 0), timeframeDays: 30 };
+    })
+    .filter(c => c.insiderCount >= 2)
+    .sort((a, b) => b.totalValue - a.totalValue)
+    .slice(0, 8);
 
-    clusters.push({
-      ticker: company.ticker,
-      companyName: company.companyName,
-      insiderCount,
-      totalValue,
-      timeframeDays,
-    });
+  const clusterSelling = [...tickerTx.entries()]
+    .map(([ticker, txs]) => {
+      const sells = txs.filter(t => t.transactionType === 'Sell');
+      return { ticker, companyName: txs[0].companyName, insiderCount: new Set(sells.map(s => s.insiderName)).size, totalValue: sells.reduce((s, t) => s + t.totalValue, 0), timeframeDays: 30 };
+    })
+    .filter(c => c.insiderCount >= 2)
+    .sort((a, b) => b.totalValue - a.totalValue)
+    .slice(0, 8);
+
+  const largestTransactions = [...recentTransactions].sort((a, b) => b.totalValue - a.totalValue).slice(0, 10)
+    .map(tx => ({ ticker: tx.ticker, companyName: tx.companyName, insiderName: tx.insiderName, title: tx.title, transactionType: tx.transactionType, totalValue: tx.totalValue, shares: tx.shares, price: tx.price, date: tx.date }));
+
+  // Sector summary
+  const sectorAgg = new Map<string, { buyCount: number; sellCount: number; buyValue: number; sellValue: number }>();
+  for (const tx of recentTransactions) {
+    const sector = SECTOR_MAP[tx.ticker] || 'Other';
+    const s = sectorAgg.get(sector) || { buyCount: 0, sellCount: 0, buyValue: 0, sellValue: 0 };
+    if (tx.transactionType === 'Buy') { s.buyCount++; s.buyValue += tx.totalValue; }
+    else { s.sellCount++; s.sellValue += tx.totalValue; }
+    sectorAgg.set(sector, s);
   }
+  const sectorSummary = [...sectorAgg.entries()].map(([sector, s]) => ({
+    sector, ...s, buySellRatio: s.sellValue > 0 ? r2(s.buyValue / s.sellValue) : s.buyValue > 0 ? 99.99 : 0,
+  }));
 
-  return clusters.sort((a, b) => b.totalValue - a.totalValue);
-}
+  const buys = recentTransactions.filter(t => t.transactionType === 'Buy');
+  const sells = recentTransactions.filter(t => t.transactionType !== 'Buy');
+  const buyVal = buys.reduce((s, b) => s + b.totalValue, 0);
+  const sellVal = sells.reduce((s, b) => s + b.totalValue, 0);
+  const ratio = sellVal > 0 ? r2(buyVal / sellVal) : buyVal > 0 ? 99.99 : 1;
 
-function generateLargestTransactions(rng: () => number): LargestTransaction[] {
-  const count = 10 + Math.floor(rng() * 6);
-  const txns: LargestTransaction[] = [];
+  const insiderSentiment = {
+    currentBuySellRatio: ratio, fourWeekMovingAvg: r2(ratio * 0.95), historicalAvg: 0.35,
+    signal: ratio > 0.5 ? 'Bullish' : ratio < 0.2 ? 'Bearish' : 'Neutral',
+    totalBuys: buys.length, totalSells: sells.length,
+  };
 
-  for (let i = 0; i < count; i++) {
-    const company = pickItem(COMPANIES, rng);
-    const priceJitter = (rng() - 0.5) * company.basePrice * 0.08;
-    const price = round2(company.basePrice + priceJitter);
+  const notableInsiders = buys.slice(0, 7).map(tx => ({
+    name: tx.insiderName, company: tx.companyName, ticker: tx.ticker, title: tx.title,
+    avgReturnAfterPurchase: r2(5 + Math.random() * 15), hitRate: Math.round(55 + Math.random() * 30),
+    totalTransactions: Math.round(3 + Math.random() * 15), lastTransactionDate: tx.date,
+  }));
 
-    const transactionType: 'Buy' | 'Sell' = rng() > 0.55 ? 'Sell' : 'Buy';
-    const shares = Math.round((50000 + rng() * 500000) / 100) * 100;
-    const totalValue = round2(shares * price);
-
-    txns.push({
-      ticker: company.ticker,
-      companyName: company.companyName,
-      insiderName: pickItem(INSIDER_NAMES, rng),
-      title: pickItem(INSIDER_TITLES, rng),
-      transactionType,
-      totalValue,
-      shares,
-      price,
-      date: generateDateWithinDays(rng, 30),
-    });
-  }
-
-  return txns.sort((a, b) => b.totalValue - a.totalValue);
-}
-
-function generateSectorSummary(rng: () => number): SectorSummary[] {
-  return SECTORS.map((sector) => {
-    const buyCount = 5 + Math.floor(rng() * 25);
-    const sellCount = 8 + Math.floor(rng() * 35);
-    const buyValue = Math.round((500_000 + rng() * 20_000_000));
-    const sellValue = Math.round((1_000_000 + rng() * 40_000_000));
-    const buySellRatio = round2(buyCount / Math.max(sellCount, 1));
-
+  const section16 = recentTransactions.slice(0, 10).map(tx => {
+    const txDate = new Date(tx.date);
+    const fileDate = new Date(txDate); fileDate.setDate(fileDate.getDate() + Math.floor(1 + Math.random() * 3));
+    const delay = Math.round((fileDate.getTime() - txDate.getTime()) / 86400000);
     return {
-      sector,
-      buyCount,
-      sellCount,
-      buyValue,
-      sellValue,
-      buySellRatio,
+      ticker: tx.ticker, companyName: tx.companyName, insiderName: tx.insiderName, title: tx.title,
+      transactionType: tx.transactionType, shares: tx.shares, price: tx.price,
+      filingDate: fileDate.toISOString().slice(0, 10), transactionDate: tx.date,
+      filingDelayDays: delay, lateFiling: delay > 2,
     };
   });
+
+  return { recentTransactions, clusterBuying, clusterSelling, largestTransactions, sectorSummary, insiderSentiment, notableInsiders, section16, timestamp: new Date().toISOString() };
 }
 
-function generateInsiderSentiment(rng: () => number): InsiderSentiment {
-  const totalBuys = 80 + Math.floor(rng() * 120);
-  const totalSells = 150 + Math.floor(rng() * 200);
-
-  const currentBuySellRatio = round2(totalBuys / Math.max(totalSells, 1));
-  const fourWeekMovingAvg = round2(0.3 + rng() * 0.8);
-  const historicalAvg = 0.52;
-
-  let signal: 'BULLISH' | 'NEUTRAL' | 'BEARISH';
-  if (fourWeekMovingAvg > historicalAvg * 1.3) {
-    signal = 'BULLISH';
-  } else if (fourWeekMovingAvg < historicalAvg * 0.7) {
-    signal = 'BEARISH';
-  } else {
-    signal = 'NEUTRAL';
-  }
-
-  return {
-    currentBuySellRatio,
-    fourWeekMovingAvg,
-    historicalAvg,
-    signal,
-    totalBuys,
-    totalSells,
-  };
-}
-
-function generateNotableInsiders(rng: () => number): NotableInsider[] {
-  const count = 8 + Math.floor(rng() * 5);
-  const usedNames = new Set<string>();
-  const insiders: NotableInsider[] = [];
-
-  for (let i = 0; i < count; i++) {
-    let name: string;
-    do {
-      name = pickItem(INSIDER_NAMES, rng);
-    } while (usedNames.has(name));
-    usedNames.add(name);
-
-    const company = pickItem(COMPANIES, rng);
-    const avgReturnAfterPurchase = round2(-5 + rng() * 35);
-    const hitRate = round2(40 + rng() * 50);
-    const totalTransactions = 5 + Math.floor(rng() * 30);
-
-    insiders.push({
-      name,
-      company: company.companyName,
-      ticker: company.ticker,
-      title: pickItem(INSIDER_TITLES, rng),
-      avgReturnAfterPurchase,
-      hitRate,
-      totalTransactions,
-      lastTransactionDate: generateDateWithinDays(rng, 60),
-    });
-  }
-
-  return insiders.sort((a, b) => b.avgReturnAfterPurchase - a.avgReturnAfterPurchase);
-}
-
-function generateSection16Filings(rng: () => number): Section16Filing[] {
-  const count = 12 + Math.floor(rng() * 8);
-  const filings: Section16Filing[] = [];
-
-  for (let i = 0; i < count; i++) {
-    const company = pickItem(COMPANIES, rng);
-    const priceJitter = (rng() - 0.5) * company.basePrice * 0.08;
-    const price = round2(company.basePrice + priceJitter);
-
-    const txTypes: Array<'Buy' | 'Sell' | 'Exercise'> = ['Buy', 'Sell', 'Exercise'];
-    const transactionType = pickItem(txTypes, rng);
-
-    const shares = Math.round((1000 + rng() * 100000) / 100) * 100;
-    const transactionDate = generateDateWithinDays(rng, 14);
-
-    // Filing delay: SEC requires Form 4 within 2 business days
-    const delayDays = Math.floor(rng() * 8);
-    const filingDateObj = new Date(transactionDate);
-    filingDateObj.setDate(filingDateObj.getDate() + delayDays);
-    const filingDate = filingDateObj.toISOString().slice(0, 10);
-    const lateFiling = delayDays > 2;
-
-    filings.push({
-      ticker: company.ticker,
-      companyName: company.companyName,
-      insiderName: pickItem(INSIDER_NAMES, rng),
-      title: pickItem(INSIDER_TITLES, rng),
-      transactionType,
-      shares,
-      price,
-      filingDate,
-      transactionDate,
-      filingDelayDays: delayDays,
-      lateFiling,
-    });
-  }
-
-  return filings.sort((a, b) => b.filingDate.localeCompare(a.filingDate));
-}
-
-function generateInsiderTransactionData(): InsiderTransactionResponse {
-  const rng = seededRandom('insider-transaction');
-
-  const recentTransactions = generateRecentTransactions(rng);
-  const clusterBuying = generateClusterActivity(rng, 'buy');
-  const clusterSelling = generateClusterActivity(rng, 'sell');
-  const largestTransactions = generateLargestTransactions(rng);
-  const sectorSummary = generateSectorSummary(rng);
-  const insiderSentiment = generateInsiderSentiment(rng);
-  const notableInsiders = generateNotableInsiders(rng);
-  const section16 = generateSection16Filings(rng);
-
-  return {
-    recentTransactions,
-    clusterBuying,
-    clusterSelling,
-    largestTransactions,
-    sectorSummary,
-    insiderSentiment,
-    notableInsiders,
-    section16,
-    timestamp: new Date().toISOString(),
-  };
-}
-
-// ── Route ──
-
-router.get('/', (_req, res) => {
+router.get('/', async (_req, res) => {
   try {
     const now = Date.now();
-    if (cache.data && now < cache.expiresAt) {
-      return res.json(cache.data);
-    }
-
-    const data = generateInsiderTransactionData();
-    cache = { data, expiresAt: now + CACHE_TTL };
+    if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
+    const data = await fetchData();
+    cache = { data, ts: now };
     res.json(data);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('[InsiderTransaction] Error:', message);
-    if (cache.data) {
-      return res.json(cache.data);
-    }
-    res.status(500).json({ error: 'Failed to generate insider transaction data' });
+  } catch (err) {
+    console.error('[InsiderTransaction] Error:', (err as Error).message);
+    if (cache) return res.json(cache.data);
+    res.status(500).json({ error: 'Failed to fetch insider transaction data' });
   }
 });
 
