@@ -1,121 +1,15 @@
 import { Router } from 'express';
-
-import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data.js';
+import { getRawQuotes } from '../services/stocks/yahoo-finance.js';
 const router = Router();
-
-const ASSETS = [
-  'SPY', 'QQQ', 'IWM', 'EFA', 'EEM', 'TLT', 'HYG', 'LQD',
-  'GLD', 'SLV', 'USO', 'UNG', 'FXI', 'EWJ', 'EWZ',
-  'AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'GOOGL', 'JPM',
-  'XLE', 'XLF', 'XLK', 'XLV', 'XLI', 'XLU', 'XLP',
-];
-
-const SIGNAL_TYPES = [
-  'Momentum Breakout', 'Mean Reversion', 'VRP Harvest', 'Credit Signal',
-  'Relative Value', 'Seasonality', 'Sentiment Extreme', 'Flow Signal',
-  'Earnings Drift', 'Factor Rotation', 'Macro Regime', 'Vol Compression',
-  'Correlation Break', 'Sector Rotation', 'Risk-On/Off',
-];
-
-const STRATEGIES = [
-  'Long Equity', 'Short Equity', 'Long/Short Pair', 'Call Spread', 'Put Spread',
-  'Iron Condor', 'Straddle', 'Risk Reversal', 'Calendar Spread',
-  'Macro Hedge', 'Carry Trade', 'Convergence Trade',
-];
-
-const TIMEFRAMES = ['Intraday', '1-3 Days', '1 Week', '2 Weeks', '1 Month', '3 Months'];
-
-
-let cache: { data: unknown; ts: number } | null = null;
-
-function generate() {
-  const day = new Date().toISOString().slice(0, 10);
-  const rng = mulberry32(hashSeed(day + '-trade-ideas'));
-  const pick = <T,>(arr: T[]): T => arr[Math.floor(rng() * arr.length)];
-
-  const ideaCount = 12 + Math.floor(rng() * 8);
-  const ideas = Array.from({ length: ideaCount }, (_, idx) => {
-    const asset = pick(ASSETS);
-    const signalType = pick(SIGNAL_TYPES);
-    const strategy = pick(STRATEGIES);
-    const timeframe = pick(TIMEFRAMES);
-    const direction = rng() > 0.45 ? 'Bullish' : 'Bearish';
-    const confidence = Math.round(55 + rng() * 40);
-    const expectedReturn = Math.round((rng() * 8 - 1.5) * 100) / 100;
-    const riskReward = Math.round((1 + rng() * 4) * 10) / 10;
-    const stopLoss = Math.round((1 + rng() * 5) * 10) / 10;
-
-    const signalStrength = Math.round(rng() * 100);
-    const historicalWinRate = Math.round(45 + rng() * 30);
-    const avgHistReturn = Math.round((rng() * 4 - 0.5) * 100) / 100;
-    const occurrences = Math.round(10 + rng() * 90);
-
-    const signals = Array.from({ length: 2 + Math.floor(rng() * 3) }, () => ({
-      name: pick(SIGNAL_TYPES),
-      value: Math.round(rng() * 100),
-      triggered: rng() > 0.3,
-    }));
-
-    const daysAgo = Math.floor(rng() * 3);
-    const createdAt = new Date();
-    createdAt.setDate(createdAt.getDate() - daysAgo);
-    createdAt.setHours(Math.floor(rng() * 14) + 6, Math.floor(rng() * 60));
-
-    return {
-      id: idx + 1, asset, signalType, strategy, timeframe, direction,
-      confidence, expectedReturn, riskReward, stopLoss,
-      signalStrength, historicalWinRate, avgHistReturn, occurrences,
-      signals, createdAt: createdAt.toISOString(),
-      status: rng() > 0.8 ? 'Expired' : rng() > 0.6 ? 'Active' : 'New',
-    };
-  }).sort((a, b) => b.confidence - a.confidence);
-
-  const summary = {
-    totalIdeas: ideas.length,
-    bullish: ideas.filter(i => i.direction === 'Bullish').length,
-    bearish: ideas.filter(i => i.direction === 'Bearish').length,
-    avgConfidence: Math.round(ideas.reduce((a, b) => a + b.confidence, 0) / ideas.length),
-    topSignalType: (() => {
-      const counts: Record<string, number> = {};
-      ideas.forEach(i => { counts[i.signalType] = (counts[i.signalType] || 0) + 1; });
-      return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
-    })(),
-    newCount: ideas.filter(i => i.status === 'New').length,
-    activeCount: ideas.filter(i => i.status === 'Active').length,
-  };
-
-  const signalHeatmap = SIGNAL_TYPES.slice(0, 10).map(sig => ({
-    signal: sig,
-    bullish: Math.round(rng() * 5),
-    bearish: Math.round(rng() * 5),
-    strength: Math.round(rng() * 100),
-  }));
-
-  const assetBreakdown = [...new Set(ideas.map(i => i.asset))].map(asset => {
-    const assetIdeas = ideas.filter(i => i.asset === asset);
-    return {
-      asset,
-      count: assetIdeas.length,
-      avgConfidence: Math.round(assetIdeas.reduce((a, b) => a + b.confidence, 0) / assetIdeas.length),
-      netDirection: assetIdeas.filter(i => i.direction === 'Bullish').length - assetIdeas.filter(i => i.direction === 'Bearish').length,
-    };
-  }).sort((a, b) => b.count - a.count);
-
-  return { ideas, summary, signalHeatmap, assetBreakdown, generatedAt: new Date().toISOString() };
-}
-
-router.get('/', (_req, res) => {
-  try {
-    const now = Date.now();
-    if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
-    const data = generate();
-    cache = { data, ts: now };
-    res.json(data);
-  } catch (err) {
-    console.error('[TradeIdeas] Error:', (err as Error).message);
-    if (cache) return res.json(cache.data);
-    res.status(500).json({ error: 'Failed to generate trade ideas data' });
-  }
-});
-
+const SYMBOLS = ['^VIX', '^GSPC', '^IXIC', '^RUT', 'SPY', 'QQQ', 'IWM', 'XLK', 'XLF', 'XLE', 'XLV', 'AAPL', 'MSFT', 'NVDA', '^TNX'];
+const CACHE_TTL = 2 * 60_000; let cache: { data: unknown; ts: number } | null = null;
+function r2(n: number | undefined | null): number { return n != null && isFinite(n) ? Math.round(n * 100) / 100 : 0; }
+function r1(n: number | undefined | null): number { return n != null && isFinite(n) ? Math.round(n * 10) / 10 : 0; }
+async function fetchData() { const quotes = await getRawQuotes(SYMBOLS); if (!quotes || quotes.length === 0) throw new Error('No data'); const qMap = new Map(quotes.filter(q => q?.symbol).map(q => [q.symbol!, q]));
+  const vix = r2(qMap.get('^VIX')?.regularMarketPrice);
+  const sectors = ['XLK', 'XLF', 'XLE', 'XLV'].map(sym => { const q = qMap.get(sym); return { ticker: sym, name: q?.shortName || sym, change: r2(q?.regularMarketChangePercent) }; });
+  const topStocks = ['AAPL', 'MSFT', 'NVDA'].map(sym => { const q = qMap.get(sym); return { ticker: sym, name: q?.shortName || sym, price: r2(q?.regularMarketPrice), change: r2(q?.regularMarketChangePercent), volume: q?.regularMarketVolume || 0 }; });
+  const indices = ['^GSPC', '^IXIC', '^RUT'].map(sym => { const q = qMap.get(sym); return { name: q?.shortName || sym, change: r2(q?.regularMarketChangePercent) }; });
+  return { indices, sectors, topStocks, vix, tenYear: r2(qMap.get('^TNX')?.regularMarketPrice), marketTone: vix > 25 ? 'Defensive' : vix < 15 ? 'Aggressive' : 'Balanced', generatedAt: new Date().toISOString() }; }
+router.get('/', async (_req, res) => { try { const now = Date.now(); if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data); const data = await fetchData(); cache = { data, ts: now }; res.json(data); } catch (err) { console.error('[TradeIdeas]', (err as Error).message); if (cache) return res.json(cache.data); res.status(500).json({ error: 'Failed' }); } });
 export default router;
