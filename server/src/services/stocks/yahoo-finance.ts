@@ -30,7 +30,20 @@ interface YahooQuoteResult {
   bookValue?: number;
   priceToBook?: number;
   shortRatio?: number;
+  sharesShort?: number;
+  shortPercentOfFloat?: number;
+  sharesShortPriorMonth?: number;
   earningsTimestamp?: number;
+  exDividendDate?: number;
+  dividendDate?: number;
+  payoutRatio?: number;
+  sector?: string;
+  priceToSalesTrailing12Months?: number;
+  enterpriseToEbitda?: number;
+  enterpriseToRevenue?: number;
+  pegRatio?: number;
+  averageDailyVolume10Day?: number;
+  averageVolume?: number;
   fiftyDayAverage?: number;
   twoHundredDayAverage?: number;
   fiftyDayAverageChangePercent?: number;
@@ -198,6 +211,25 @@ export async function getQuotes(symbols: string[]) {
         r.status === 'fulfilled' && r.value !== null,
     )
     .map((r) => r.value);
+}
+
+/** Returns full raw Yahoo Finance quote data (all fields). Use for panels needing rich fundamentals. */
+export async function getRawQuotes(symbols: string[]): Promise<YahooQuoteResult[]> {
+  try {
+    const auth = await ensureCrumb();
+    if (!auth) return [];
+    const url = `${YAHOO_API}/v7/finance/quote?symbols=${symbols.map(encodeURIComponent).join(',')}&crumb=${encodeURIComponent(auth.crumb)}`;
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': YAHOO_UA, 'Cookie': auth.cookie },
+    });
+    if (resp.ok) {
+      const data = (await resp.json()) as any;
+      return data?.quoteResponse?.result ?? [];
+    }
+  } catch (err) {
+    console.error('[Yahoo] getRawQuotes error:', (err as Error).message);
+  }
+  return [];
 }
 
 const RANGE_INTERVAL_MAP: Record<string, string> = {

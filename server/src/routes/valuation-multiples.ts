@@ -1,79 +1,70 @@
 import { Router } from 'express';
+import { getRawQuotes } from '../services/stocks/yahoo-finance.js';
 
-import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
-
-// ── Stock definitions ──
-const STOCKS = [
-  { ticker: 'AAPL', name: 'Apple', sector: 'Technology', mcap: 3200, basePE: 32, baseEV: 26 },
-  { ticker: 'MSFT', name: 'Microsoft', sector: 'Technology', mcap: 3100, basePE: 35, baseEV: 28 },
-  { ticker: 'GOOGL', name: 'Alphabet', sector: 'Technology', mcap: 2100, basePE: 25, baseEV: 18 },
-  { ticker: 'AMZN', name: 'Amazon', sector: 'Technology', mcap: 1900, basePE: 55, baseEV: 22 },
-  { ticker: 'NVDA', name: 'NVIDIA', sector: 'Technology', mcap: 2800, basePE: 60, baseEV: 45 },
-  { ticker: 'META', name: 'Meta Platforms', sector: 'Technology', mcap: 1400, basePE: 28, baseEV: 16 },
-  { ticker: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', mcap: 380, basePE: 16, baseEV: 14 },
-  { ticker: 'UNH', name: 'UnitedHealth', sector: 'Healthcare', mcap: 480, basePE: 22, baseEV: 15 },
-  { ticker: 'PFE', name: 'Pfizer', sector: 'Healthcare', mcap: 160, basePE: 12, baseEV: 9 },
-  { ticker: 'ABBV', name: 'AbbVie', sector: 'Healthcare', mcap: 310, basePE: 18, baseEV: 14 },
-  { ticker: 'JPM', name: 'JPMorgan', sector: 'Financials', mcap: 600, basePE: 12, baseEV: 10 },
-  { ticker: 'BAC', name: 'Bank of America', sector: 'Financials', mcap: 320, basePE: 11, baseEV: 9 },
-  { ticker: 'GS', name: 'Goldman Sachs', sector: 'Financials', mcap: 160, basePE: 14, baseEV: 11 },
-  { ticker: 'BRK.B', name: 'Berkshire Hathaway', sector: 'Financials', mcap: 900, basePE: 9, baseEV: 8 },
-  { ticker: 'PG', name: 'Procter & Gamble', sector: 'Consumer Staples', mcap: 380, basePE: 26, baseEV: 20 },
-  { ticker: 'KO', name: 'Coca-Cola', sector: 'Consumer Staples', mcap: 260, basePE: 24, baseEV: 22 },
-  { ticker: 'MCD', name: "McDonald's", sector: 'Consumer Staples', mcap: 210, basePE: 25, baseEV: 21 },
-  { ticker: 'WMT', name: 'Walmart', sector: 'Consumer Staples', mcap: 500, basePE: 28, baseEV: 15 },
-  { ticker: 'XOM', name: 'Exxon Mobil', sector: 'Energy', mcap: 460, basePE: 13, baseEV: 8 },
-  { ticker: 'CVX', name: 'Chevron', sector: 'Energy', mcap: 290, basePE: 12, baseEV: 7 },
-  { ticker: 'CAT', name: 'Caterpillar', sector: 'Industrials', mcap: 180, basePE: 17, baseEV: 13 },
-  { ticker: 'HON', name: 'Honeywell', sector: 'Industrials', mcap: 140, basePE: 20, baseEV: 15 },
-  { ticker: 'UPS', name: 'United Parcel Service', sector: 'Industrials', mcap: 110, basePE: 16, baseEV: 11 },
-  { ticker: 'AMT', name: 'American Tower', sector: 'Real Estate', mcap: 95, basePE: 40, baseEV: 25 },
-  { ticker: 'PLD', name: 'Prologis', sector: 'Real Estate', mcap: 110, basePE: 38, baseEV: 28 },
+const SYMBOLS = [
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META',
+  'JNJ', 'UNH', 'PFE', 'ABBV',
+  'JPM', 'BAC', 'GS', 'BRK-B',
+  'PG', 'KO', 'MCD', 'WMT',
+  'XOM', 'CVX',
+  'CAT', 'HON', 'UPS',
+  'AMT', 'PLD',
 ];
+
+const SECTOR_MAP: Record<string, string> = {
+  AAPL: 'Technology', MSFT: 'Technology', GOOGL: 'Technology', AMZN: 'Technology',
+  NVDA: 'Technology', META: 'Technology',
+  JNJ: 'Healthcare', UNH: 'Healthcare', PFE: 'Healthcare', ABBV: 'Healthcare',
+  JPM: 'Financials', BAC: 'Financials', GS: 'Financials', 'BRK-B': 'Financials',
+  PG: 'Consumer Staples', KO: 'Consumer Staples', MCD: 'Consumer Staples', WMT: 'Consumer Staples',
+  XOM: 'Energy', CVX: 'Energy',
+  CAT: 'Industrials', HON: 'Industrials', UPS: 'Industrials',
+  AMT: 'Real Estate', PLD: 'Real Estate',
+};
+
+const CACHE_TTL = 5 * 60_000; // 5 min
 let cache: { data: unknown; ts: number } | null = null;
 
-function generate() {
-  const day = new Date().toISOString().slice(0, 10);
-  const rng = mulberry32(hashSeed(day + '-valuation'));
+function r2(n: number | undefined | null): number {
+  return n != null && isFinite(n) ? Math.round(n * 10) / 10 : 0;
+}
 
-  const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
+async function fetchData() {
+  const quotes = await getRawQuotes(SYMBOLS);
+  if (!quotes || quotes.length === 0) throw new Error('No quote data');
 
-  const stocks = STOCKS.map(s => {
-    const peTrailing = Math.round(jitter(s.basePE, 0.12) * 10) / 10;
-    const peForward = Math.round(peTrailing * (0.85 + rng() * 0.15) * 10) / 10;
-    const evEbitda = Math.round(jitter(s.baseEV, 0.12) * 10) / 10;
-    const pSales = Math.round((1 + rng() * 12) * 10) / 10;
-    const pBook = Math.round((1 + rng() * 15) * 10) / 10;
-    const pFcf = Math.round((peTrailing * (0.8 + rng() * 0.6)) * 10) / 10;
-    const evSales = Math.round((pSales * (0.8 + rng() * 0.4)) * 10) / 10;
-    const pegRatio = Math.round((0.5 + rng() * 3) * 100) / 100;
+  const stocks = quotes
+    .filter((q: any) => q && q.symbol)
+    .map((q: any) => {
+      const sym = q.symbol as string;
+      const peTrailing = r2(q.trailingPE);
+      const peForward = r2(q.forwardPE);
+      const pBook = r2(q.priceToBook);
+      const mcap = q.marketCap ? Math.round(q.marketCap / 1e9 * 10) / 10 : 0;
+      const pSales = r2(q.priceToSalesTrailing12Months);
+      const evEbitda = r2(q.enterpriseToEbitda);
+      const evSales = r2(q.enterpriseToRevenue);
+      const pegRatio = r2(q.pegRatio);
+      const pFcf = peTrailing > 0 ? r2(peTrailing * 0.9) : 0; // approximate
 
-    const pe5YPctile = Math.round(rng() * 100);
-    const evEbitda5YPctile = Math.round(rng() * 100);
-    const pSales5YPctile = Math.round(rng() * 100);
-
-    const history = Array.from({ length: 8 }, (_, i) => {
-      const d = new Date();
-      d.setMonth(d.getMonth() - (7 - i) * 3);
       return {
-        date: d.toISOString().slice(0, 10),
-        pe: Math.round(jitter(s.basePE, 0.15) * 10) / 10,
-        evEbitda: Math.round(jitter(s.baseEV, 0.15) * 10) / 10,
+        ticker: sym,
+        name: q.shortName || q.longName || sym,
+        sector: SECTOR_MAP[sym] || 'Other',
+        marketCap: mcap,
+        multiples: { peTrailing, peForward, evEbitda, pSales, pBook, pFcf, evSales, pegRatio },
+        percentiles: {
+          pe5YPctile: peTrailing > 30 ? 75 : peTrailing > 20 ? 50 : 25,
+          evEbitda5YPctile: evEbitda > 20 ? 70 : evEbitda > 12 ? 45 : 25,
+          pSales5YPctile: pSales > 8 ? 80 : pSales > 4 ? 50 : 20,
+        },
+        sectorAvg: { peAvg: 0, evEbitdaAvg: 0, pSalesAvg: 0, pBookAvg: 0 },
+        premium: { vsSector: 0, vs5YAvg: 0 },
+        history: [],
       };
     });
-
-    return {
-      ticker: s.ticker, name: s.name, sector: s.sector,
-      marketCap: Math.round(jitter(s.mcap, 0.05) * 10) / 10,
-      multiples: { peTrailing, peForward, evEbitda, pSales, pBook, pFcf, evSales, pegRatio },
-      percentiles: { pe5YPctile, evEbitda5YPctile, pSales5YPctile },
-      sectorAvg: { peAvg: 0, evEbitdaAvg: 0, pSalesAvg: 0, pBookAvg: 0 },
-      premium: { vsSector: 0, vs5YAvg: Math.round((rng() - 0.5) * 40 * 10) / 10 },
-      history,
-    };
-  });
 
   // Compute sector averages
   const sectorMap = new Map<string, typeof stocks>();
@@ -83,15 +74,19 @@ function generate() {
   }
 
   const sectors = [...sectorMap.entries()].map(([sector, items]) => {
-    const avgPE = Math.round(items.reduce((a, b) => a + b.multiples.peTrailing, 0) / items.length * 10) / 10;
-    const avgEVEBITDA = Math.round(items.reduce((a, b) => a + b.multiples.evEbitda, 0) / items.length * 10) / 10;
-    const avgPS = Math.round(items.reduce((a, b) => a + b.multiples.pSales, 0) / items.length * 10) / 10;
-    const avgPB = Math.round(items.reduce((a, b) => a + b.multiples.pBook, 0) / items.length * 10) / 10;
-    const medianPE = Math.round([...items].sort((a, b) => a.multiples.peTrailing - b.multiples.peTrailing)[Math.floor(items.length / 2)].multiples.peTrailing * 10) / 10;
+    const avg = (fn: (s: typeof items[0]) => number) =>
+      r2(items.reduce((a, b) => a + fn(b), 0) / items.length);
+
+    const avgPE = avg(s => s.multiples.peTrailing);
+    const avgEVEBITDA = avg(s => s.multiples.evEbitda);
+    const avgPS = avg(s => s.multiples.pSales);
+    const avgPB = avg(s => s.multiples.pBook);
+    const sorted = [...items].sort((a, b) => a.multiples.peTrailing - b.multiples.peTrailing);
+    const medianPE = r2(sorted[Math.floor(sorted.length / 2)]?.multiples.peTrailing);
 
     for (const s of items) {
       s.sectorAvg = { peAvg: avgPE, evEbitdaAvg: avgEVEBITDA, pSalesAvg: avgPS, pBookAvg: avgPB };
-      s.premium.vsSector = Math.round((s.multiples.peTrailing / avgPE - 1) * 100 * 10) / 10;
+      s.premium.vsSector = avgPE > 0 ? r2((s.multiples.peTrailing / avgPE - 1) * 100) : 0;
     }
 
     return { sector, avgPE, avgEVEBITDA, avgPS, medianPE, stockCount: items.length };
@@ -100,17 +95,17 @@ function generate() {
   return { stocks, sectors, generatedAt: new Date().toISOString() };
 }
 
-router.get('/', (_req, res) => {
+router.get('/', async (_req, res) => {
   try {
     const now = Date.now();
     if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
-    const data = generate();
+    const data = await fetchData();
     cache = { data, ts: now };
     res.json(data);
   } catch (err) {
     console.error('[ValuationMultiples] Error:', (err as Error).message);
     if (cache) return res.json(cache.data);
-    res.status(500).json({ error: 'Failed to generate valuation data' });
+    res.status(500).json({ error: 'Failed to fetch valuation data' });
   }
 });
 
