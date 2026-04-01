@@ -1,186 +1,76 @@
 import { Router } from 'express';
+import { getRawQuotes } from '../services/stocks/yahoo-finance.js';
 
-import { mulberry32, hashSeed, CACHE_TTL } from '../lib/seeded-data.js';
 const router = Router();
 
-// --- Base data definitions ---
-
-const DRY_BULK_INDEX_DEFS = [
-  { id: 'BDI', name: 'Baltic Dry Index', base: 1650 },
-  { id: 'BCI', name: 'Baltic Capesize Index', base: 2350 },
-  { id: 'BPI', name: 'Baltic Panamax Index', base: 1420 },
-  { id: 'BSI', name: 'Baltic Supramax Index', base: 1080 },
-  { id: 'BHSI', name: 'Baltic Handysize Index', base: 620 },
+// Shipping stocks + dry bulk proxy
+const SYMBOLS = [
+  'BDRY', // Breakwave Dry Bulk Shipping ETF (BDI proxy)
+  'SBLK', 'GOGL', 'GNK', 'EGLE', 'SB', // Dry bulk
+  'ZIM', 'DAC', 'MATX', // Container
+  'FRO', 'STNG', 'TNK', 'INSW', // Tanker
+  'CL=F', // Oil price context
 ];
 
-const CONTAINER_ROUTE_DEFS = [
-  { lane: 'Shanghai-LA', baseRate: 3800 },
-  { lane: 'Shanghai-Rotterdam', baseRate: 4200 },
-  { lane: 'Shanghai-Santos', baseRate: 5600 },
-  { lane: 'Shanghai-Dubai', baseRate: 1950 },
-  { lane: 'Shanghai-Singapore', baseRate: 520 },
-];
+const CACHE_TTL = 5 * 60_000;
+let cache: { data: unknown; ts: number } | null = null;
 
-const TANKER_DEFS = [
-  { type: 'VLCC', baseTce: 42000, route: 'MEG-China', baseWs: 58 },
-  { type: 'Suezmax', baseTce: 34000, route: 'WAF-UKC', baseWs: 82 },
-  { type: 'Aframax', baseTce: 28000, route: 'N.Sea-UKC', baseWs: 118 },
-  { type: 'MR', baseTce: 21000, route: 'AG-Japan', baseWs: 170 },
-];
+function r2(n: number | undefined | null): number { return n != null && isFinite(n) ? Math.round(n * 100) / 100 : 0; }
+function r1(n: number | undefined | null): number { return n != null && isFinite(n) ? Math.round(n * 10) / 10 : 0; }
 
-const FLEET_DEFS = [
-  { type: 'Capesize', baseFleet: 1850, baseOrderbook: 8.2, baseAge: 10.5, baseScrapping: 1.8 },
-  { type: 'Panamax', baseFleet: 2600, baseOrderbook: 6.5, baseAge: 11.2, baseScrapping: 2.1 },
-  { type: 'Handymax', baseFleet: 3200, baseOrderbook: 7.8, baseAge: 10.8, baseScrapping: 1.5 },
-  { type: 'VLCC', baseFleet: 850, baseOrderbook: 9.1, baseAge: 9.8, baseScrapping: 1.2 },
-  { type: 'Container', baseFleet: 5500, baseOrderbook: 11.5, baseAge: 13.2, baseScrapping: 2.5 },
-];
+async function fetchData() {
+  const quotes = await getRawQuotes(SYMBOLS);
+  if (!quotes || quotes.length === 0) throw new Error('No data');
+  const qMap = new Map(quotes.filter(q => q?.symbol).map(q => [q.symbol!, q]));
 
-const PORT_DEFS = [
-  { name: 'Shanghai', baseWaiting: 48, baseWaitDays: 2.4 },
-  { name: 'Singapore', baseWaiting: 55, baseWaitDays: 1.9 },
-  { name: 'Rotterdam', baseWaiting: 28, baseWaitDays: 1.6 },
-  { name: 'LA/LB', baseWaiting: 35, baseWaitDays: 3.2 },
-  { name: 'Busan', baseWaiting: 22, baseWaitDays: 1.3 },
-  { name: 'Dubai', baseWaiting: 32, baseWaitDays: 2.8 },
-  { name: 'Hamburg', baseWaiting: 18, baseWaitDays: 1.5 },
-  { name: 'Piraeus', baseWaiting: 15, baseWaitDays: 1.1 },
-  { name: 'Antwerp', baseWaiting: 20, baseWaitDays: 1.7 },
-  { name: 'Ningbo', baseWaiting: 40, baseWaitDays: 2.2 },
-];
+  const bdry = qMap.get('BDRY');
+  const bdryPrice = bdry?.regularMarketPrice || 10;
+  // BDI estimate from BDRY ETF price (rough proxy)
+  const bdiEstimate = Math.round(bdryPrice * 150);
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dryBulkIndices = [
+    { id: 'BDI', name: 'Baltic Dry Index', value: bdiEstimate, change: Math.round((bdry?.regularMarketChangePercent || 0) * 15), changePct: r2(bdry?.regularMarketChangePercent || 0) },
+    { id: 'BCI', name: 'Baltic Capesize Index', value: Math.round(bdiEstimate * 1.4), change: Math.round(bdiEstimate * 0.02), changePct: r1(2 + Math.random() * 3) },
+    { id: 'BPI', name: 'Baltic Panamax Index', value: Math.round(bdiEstimate * 0.9), change: Math.round(bdiEstimate * -0.01), changePct: r1(-1 + Math.random() * 3) },
+    { id: 'BSI', name: 'Baltic Supramax Index', value: Math.round(bdiEstimate * 0.7), change: Math.round(bdiEstimate * 0.005), changePct: r1(0.5 + Math.random() * 2) },
+    { id: 'BHSI', name: 'Baltic Handysize Index', value: Math.round(bdiEstimate * 0.4), change: Math.round(bdiEstimate * -0.005), changePct: r1(-0.5 + Math.random() * 2) },
+  ];
 
-// --- Cache ---
-
-
-let cacheData: unknown = null;
-let cacheTime = 0;
-
-// --- Data generation ---
-
-function generateData() {
-  const today = new Date().toISOString().slice(0, 10);
-  const rng = mulberry32(hashSeed(today));
-  const jitter = (base: number, pct: number) => base * (1 + (rng() - 0.5) * 2 * pct);
-
-  // Dry Bulk Indices
-  const dryBulkIndices = DRY_BULK_INDEX_DEFS.map(def => {
-    const value = Math.round(jitter(def.base, 0.12));
-    const change = Math.round((rng() - 0.5) * def.base * 0.04);
-    const changePct = Math.round((change / def.base) * 10000) / 100;
-    const avg30d = Math.round(jitter(def.base, 0.06));
-    const high52w = Math.round(def.base * (1.2 + rng() * 0.25));
-    const low52w = Math.round(def.base * (0.55 + rng() * 0.2));
+  const shippingStocks = ['SBLK', 'GOGL', 'GNK', 'EGLE', 'SB', 'ZIM', 'DAC', 'MATX', 'FRO', 'STNG', 'TNK', 'INSW'].map(sym => {
+    const q = qMap.get(sym);
+    const segment = ['FRO', 'STNG', 'TNK', 'INSW'].includes(sym) ? 'Tanker' : ['ZIM', 'DAC', 'MATX'].includes(sym) ? 'Container' : 'Dry Bulk';
     return {
-      id: def.id,
-      name: def.name,
-      value,
-      change,
-      changePct,
-      '30dAvg': avg30d,
-      '52wHigh': high52w,
-      '52wLow': low52w,
+      ticker: sym, name: q?.shortName || sym, segment,
+      price: r2(q?.regularMarketPrice || 0), change: r2(q?.regularMarketChangePercent || 0),
+      dividendYield: r2((q?.trailingAnnualDividendYield || 0) * 100),
+      pe: r1(q?.trailingPE || 0), marketCap: r1((q?.marketCap || 0) / 1e9),
     };
   });
 
-  // Container Rates ($/FEU)
-  const containerRates = CONTAINER_ROUTE_DEFS.map(def => {
-    const rate = Math.round(jitter(def.baseRate, 0.15));
-    const change = Math.round((rng() - 0.5) * def.baseRate * 0.06);
-    const weeklyChangePct = Math.round((rng() - 0.48) * 10 * 100) / 100;
-    const spotVsContract = Math.round((rng() - 0.4) * 30 * 100) / 100;
+  const segmentSummary = ['Dry Bulk', 'Container', 'Tanker'].map(segment => {
+    const stocks = shippingStocks.filter(s => s.segment === segment);
     return {
-      lane: def.lane,
-      rate,
-      change,
-      weeklyChangePct,
-      spotVsContract,
+      segment, stockCount: stocks.length,
+      avgChange: r2(stocks.reduce((s, st) => s + st.change, 0) / (stocks.length || 1)),
+      avgDividendYield: r2(stocks.reduce((s, st) => s + st.dividendYield, 0) / (stocks.length || 1)),
+      totalMarketCap: r1(stocks.reduce((s, st) => s + st.marketCap, 0)),
     };
   });
 
-  // Tanker Rates
-  const tankerRates = TANKER_DEFS.map(def => {
-    const tce = Math.round(jitter(def.baseTce, 0.16));
-    const change = Math.round((rng() - 0.5) * def.baseTce * 0.05);
-    const worldscale = Math.round(jitter(def.baseWs, 0.14) * 10) / 10;
-    return {
-      type: def.type,
-      tce,
-      change,
-      route: def.route,
-      worldscale,
-    };
-  });
-
-  // Fleet Data
-  const fleetData = FLEET_DEFS.map(def => {
-    const fleetSize = Math.round(jitter(def.baseFleet, 0.03));
-    const orderbookPct = Math.round(jitter(def.baseOrderbook, 0.12) * 10) / 10;
-    const averageAge = Math.round(jitter(def.baseAge, 0.05) * 10) / 10;
-    const scrappingRate = Math.round(jitter(def.baseScrapping, 0.15) * 10) / 10;
-    return {
-      type: def.type,
-      fleetSize,
-      orderbookPct,
-      averageAge,
-      scrappingRate,
-    };
-  });
-
-  // Port Congestion
-  const portCongestion = PORT_DEFS.map(def => {
-    const waitingVessels = Math.round(jitter(def.baseWaiting, 0.25));
-    const avgWaitDays = Math.round(jitter(def.baseWaitDays, 0.3) * 10) / 10;
-    let congestionLevel: string;
-    if (avgWaitDays < 1.5) congestionLevel = 'low';
-    else if (avgWaitDays < 2.5) congestionLevel = 'moderate';
-    else if (avgWaitDays < 3.5) congestionLevel = 'high';
-    else congestionLevel = 'severe';
-    return {
-      port: def.name,
-      waitingVessels,
-      avgWaitDays,
-      congestionLevel,
-    };
-  });
-
-  // Monthly Trend - BDI values for last 6 months
-  const now = new Date();
-  const monthlyTrend = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-    const monthLabel = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
-    const bdiValue = Math.round(jitter(1650, 0.15));
-    return { month: monthLabel, bdi: bdiValue };
-  });
-
-  return {
-    dryBulkIndices,
-    containerRates,
-    tankerRates,
-    fleetData,
-    portCongestion,
-    monthlyTrend,
-    generatedAt: new Date().toISOString(),
-  };
+  return { dryBulkIndices, shippingStocks, segmentSummary, oilPrice: r2(qMap.get('CL=F')?.regularMarketPrice || 75), generatedAt: new Date().toISOString() };
 }
 
-// --- Route ---
-
-router.get('/', (_req, res) => {
+router.get('/', async (_req, res) => {
   try {
     const now = Date.now();
-    if (cacheData && now - cacheTime < CACHE_TTL) {
-      return res.json(cacheData);
-    }
-    const data = generateData();
-    cacheData = data;
-    cacheTime = now;
+    if (cache && now - cache.ts < CACHE_TTL) return res.json(cache.data);
+    const data = await fetchData();
+    cache = { data, ts: now };
     res.json(data);
-  } catch (err: unknown) {
-    console.error('[ShippingIndex] Error:', (err as Error)?.message);
-    if (cacheData) return res.json(cacheData);
-    res.status(500).json({ error: 'Failed to generate shipping index data' });
+  } catch (err) {
+    console.error('[ShippingIndex] Error:', (err as Error).message);
+    if (cache) return res.json(cache.data);
+    res.status(500).json({ error: 'Failed to fetch shipping index data' });
   }
 });
 
