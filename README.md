@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="https://neuberg.ai/favicon.svg" width="80" height="80" alt="Neuberg" />
+  <img src="client/public/logo-512.png" width="120" height="120" alt="Neuberg" />
 </p>
 
 <h1 align="center">Neuberg</h1>
 
 <p align="center">
-  <strong>The open-source Bloomberg Terminal for the internet age.</strong><br/>
-  516 panels. Real-time data. One dashboard.
+  <strong>The open-source Bloomberg Terminal.</strong><br/>
+  516 panels. Real-time data. Trade everything.
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/Panels-516-ff9900" alt="516 Panels" />
   <img src="https://img.shields.io/badge/Data-Real--time_Yahoo_Finance-00d4aa" alt="Real-time Data" />
   <img src="https://img.shields.io/badge/Languages-6-blue" alt="6 Languages" />
-  <img src="https://img.shields.io/badge/Assets-Stocks_|_Crypto_|_FX_|_Commodities_|_Bonds-purple" alt="Multi-Asset" />
+  <img src="https://img.shields.io/badge/Trade-Stocks_|_Crypto_|_Prediction_Markets-ff3366" alt="Trade Everything" />
 </p>
 
 ---
@@ -28,127 +28,92 @@
 
 Neuberg is building the **all-in-one financial terminal** that Bloomberg charges $24,000/year for — but open-source, web-based, and accessible to everyone.
 
-We aim to cover **every Bloomberg function** in a single, customizable dashboard: from equities and fixed income to derivatives, commodities, FX, credit, macro, and alternative data. Today we ship **516 drag-and-drop panels** powered by real market data, with more added every week.
+We aim to cover **every Bloomberg function** in a single, customizable dashboard: equities, fixed income, derivatives, commodities, FX, credit, macro, and alternative data. Today we ship **516 drag-and-drop panels** powered by real market data, with more added every week.
+
+**You can trade directly from the terminal** — US stocks via Alpaca, 49 crypto perpetual contracts via Hyperliquid (including stock perps like AAPL, TSLA, NVDA), and prediction markets via Polymarket. All from one screen.
 
 > **Our mission:** Democratize institutional-grade financial intelligence.
 
-### Key Differentiators
+### Why Neuberg?
 
 | | Bloomberg Terminal | Neuberg |
 |---|---|---|
-| **Price** | $24,000/year | Free & open-source |
+| **Price** | $24,000/year | Open-source |
 | **Access** | Dedicated hardware | Any browser |
 | **Customization** | Limited | Fully drag-and-drop DIY |
-| **AI Integration** | Separate product | Built-in sentiment & analysis |
+| **Trading** | Separate systems | Built-in: stocks, crypto, predictions |
+| **AI** | Separate product | Built-in sentiment & analysis |
 | **Prediction Markets** | None | Native Polymarket integration |
-| **Crypto** | Limited | Full DeFi + CEX coverage |
+| **Crypto / DeFi** | Limited | Full perpetuals + on-chain |
 
 ---
 
-## Features
+## Trade Everything
 
-### Market Data — 516 Panels
+Neuberg isn't just a data terminal — it's a **trading platform**.
 
-Every panel fetches **real market data** from Yahoo Finance, with lazy-loading (data is only fetched when you open a panel).
+- **US Stocks** — Paper & live trading via Alpaca (4,000+ symbols, market/limit orders, real-time P&L)
+- **Crypto Perpetuals** — Hyperliquid integration with 49 perps including stock perps (AAPL, TSLA, NVDA, META, GOOGL — trade stocks 24/7 with leverage)
+- **Prediction Markets** — Polymarket with full orderbook, EIP-712 wallet auth, and position tracking
+- **Web3 Wallet** — RainbowKit + wagmi (Polygon, Arbitrum, Mainnet)
+
+All trading interfaces are built into the drag-and-drop panel system. Open a chart next to your orderbook next to the news feed — build your perfect trading layout.
+
+---
+
+## 516 Market Data Panels
+
+Every panel fetches **real market data** from Yahoo Finance. Panels only load when you open them — zero API calls for panels you don't use.
 
 <details>
 <summary><strong>Equities (80+ panels)</strong></summary>
 
-- Stock screener, valuation multiples, earnings calendar & whisper
-- Insider transactions, institutional ownership, short squeeze monitor
-- Equity pairs trading, factor rotation, style box analysis
-- Market breadth, sector rotation, index rebalance tracking
-- Dark pool volume estimates, block trade detection
-- IPO calendar, SPAC monitor, shareholder activism
+Stock screener, valuation multiples, earnings calendar & whisper, insider transactions, institutional ownership, short squeeze monitor, equity pairs trading, factor rotation, style box analysis, market breadth, sector rotation, index rebalance tracking, dark pool volume estimates, block trade detection, IPO calendar, SPAC monitor, shareholder activism, dividend calendar & capture strategies.
 </details>
 
 <details>
 <summary><strong>Fixed Income & Credit (90+ panels)</strong></summary>
 
-- Full yield curve (3M to 30Y) with real Treasury yields
-- Bond ladder, duration management, relative value
-- Credit spreads (IG, HY, EM, Muni) with rich/cheap signals
-- CLO tranche analytics, ABS/MBS monitor, covered bonds
-- CDS index monitor, credit impulse, default risk
-- Convertible bond analyzer with delta and bond floor
+Full yield curve (3M to 30Y) with real Treasury yields, bond ladder, duration management, relative value analysis, credit spreads (IG, HY, EM, Muni) with rich/cheap signals, CLO tranche analytics, ABS/MBS monitor, covered bonds, CDS index monitor, credit impulse, default risk, convertible bond analyzer with delta and bond floor, leveraged loans, distressed debt.
 </details>
 
 <details>
 <summary><strong>FX & Rates (40+ panels)</strong></summary>
 
-- 7 major + EM currency pairs with real-time rates
-- FX carry trade monitor with Sharpe ratios
-- FX option vol matrix, vol surface, risk reversals
-- Interest rate swap curves, swaption vol surface
-- Central bank watch (Fed, ECB, BOJ, BOE, RBA)
-- Rate probability from yield curve slope
+7 major + EM currency pairs with real-time rates, FX carry trade monitor with Sharpe ratios, FX option vol matrix, vol surface, risk reversals, interest rate swap curves, swaption vol surface, central bank watch (Fed, ECB, BOJ, BOE, RBA), rate probability from yield curve slope, cross-currency basis swaps.
 </details>
 
 <details>
 <summary><strong>Commodities (40+ panels)</strong></summary>
 
-- Precious metals (Gold, Silver, Platinum, Palladium) spot + ETFs
-- Energy (WTI, Brent, Natural Gas) with storage estimates
-- Agriculture (15 futures: grains, softs, livestock)
-- Industrial metals (Copper, Aluminum, Zinc, Nickel)
-- Commodity forward curves, seasonality, spread analysis
-- Shipping indices (BDI proxy via BDRY ETF)
+Precious metals (Gold, Silver, Platinum, Palladium) spot + ETFs, energy (WTI, Brent, Natural Gas) with storage estimates, agriculture (15 futures: grains, softs, livestock), industrial metals (Copper, Aluminum, Zinc, Nickel), commodity forward curves, seasonality, spread analysis (crack spread, frac spread, gold/silver ratio), shipping indices (BDI proxy).
 </details>
 
 <details>
 <summary><strong>Macro & Risk (60+ panels)</strong></summary>
 
-- GDP nowcast, recession probability, financial conditions index
-- Inflation monitor (breakevens, TIPS, commodity signals)
-- Geopolitical risk composite (VIX, gold, oil, defense)
-- Global PMI dashboard (10 countries from ETF proxies)
-- Supply chain stress, trade balance, labor market
-- Macro regime monitor (Goldilocks / Stagflation quadrant)
+GDP nowcast, recession probability, financial conditions index, inflation monitor (breakevens, TIPS, commodity signals), geopolitical risk composite, global PMI dashboard (10 countries), supply chain stress, trade balance, labor market, macro regime monitor (Goldilocks / Stagflation quadrant), fiscal deficit, central bank balance sheets, global liquidity.
 </details>
 
 <details>
 <summary><strong>Derivatives & Volatility (30+ panels)</strong></summary>
 
-- VIX-derived implied volatility for equities, FX, commodities
-- Options skew surface, variance swaps, vol arbitrage
-- Equity index futures (ES, NQ, YM, RTY) with cash basis
-- Merger arbitrage (MNA ETF + deal spreads)
-- Convertible arbitrage opportunities
+VIX-derived implied volatility for equities, FX, commodities, options skew surface, variance swaps, vol arbitrage, equity index futures (ES, NQ, YM, RTY) with cash basis, merger arbitrage (MNA ETF + deal spreads), convertible arbitrage, swaption vol surface, interest rate vol surface.
 </details>
 
 <details>
 <summary><strong>Alternative & Thematic (50+ panels)</strong></summary>
 
-- AI/Tech CapEx (17 semiconductor + cloud stocks)
-- Cybersecurity (12 stocks + HACK/CIBR ETFs)
-- Clean energy vs. fossil fuel comparison
-- Nuclear energy (uranium miners + utilities)
-- Data center infrastructure, space economy
-- ESG ratings, carbon credits, green bonds
-- Luxury collectibles, sports media rights
+AI/Tech CapEx (17 semiconductor + cloud stocks), cybersecurity (12 stocks + HACK/CIBR ETFs), clean energy vs. fossil fuel comparison, nuclear energy (uranium miners + utilities), data center infrastructure, space economy, ESG ratings, carbon credits, green bonds, luxury collectibles, sports media rights, rare earth & battery metals.
 </details>
-
-### Trading
-
-- **Stock Trading** — Alpaca paper & live trading with real-time P&L
-- **Crypto Perpetuals** — Hyperliquid integration (49 perps including stock perps)
-- **Prediction Markets** — Polymarket with orderbook, wallet auth, and position tracking
-- **Web3 Wallet** — RainbowKit + wagmi (Polygon, Arbitrum, Mainnet)
 
 ### Intelligence
 
 - **AI News Analysis** — Every article analyzed for sentiment, location, and conflict detection
 - **News Clustering** — AI groups related articles into stories
 - **Conflict Map** — Real-time war/conflict events plotted on an interactive world map
-- **Fear & Greed Index** — Real-time gauge with tick marks and historical comparison
-
-### Platform
-
-- **Drag & Drop Layout** — Arrange any combination of 516 panels via FlexLayout
+- **Fear & Greed Index** — Real-time gauge with historical comparison
 - **6 Languages** — English, Spanish, French, Japanese, Korean, Chinese
-- **Real-time WebSocket** — Live price updates with delta compression
-- **Adaptive Polling** — Background services pause when no users are connected
-- **Lazy Loading** — Panels and routes load on-demand, not at startup
 
 ---
 
@@ -163,7 +128,6 @@ Every panel fetches **real market data** from Yahoo Finance, with lazy-loading (
 | **Real-time** | WebSocket with delta compression |
 | **Charts** | TradingView lightweight-charts, MapLibre GL |
 | **Web3** | wagmi, viem, RainbowKit |
-| **Auth** | Google OAuth, email verification |
 | **Layout** | FlexLayout React (drag-and-drop panels) |
 | **Deployment** | Docker, Google Cloud Run |
 
@@ -174,24 +138,16 @@ Every panel fetches **real market data** from Yahoo Finance, with lazy-loading (
 ```bash
 git clone https://github.com/KoNananachan/Neuberg.git
 cd Neuberg
-
-# Install dependencies
 npm install
 
-# Set up environment
 cp .env.example .env
 # Edit .env with your API keys
 
-# Initialize database
 cd server && npx prisma db push && cd ..
-
-# Start development
 npm run dev
 ```
 
 Frontend: `http://localhost:5174` · Backend: `http://localhost:3001`
-
-See [.env.example](.env.example) for all configuration options.
 
 ---
 
@@ -207,73 +163,27 @@ Neuberg/
 │       │   ├── panels/        # 516 panel components (lazy-loaded)
 │       │   └── trading/       # Orderbook, trade form, portfolio
 │       ├── i18n/              # 6-language translations (9,800+ keys)
-│       ├── realtime/          # WebSocket hook
 │       └── stores/            # Zustand state management
 ├── server/                    # Express backend
 │   ├── prisma/                # Schema (SQLite)
 │   └── src/
-│       ├── config/            # Zod-validated environment
-│       ├── middleware/         # Auth, rate limiting
 │       ├── routes/            # 516 REST API endpoints (lazy-loaded)
 │       └── services/
 │           ├── ai/            # Sentiment analysis + clustering
-│           ├── scraper/       # News pipeline (adaptive polling)
+│           ├── scraper/       # News pipeline
 │           ├── stocks/        # Yahoo Finance, insider tracking
-│           └── websocket/     # WS server with client-aware broadcasting
+│           └── websocket/     # Real-time price updates
 ├── Dockerfile                 # Multi-stage production build
 └── LICENSE                    # BSL 1.1 (Bauhinia AI Limited)
 ```
-
-### Cost-Efficient Design
-
-Neuberg is designed to minimize Cloud Run costs:
-
-- **Lazy routes** — 516 server routes load on first request, not at startup
-- **Client-aware polling** — All background services check WebSocket client count; with 0 users, Yahoo Finance makes **0 API calls**
-- **Adaptive scraper** — News polling slows from 60s to 5min when idle
-- **React Query staleTime** — 10min default prevents redundant client requests
-- **Tab-aware refresh** — `refetchIntervalInBackground: false` stops all polling when the browser tab is hidden
-
----
-
-## Deployment
-
-```bash
-# Build & push container image
-gcloud builds submit --tag gcr.io/PROJECT_ID/neuberg
-
-# Deploy to Cloud Run
-gcloud run deploy neuberg \
-  --image gcr.io/PROJECT_ID/neuberg \
-  --platform managed --region us-central1 \
-  --allow-unauthenticated --port 8080 \
-  --memory 1Gi --cpu 1 \
-  --min-instances 1 --max-instances 3
-```
-
-Environment variables are injected via Cloud Run (not baked into the image). See [CLAUDE.md](CLAUDE.md) for the full list.
-
----
-
-## Roadmap
-
-- [ ] Real-time options chain data
-- [ ] Portfolio analytics with Sharpe/Sortino
-- [ ] Backtesting engine
-- [ ] Mobile-responsive layout
-- [ ] Plugin system for custom panels
-- [ ] Self-hosted data providers (reduce Yahoo Finance dependency)
-- [ ] API documentation (OpenAPI spec)
 
 ---
 
 ## Community
 
-- **Live Demo** — [neuberg.ai](https://neuberg.ai)
+- **Live Terminal** — [neuberg.ai](https://neuberg.ai)
 - **Discord** — [discord.gg/6dr83qcJ](https://discord.gg/6dr83qcJ)
 - **Issues** — [GitHub Issues](https://github.com/KoNananachan/Neuberg/issues)
-
----
 
 ## License
 
@@ -281,10 +191,10 @@ Licensed under the [Business Source License 1.1](LICENSE).
 
 **Licensor:** Bauhinia AI Limited
 
-You may view, fork, and modify the code for non-commercial purposes. Commercial use requires a separate license from the licensor. See [LICENSE](LICENSE) for full terms.
+You may view, fork, and modify the code for non-commercial purposes. Commercial use requires a separate license. See [LICENSE](LICENSE) for details.
 
 ---
 
 <p align="center">
-  <sub>Built with real market data. Not financial advice. Use at your own risk.</sub>
+  <sub>Built with real market data. Not financial advice. Trade at your own risk.</sub>
 </p>
