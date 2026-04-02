@@ -65,11 +65,20 @@ const server = app.listen(env.PORT, async () => {
     }
   }, 60 * 60 * 1000));
 
-  // Periodic database backup to GCS
+  // Periodic database backup to GCS (adaptive: normal interval when active, 60min when idle)
   if (env.GCS_BUCKET) {
-    const intervalMs = env.GCS_BACKUP_INTERVAL_MINUTES * 60 * 1000;
-    intervals.push(setInterval(() => backupDatabase(), intervalMs));
-    console.log(`[GCS] Backup scheduled every ${env.GCS_BACKUP_INTERVAL_MINUTES} minutes`);
+    const activeIntervalMs = env.GCS_BACKUP_INTERVAL_MINUTES * 60 * 1000;
+    const idleIntervalMs = 60 * 60 * 1000; // 60 min when no users
+    let lastBackupTime = Date.now();
+    intervals.push(setInterval(() => {
+      const { getClientCount } = require('./services/websocket/ws-server.js');
+      const interval = getClientCount() > 0 ? activeIntervalMs : idleIntervalMs;
+      if (Date.now() - lastBackupTime >= interval) {
+        lastBackupTime = Date.now();
+        backupDatabase();
+      }
+    }, activeIntervalMs));
+    console.log(`[GCS] Backup scheduled every ${env.GCS_BACKUP_INTERVAL_MINUTES}min (active) / 60min (idle)`);
   }
 
   console.log('[Server] All services started');
