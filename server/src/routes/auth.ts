@@ -126,11 +126,32 @@ router.post('/email/send', async (req, res) => {
       return res.status(400).json({ error: 'Valid email required' });
     }
 
+    const normalizedEmail = email.toLowerCase();
+
+    // Prevent duplicate sends: check if a valid code was sent in the last 60 seconds
+    const recentCode = await prisma.verificationCode.findFirst({
+      where: {
+        email: normalizedEmail,
+        used: false,
+        expiresAt: { gt: new Date() },
+        createdAt: { gt: new Date(Date.now() - 60 * 1000) }, // within last 60s
+      },
+    });
+    if (recentCode) {
+      return res.json({ ok: true }); // Already sent recently, don't send again
+    }
+
+    // Invalidate any previous unused codes for this email
+    await prisma.verificationCode.updateMany({
+      where: { email: normalizedEmail, used: false },
+      data: { used: true },
+    });
+
     const code = String(crypto.randomInt(100000, 999999));
 
     await prisma.verificationCode.create({
       data: {
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         code,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min
       },
@@ -138,21 +159,26 @@ router.post('/email/send', async (req, res) => {
 
     // Send via Resend API
     if (env.RESEND_API_KEY) {
-      await fetch('https://api.resend.com/emails', {
+      const resp = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${env.RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: env.RESEND_FROM_EMAIL,
-          to: email,
+          from: env.RESEND_FROM_EMAIL || 'noreply@neuberg.ai',
+          to: normalizedEmail,
           subject: 'Neuberg - Verification Code',
           html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code expires in 10 minutes.</p>`,
         }),
       });
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => 'unknown');
+        console.error('[Auth] Resend API error:', resp.status, errBody);
+        return res.status(502).json({ error: 'Failed to send email. Please try again.' });
+      }
     } else {
-      console.log('[Auth] Verification code generated (Resend not configured)');
+      console.log(`[Auth] Verification code for ${normalizedEmail}: ${code} (Resend not configured)`);
     }
 
     res.json({ ok: true });
