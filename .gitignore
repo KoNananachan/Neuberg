@@ -41,3 +41,4 @@ D:\\*
 # Proprietary AI/LLM services (not open source)
 server/src/services/ai/
 server/src/routes/chat.ts
+CLAUDE.md
