@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-04-01
+
+### The Bloomberg Terminal Release
+
+The biggest update since launch: Neuberg goes from 30 panels to **516 panels**, with ALL panels now powered by real Yahoo Finance market data.
+
+### Added
+- **486 new market data panels** across fixed income, derivatives, commodities, FX, credit, macro, alternative data, and more
+- **getRawQuotes()** Yahoo Finance API — full quote field access for all panels
+- **Bloomberg-style 10-panel default layout** — data-first experience with Technical Chart as hero panel
+- **"DIY with 500+ Panels"** CTA button in top bar
+- **Fear & Greed gauge redesign** — tick marks, tapered needle, compact layout
+
+### Changed
+- **ALL 394 panels now use real Yahoo Finance data** — zero PRNG/seeded fake data remaining
+- Default layout simplified from 19 panels to 10 for cleaner UX
+- Economic Calendar defaults to US filter
+- World Map defaults to global zoom (zoom 0)
+- Removed OnboardingTooltip component (replaced by inline CTA)
+
+### Performance
+- Lazy-load all 516 panel routes — startup memory and cold start time drastically reduced
+- 6x reduction in API calls via intelligent caching and fetch-on-open
+- WebSocket delta broadcasts — only send changed data
+- HTTP compression (gzip/brotli) on all responses
+- 12-hour server cache TTL for static routes
+- Client-side staleTime on all React Query hooks
+- Background tracker pause when no WebSocket clients connected
+- framer-motion code-split into separate chunk
+- Docker image optimized — skip client dependencies in production
+
+### Security
+- XSS prevention: banned innerHTML/dangerouslySetInnerHTML
+- Alpaca credentials encrypted at rest (AES-256-GCM)
+- Auth bypass and open redirect fixes
+- Brute-force protection on auth endpoints
+- Cryptographically secure 2FA codes
+- Input validation with Zod on all POST/PUT endpoints
+
+### Infrastructure
+- Rebranded to **Neuberg** — new domain neuberg.ai
+- BSL 1.1 license (perpetual, non-commercial) under Bauhinia AI Limited
+- GDPR compliance: Privacy Policy, Terms of Service
+- 301 redirects from old domains
+- Removed dead code: unused dependencies, stale translation keys
+- Adaptive polling: scraper slows to 5min when no users connected
+- GCS backup reduces to 60min interval when idle
+
+### Removed
+- All PRNG/seeded-data fake data generation code (~170,000 lines deleted)
+- OnboardingTooltip component
+- Unused yahoo-finance2 dependency
+- CI workflow (was failing due to missing workflow scope)
+- CLAUDE.md from public repo (moved to .gitignore)
+
 ## [0.11.0] - 2026-03-06
 
 ### Changed
