@@ -1,5 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
-import { broadcastCalendarRelease, getClientCount } from '../websocket/ws-server.js';
+import { broadcastCalendarRelease } from '../websocket/ws-server.js';
 import { fetchEconomicCalendar } from './fmp-calendar.js';
 
 const POLL_INTERVAL = 15 * 60_000; // 15 minutes
@@ -10,8 +10,6 @@ function toDateString(d: Date): string {
 }
 
 async function pollCalendar() {
-  // Skip when no clients are connected
-  if (getClientCount() === 0) return;
   try {
     const now = new Date();
     const from = toDateString(now);
