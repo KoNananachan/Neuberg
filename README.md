@@ -11,7 +11,6 @@
 
 <p align="center">
   <a href="https://neuberg.ai"><img src="https://img.shields.io/badge/Live-neuberg.ai-ff9900?style=for-the-badge" alt="Live Demo" /></a>
-  <a href="https://discord.gg/6dr83qcJ"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL_1.1-yellow?style=for-the-badge" alt="License" /></a>
 </p>
 
@@ -182,7 +181,6 @@ Neuberg/
 ## Community
 
 - **Live Terminal** — [neuberg.ai](https://neuberg.ai)
-- **Discord** — [discord.gg/6dr83qcJ](https://discord.gg/6dr83qcJ)
 - **Issues** — [GitHub Issues](https://github.com/KoNananachan/Neuberg/issues)
 
 ## License
