@@ -1,6 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
 import { getQuotes } from './yahoo-finance.js';
-import { broadcastQuotes, getClientCount } from '../websocket/ws-server.js';
+import { broadcastQuotes } from '../websocket/ws-server.js';
 import { evaluateAlerts } from '../alerts/alert-evaluator.js';
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -8,8 +8,6 @@ let isRefreshing = false;
 
 async function refreshQuotes() {
   if (isRefreshing) return;
-  // Skip when no clients are connected (saves Yahoo Finance API calls)
-  if (getClientCount() === 0) return;
   isRefreshing = true;
   try {
     const tracked = await prisma.trackedStock.findMany({
