@@ -2115,7 +2115,7 @@ export const ALL_PANEL_IDS = Object.values(PANEL_IDS);
 
 /** Panel IDs that exist in the DEFAULT_LAYOUT (core panels shown on first load) */
 const DEFAULT_PANEL_IDS: Set<string> = new Set([
-  PANEL_IDS.NEWS, PANEL_IDS.MAP, PANEL_IDS.TECHNICAL_CHART,
+  PANEL_IDS.NEWS, PANEL_IDS.LIVE_STREAMS, PANEL_IDS.TECHNICAL_CHART,
   PANEL_IDS.STOCKS, PANEL_IDS.INSIDERS, PANEL_IDS.MARKET_MOVERS,
   PANEL_IDS.HEAT_MAP, PANEL_IDS.MACRO_HEATMAP,
   PANEL_IDS.ECON_CALENDAR,
@@ -2127,14 +2127,14 @@ const DEFAULT_PANEL_IDS: Set<string> = new Set([
  *
  * +-- 16% ---+------------ 52% --------------------+--------- 32% ---------+
  * |           |                                      |                       |
- * | NEWS      | TECHNICAL CHART                      | HEAT MAP              |
- * | FEED      |                                      | (tab: MACRO HEATMAP)  |
+ * | HEAT MAP  | TECHNICAL CHART                      | NEWS FEED             |
+ * | (MACRO)   |                                      |                       |
  * |           |                                      |                       |
  * | (60%)     | (55%)                                | (55%)                 |
  * |           +-------------------+-----------------++                       |
  * +-----------+ MARKET WATCH      | ECON CALENDAR   |                       |
- * | WORLD MAP | (tab: INSIDERS)   |                  | STOCK TRADING         |
- * |           | (tab: MOVERS)     |                  | (tab: PREDICTION)     |
+ * | LIVE      | (tab: INSIDERS)   |                  | STOCK TRADING         |
+ * | STREAMS   | (tab: MOVERS)     |                  | (tab: PREDICTION)     |
  * | (40%)     | (55%)             | (45%)     (45%) | (45%)                 |
  * +-----------+-------------------+-----------------+-----------------------+
  */
@@ -2154,7 +2154,7 @@ const DEFAULT_LAYOUT: IJsonModel = {
     type: 'row',
     weight: 100,
     children: [
-      // Left column (16%): News Feed + World Map
+      // Left column (16%): Heat Map + Live Streams
       {
         type: 'row',
         weight: 16,
@@ -2163,14 +2163,15 @@ const DEFAULT_LAYOUT: IJsonModel = {
             type: 'tabset',
             weight: 60,
             children: [
-              { type: 'tab', name: 'NEWS FEED', component: PANEL_IDS.NEWS, id: PANEL_IDS.NEWS },
+              { type: 'tab', name: 'HEAT MAP', component: PANEL_IDS.HEAT_MAP, id: PANEL_IDS.HEAT_MAP },
+              { type: 'tab', name: 'GLOBAL MACRO HEATMAP', component: PANEL_IDS.MACRO_HEATMAP, id: PANEL_IDS.MACRO_HEATMAP },
             ],
           },
           {
             type: 'tabset',
             weight: 40,
             children: [
-              { type: 'tab', name: 'WORLD MAP', component: PANEL_IDS.MAP, id: PANEL_IDS.MAP },
+              { type: 'tab', name: 'LIVE STREAMS', component: PANEL_IDS.LIVE_STREAMS, id: PANEL_IDS.LIVE_STREAMS },
             ],
           },
         ],
@@ -2213,18 +2214,17 @@ const DEFAULT_LAYOUT: IJsonModel = {
           },
         ],
       },
-      // Right column (32%): Heatmaps on top, Trading on bottom
+      // Right column (32%): News Feed on top, Trading on bottom
       {
         type: 'row',
         weight: 32,
         children: [
-          // Top: Heat Map (visual hero)
+          // Top: News Feed
           {
             type: 'tabset',
             weight: 55,
             children: [
-              { type: 'tab', name: 'HEAT MAP', component: PANEL_IDS.HEAT_MAP, id: PANEL_IDS.HEAT_MAP },
-              { type: 'tab', name: 'GLOBAL MACRO HEATMAP', component: PANEL_IDS.MACRO_HEATMAP, id: PANEL_IDS.MACRO_HEATMAP },
+              { type: 'tab', name: 'NEWS FEED', component: PANEL_IDS.NEWS, id: PANEL_IDS.NEWS },
             ],
           },
           // Bottom: Trading
