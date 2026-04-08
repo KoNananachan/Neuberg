@@ -312,15 +312,7 @@ export function EconomicCalendarContent() {
 export function EconomicCalendarPanel() {
   const t = useT();
   return (
-    <GlassCard
-      title={
-        <span className="flex items-center gap-1.5">
-          <CalendarDays className="w-3 h-3" />
-          {t('econCalendar')}
-        </span>
-      }
-      className="h-full"
-    >
+    <GlassCard className="h-full">
       <EconomicCalendarContent />
     </GlassCard>
   );
