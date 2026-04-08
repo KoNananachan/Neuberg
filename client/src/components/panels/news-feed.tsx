@@ -15,6 +15,7 @@ import { MapPin, Zap, Layers, Search, X } from 'lucide-react';
 
 export function NewsFeed() {
   const selectedCategory = useAppStore((s) => s.selectedCategory);
+  const setSelectedCategory = useAppStore((s) => s.setSelectedCategory);
   const searchQuery = useAppStore((s) => s.searchQuery);
   const setSelectedArticleId = useAppStore((s) => s.setSelectedArticleId);
   const setArticleCount = useAppStore((s) => s.setArticleCount);
@@ -98,27 +99,6 @@ export function NewsFeed() {
 
   return (
     <GlassCard
-      headerRight={
-        <div className="flex items-center gap-2">
-          <div className="flex text-[9px] font-bold font-mono uppercase tracking-tighter">
-            <button
-              onClick={() => setForYouEnabled(false)}
-              className={`px-2 py-0.5 border transition-colors ${!forYouEnabled ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
-            >
-              {t('allNews')}
-            </button>
-            <button
-              onClick={() => setForYouEnabled(true)}
-              className={`px-2 py-0.5 border-t border-b border-r transition-colors ${forYouEnabled ? 'bg-accent text-black border-accent' : 'bg-black text-neutral border-border hover:text-white'}`}
-            >
-              {t('forYou')}
-            </button>
-          </div>
-          <div className="flex items-center gap-1.5 text-[9px] font-bold text-accent bg-black px-2 py-0.5 border border-accent uppercase tracking-tighter">
-            <Zap className="w-3 h-3" /> {t('live')}
-          </div>
-        </div>
-      }
       className="h-full flex flex-col"
     >
       <div className="bg-bearish/10 border-b border-bearish/30 px-3 py-1">
@@ -126,7 +106,29 @@ export function NewsFeed() {
           {t('newsDisclaimer')}
         </p>
       </div>
-      <CategorySidebar />
+      {/* Category bar: ALL | FOR YOU | WORLD | FINANCE | ... | LIVE */}
+      <div className="flex gap-1 px-3 py-1.5 overflow-x-auto no-scrollbar bg-black border-b border-border items-center">
+        <button
+          onClick={() => { setForYouEnabled(false); setSelectedCategory(null); }}
+          className={`shrink-0 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest transition-colors border ${
+            !forYouEnabled && !selectedCategory ? 'bg-accent text-black border-accent' : 'bg-black border-border text-neutral hover:border-accent hover:text-accent'
+          }`}
+        >
+          {t('allNews')}
+        </button>
+        <button
+          onClick={() => { setForYouEnabled(!forYouEnabled); setSelectedCategory(null); }}
+          className={`shrink-0 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest transition-colors border ${
+            forYouEnabled ? 'bg-accent text-black border-accent' : 'bg-black border-border text-neutral hover:border-accent hover:text-accent'
+          }`}
+        >
+          {t('forYou')}
+        </button>
+        <CategorySidebar />
+        <div className="shrink-0 flex items-center gap-1 text-[9px] font-bold text-accent bg-black px-2 py-0.5 border border-accent uppercase tracking-tighter ml-auto">
+          <Zap className="w-2.5 h-2.5" /> {t('live')}
+        </div>
+      </div>
 
       {/* Search Bar */}
       <div className="flex items-center gap-2 px-2 py-1 border-b border-border bg-black/60">

@@ -541,7 +541,7 @@ function LazyWrap({ children }: { children: React.ReactNode }) {
 
 const STORAGE_KEY = 'terminal-layout';
 const LAYOUT_VERSION_KEY = 'terminal-layout-version';
-const LAYOUT_VERSION = 29; // bump this when default layout changes to force reset
+const LAYOUT_VERSION = 32; // bump this when default layout changes to force reset
 
 export const PANEL_IDS = {
   NEWS: 'news-feed',
@@ -2118,23 +2118,23 @@ const DEFAULT_PANEL_IDS: Set<string> = new Set([
   PANEL_IDS.NEWS, PANEL_IDS.LIVE_STREAMS, PANEL_IDS.TECHNICAL_CHART,
   PANEL_IDS.STOCKS, PANEL_IDS.INSIDERS, PANEL_IDS.MARKET_MOVERS,
   PANEL_IDS.HEAT_MAP, PANEL_IDS.MACRO_HEATMAP,
-  PANEL_IDS.ECON_CALENDAR,
+  PANEL_IDS.AI,
   PANEL_IDS.TRADING, PANEL_IDS.PREDICTION,
 ]);
 
 /*
- * Bloomberg-style data-first layout — 10 panels across 7 visible areas:
+ * Bloomberg-style data-first layout — v30
  *
  * +-- 16% ---+------------ 52% --------------------+--------- 32% ---------+
  * |           |                                      |                       |
- * | HEAT MAP  | TECHNICAL CHART                      | NEWS FEED             |
- * | (MACRO)   |                                      |                       |
+ * | HEAT MAP  | MARKET WATCH                         | NEWS FEED             |
+ * | (MACRO)   | (tab: TECHNICAL CHART)               |                       |
  * |           |                                      |                       |
  * | (60%)     | (55%)                                | (55%)                 |
  * |           +-------------------+-----------------++                       |
- * +-----------+ MARKET WATCH      | ECON CALENDAR   |                       |
+ * +-----------+ MARKET MOVERS     | AI INSIGHTS     |                       |
  * | LIVE      | (tab: INSIDERS)   |                  | STOCK TRADING         |
- * | STREAMS   | (tab: MOVERS)     |                  | (tab: PREDICTION)     |
+ * | STREAMS   |                   |                  | (tab: PREDICTION)     |
  * | (40%)     | (55%)             | (45%)     (45%) | (45%)                 |
  * +-----------+-------------------+-----------------+-----------------------+
  */
@@ -2176,20 +2176,21 @@ const DEFAULT_LAYOUT: IJsonModel = {
           },
         ],
       },
-      // Center column (52%): Chart on top, Market data on bottom
+      // Center column (52%): Market Watch on top, Movers + AI on bottom
       {
         type: 'row',
         weight: 52,
         children: [
-          // Top: Technical Chart (hero panel)
+          // Top: Market Watch (hero), Technical Chart as secondary tab
           {
             type: 'tabset',
             weight: 55,
             children: [
+              { type: 'tab', name: 'MARKET WATCH', component: PANEL_IDS.STOCKS, id: PANEL_IDS.STOCKS },
               { type: 'tab', name: 'TECHNICAL CHART', component: PANEL_IDS.TECHNICAL_CHART, id: PANEL_IDS.TECHNICAL_CHART },
             ],
           },
-          // Bottom: Market Watch | Economic Calendar
+          // Bottom: Market Movers | AI Insights
           {
             type: 'row',
             weight: 45,
@@ -2198,16 +2199,15 @@ const DEFAULT_LAYOUT: IJsonModel = {
                 type: 'tabset',
                 weight: 55,
                 children: [
-                  { type: 'tab', name: 'MARKET WATCH', component: PANEL_IDS.STOCKS, id: PANEL_IDS.STOCKS },
-                  { type: 'tab', name: 'INSIDER TRADES', component: PANEL_IDS.INSIDERS, id: PANEL_IDS.INSIDERS },
                   { type: 'tab', name: 'MARKET MOVERS', component: PANEL_IDS.MARKET_MOVERS, id: PANEL_IDS.MARKET_MOVERS },
+                  { type: 'tab', name: 'INSIDER TRADES', component: PANEL_IDS.INSIDERS, id: PANEL_IDS.INSIDERS },
                 ],
               },
               {
                 type: 'tabset',
                 weight: 45,
                 children: [
-                  { type: 'tab', name: 'ECONOMIC CALENDAR', component: PANEL_IDS.ECON_CALENDAR, id: PANEL_IDS.ECON_CALENDAR },
+                  { type: 'tab', name: 'AI INSIGHTS', component: PANEL_IDS.AI, id: PANEL_IDS.AI },
                 ],
               },
             ],

@@ -130,15 +130,7 @@ export function LiveStreamsPanel() {
   const showFallback = !loading && (!videoId || embedError);
 
   return (
-    <GlassCard
-      className="h-full"
-      title={
-        <span className="flex items-center gap-1.5">
-          <Radio size={12} className="text-red-500 animate-pulse" />
-          {t('liveStreams')}
-        </span>
-      }
-    >
+    <GlassCard className="h-full">
       {/* Channel selector */}
       <div className="flex flex-wrap gap-1 px-2 py-1.5 border-b border-border bg-black/50 shrink-0">
         {STREAMS.map(s => (

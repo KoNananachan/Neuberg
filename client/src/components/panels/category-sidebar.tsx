@@ -16,24 +16,14 @@ export function CategorySidebar() {
   const t = useT();
 
   return (
-    <div className="flex gap-1 px-4 py-2 overflow-x-auto no-scrollbar bg-black border-b border-border">
-      <button
-        onClick={() => setSelectedCategory(null)}
-        className={`shrink-0 px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors border ${
-          selectedCategory === null
-            ? 'bg-accent text-black border-accent'
-            : 'bg-black border-border text-neutral hover:border-accent hover:text-accent'
-        }`}
-      >
-        {t('categoryAll')}
-      </button>
+    <>
       {categories?.map((cat) => {
         const isSelected = selectedCategory === cat.slug;
         return (
           <button
             key={cat.slug}
             onClick={() => setSelectedCategory(isSelected ? null : cat.slug)}
-            className={`shrink-0 px-3 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors border flex items-center gap-2 ${
+            className={`shrink-0 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest transition-colors border flex items-center gap-1.5 ${
               isSelected
                 ? ''
                 : 'bg-black border-border text-neutral hover:border-accent hover:text-accent'
@@ -49,6 +39,6 @@ export function CategorySidebar() {
           </button>
         );
       })}
-    </div>
+    </>
   );
 }

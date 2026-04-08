@@ -16,22 +16,6 @@ export function MarketMoversPanel() {
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#050505] border-b border-border/30 shrink-0">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-emerald-400" />
-          <span className="text-[9px] font-black font-mono uppercase tracking-tighter text-emerald-400">
-            {t('panelMarketMovers')}
-          </span>
-        </div>
-        <button
-          onClick={() => refetch()}
-          className="p-1 text-neutral/40 hover:text-emerald-400 transition-colors"
-        >
-          <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
-
       {/* Tabs */}
       <div className="flex border-b border-border/30 bg-black/40 shrink-0">
         {(['gainers', 'losers', 'actives'] as Tab[]).map((t_) => (

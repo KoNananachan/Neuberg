@@ -90,32 +90,19 @@ export function AiInsights() {
                   aria-label={`${rec.action} ${rec.symbol}`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[11px] font-bold text-white bg-border px-1">
-                        {rec.symbol}
-                      </span>
-                      <span
-                        className="text-[10px] font-mono font-bold px-1 border uppercase flex items-center gap-0.5"
-                        style={{
-                          color,
-                          borderColor: color,
-                        }}
-                      >
-                        <span className="text-[8px]">{icon}</span> {rec.action}
-                      </span>
-                    </div>
-                    {rec.confidence != null && (
-                      <span
-                        className="text-[8px] font-mono font-bold px-1 py-0.5 border"
-                        style={{
-                          color: color,
-                          borderColor: `${color}40`,
-                          backgroundColor: `${color}10`,
-                        }}
-                      >
-                        {(rec.confidence * 100).toFixed(0)}%
-                      </span>
-                    )}
+                    <span className="font-mono text-[11px] font-bold text-white bg-border px-1">
+                      {rec.symbol}
+                    </span>
+                    <span
+                      className="text-[10px] font-mono font-bold px-1.5 py-0.5 border uppercase flex items-center gap-0.5"
+                      style={{
+                        color,
+                        borderColor: color,
+                        backgroundColor: `${color}10`,
+                      }}
+                    >
+                      <span className="text-[8px]">{icon}</span> {rec.action}
+                    </span>
                   </div>
 
                   {/* Reason snippet */}

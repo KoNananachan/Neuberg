@@ -50,6 +50,15 @@ export function StockPanel() {
   );
 }
 
+function fmtCompact(n: number | null | undefined): string {
+  if (n == null) return '--';
+  if (n >= 1e12) return `${(n / 1e12).toFixed(1)}T`;
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return n.toFixed(0);
+}
+
 function HeatmapWrapper() {
   const setStockPanelView = useAppStore((s) => s.setStockPanelView);
   return (
@@ -203,41 +212,18 @@ function WatchlistView({
 
   return (
     <GlassCard
-      headerRight={
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setStockPanelView('heatmap')}
-            className="p-1 text-neutral hover:text-accent transition-colors"
-            title={t('heatmap')}
-          >
-            <Grid3X3 className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => setStockPanelView('compare')}
-            className="p-1 text-neutral hover:text-accent transition-colors relative"
-            title={t('compare')}
-          >
-            <Columns className="w-3.5 h-3.5" />
-            {compareSymbols.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent text-[7px] font-bold text-black flex items-center justify-center">
-                {compareSymbols.length}
-              </span>
-            )}
-          </button>
-        </div>
-      }
       className="h-full flex flex-col"
     >
-      {/* Tab Bar */}
+      {/* Tab Bar + view toggle */}
       <div className="flex items-center px-2 bg-black/40 border-b border-border/30 overflow-x-auto no-scrollbar shrink-0">
-        <div className="flex">
+        <div className="flex flex-1">
           {tabs.map(tab => (
             <div key={tab} className="relative group/tab">
               <button
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 ${
-                  activeTab === tab 
-                    ? 'border-accent text-accent bg-accent/5' 
+                  activeTab === tab
+                    ? 'border-accent text-accent bg-accent/5'
                     : 'border-transparent text-neutral hover:text-gray-300 hover:bg-white/5'
                 }`}
               >
@@ -252,13 +238,34 @@ function WatchlistView({
             </div>
           ))}
         </div>
-        <button 
+        <button
           onClick={() => setIsAddingTab(true)}
           className="p-2 text-neutral hover:text-accent transition-colors"
           title={t('addNewTab')}
         >
           <FolderPlus className="w-3.5 h-3.5" />
         </button>
+        <div className="flex items-center gap-0.5 ml-auto pl-2 border-l border-border/20">
+          <button
+            onClick={() => setStockPanelView('heatmap')}
+            className="p-1.5 text-neutral hover:text-accent transition-colors"
+            title={t('heatmap')}
+          >
+            <Grid3X3 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setStockPanelView('compare')}
+            className="p-1.5 text-neutral hover:text-accent transition-colors relative"
+            title={t('compare')}
+          >
+            <Columns className="w-3.5 h-3.5" />
+            {compareSymbols.length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent text-[7px] font-bold text-black flex items-center justify-center">
+                {compareSymbols.length}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -289,7 +296,7 @@ function WatchlistView({
 
       <div className="relative px-4 py-3 border-b border-border/30 bg-black/20" ref={wrapperRef}>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral/40" />
           <input
             type="text"
             value={input}
@@ -300,7 +307,8 @@ function WatchlistView({
             }}
             onFocus={() => input && setShowDropdown(true)}
             placeholder={t('addToTab').replace('{tab}', tabLabel(activeTab))}
-            className="w-full bg-black/40 border border-border/50 pl-9 pr-3 py-1.5 text-xs font-mono text-gray-200 placeholder:text-neutral/50 outline-none focus:border-accent/50 transition-all"
+            className="w-full bg-black/40 border border-border/50 pr-3 py-1.5 text-xs font-mono text-gray-200 placeholder:text-neutral/50 outline-none focus:border-accent/50 transition-all"
+            style={{ paddingLeft: 32 }}
             maxLength={20}
           />
         </div>
@@ -323,61 +331,63 @@ function WatchlistView({
       </div>
 
       <div className="overflow-auto flex-1 no-scrollbar">
-        <table className="w-full text-sm border-separate border-spacing-0">
-          <thead>
-            <tr className="text-[9px] text-neutral/50 uppercase tracking-[0.2em] bg-black/10">
-              <th className="text-left px-4 py-2 font-black border-b border-border/10">{t('asset')}</th>
-              <th className="text-right px-4 py-2 font-black border-b border-border/10">{t('price')}</th>
-              <th className="text-right px-4 py-2 font-black border-b border-border/10">{t('change')}</th>
-              <th className="text-right px-4 py-2 font-black border-b border-border/10">{t('trend')}</th>
-              <th className="text-right px-2 py-2 font-black border-b border-border/10 w-[40px]"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <AnimatePresence initial={false}>
+        <div>
+          {/* Header */}
+          <div className="grid grid-cols-[1.2fr_0.7fr_0.7fr_0.7fr_0.7fr_1fr_0.8fr_36px] px-3 py-1.5 border-b border-border/20 text-[8px] font-black text-neutral/50 uppercase tracking-[0.15em]">
+            <span>{t('asset')}</span>
+            <span className="text-right">{t('price')}</span>
+            <span className="text-right">{t('change')}</span>
+            <span className="text-right">VOL</span>
+            <span className="text-right">MKT CAP</span>
+            <span className="text-right">DAY H/L</span>
+            <span className="text-right">{t('trend')}</span>
+            <span />
+          </div>
+          {/* Rows */}
               {filteredItems.map((item) => {
                 const q = item.quote;
                 const isUp = q && q.changePercent !== null && q.changePercent >= 0;
-                
+
                 return (
-                  <motion.tr
-                    layout
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                  <div
                     key={item.symbol}
-                    className="hover:bg-accent/[0.03] cursor-pointer transition-all group border-b border-border/5"
+                    className="grid grid-cols-[1.2fr_0.7fr_0.7fr_0.7fr_0.7fr_1fr_0.8fr_36px] px-3 py-2 border-b border-border/5 hover:bg-accent/[0.03] cursor-pointer transition-all group items-center"
                     onClick={() => onSelect(item.symbol)}
                   >
-                    <td className="px-4 py-3 border-b border-border/5">
-                      <div className="font-mono font-black text-white text-[13px]">{item.symbol}</div>
-                      <div className="text-[10px] text-neutral truncate max-w-[140px] mt-0.5 font-medium uppercase tracking-tighter">
+                    <div className="min-w-0">
+                      <div className="font-mono font-black text-white text-[12px] group-hover:text-cyan-300 transition-colors">{item.symbol}</div>
+                      <div className="text-[9px] text-neutral truncate mt-0.5 font-medium uppercase tracking-tighter">
                         {item.name || item.symbol}
                       </div>
-                    </td>
-                    <td className={`text-right px-4 py-3 font-mono text-gray-200 font-bold border-b border-border/5 ${flashMap[item.symbol] === 'up' ? 'flash-up' : flashMap[item.symbol] === 'down' ? 'flash-down' : ''}`}>
+                    </div>
+                    <span className={`text-right font-mono text-[12px] text-gray-200 font-bold ${flashMap[item.symbol] === 'up' ? 'flash-up' : flashMap[item.symbol] === 'down' ? 'flash-down' : ''}`}>
                       {q ? q.price.toFixed(2) : '--'}
-                    </td>
-                    <td className={`text-right px-4 py-3 font-mono font-black border-b border-border/5 ${isUp ? 'text-bullish' : 'text-bearish'} ${flashMap[item.symbol] === 'up' ? 'flash-up' : flashMap[item.symbol] === 'down' ? 'flash-down' : ''}`}>
-                      {q && q.changePercent !== null ? (
-                        <div className="flex items-center justify-end gap-1">
-                          {isUp ? '+' : ''}{q.changePercent.toFixed(2)}%
-                        </div>
+                    </span>
+                    <span className={`text-right font-mono text-[11px] font-black ${isUp ? 'text-bullish' : 'text-bearish'}`}>
+                      {q && q.changePercent !== null ? `${isUp ? '+' : ''}${q.changePercent.toFixed(2)}%` : '--'}
+                    </span>
+                    <span className="text-right font-mono text-[10px] text-neutral/60">
+                      {q?.volume ? fmtCompact(q.volume) : '--'}
+                    </span>
+                    <span className="text-right font-mono text-[10px] text-neutral/60">
+                      {q?.marketCap ? fmtCompact(q.marketCap) : '--'}
+                    </span>
+                    <div className="text-right font-mono text-[10px]">
+                      {q && q.dayHigh != null && q.dayLow != null ? (
+                        <span><span className="text-bullish/70">{q.dayHigh.toFixed(1)}</span><span className="text-neutral/30"> / </span><span className="text-bearish/70">{q.dayLow.toFixed(1)}</span></span>
                       ) : '--'}
-                    </td>
-                    <td className="text-right px-3 py-3 border-b border-border/5">
+                    </div>
+                    <div className="flex justify-end">
                       {q && (
-                        <div className="flex justify-end opacity-60 group-hover:opacity-100 transition-opacity">
-                          <Sparkline
-                            data={miniTrend(q.price, q.changePercent, q.dayHigh, q.dayLow, q.previousClose)}
-                            width={60}
-                            height={20}
-                            color={isUp ? '#22c55e' : '#ef4444'}
-                          />
-                        </div>
+                        <Sparkline
+                          data={miniTrend(q.price, q.changePercent, q.dayHigh, q.dayLow, q.previousClose)}
+                          width={50}
+                          height={18}
+                          color={isUp ? '#22c55e' : '#ef4444'}
+                        />
                       )}
-                    </td>
-                    <td className="text-right px-2 py-3 border-b border-border/5">
+                    </div>
+                    <div className="flex items-center justify-end">
                       <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
                         <button
                           onClick={(e) => {
@@ -400,20 +410,16 @@ function WatchlistView({
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </td>
-                  </motion.tr>
+                    </div>
+                  </div>
                 );
               })}
-            </AnimatePresence>
             {filteredItems.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-neutral/40 text-[10px] font-mono uppercase tracking-[0.2em]">
-                  {t('noDataInTab').replace('{tab}', tabLabel(activeTab))}
-                </td>
-              </tr>
+              <div className="px-4 py-12 text-center text-neutral/40 text-[10px] font-mono uppercase tracking-[0.2em]">
+                {t('noDataInTab').replace('{tab}', tabLabel(activeTab))}
+              </div>
             )}
-          </tbody>
-        </table>
+        </div>
       </div>
 
       <ConfirmDialog
@@ -560,31 +566,17 @@ function StockChart({ symbol, onBack }: { symbol: string; onBack: () => void }) 
         </div>
       )}
 
-      {/* Key Stats Bar (chart tab only) */}
+      {/* Key Stats Bar (chart tab only) — single compact row */}
       {detailTab === 'chart' && q && (
-        <div className="shrink-0 border-t border-border/30 bg-black/20">
-          <div className="grid grid-cols-4">
-            <StatCell label={t('mktCap')} value={formatCompact(q.marketCap)} />
-            <StatCell label={t('peLabel')} value={q.pe != null ? q.pe.toFixed(2) : '--'} />
-            <StatCell label={t('epsLabel')} value={q.eps != null ? `$${q.eps.toFixed(2)}` : '--'} />
-            <StatCell label={t('betaLabel')} value={q.beta != null ? q.beta.toFixed(2) : '--'} />
-          </div>
-          <div className="grid grid-cols-4 border-t border-border/10">
-            <StatCell label={t('volume')} value={formatCompact(q.volume)} />
-            <StatCell label={t('avgVol')} value={formatCompact(q.avgVolume)} />
-            <StatCell
-              label={t('fiftyTwoWeekRange')}
-              value={q.fiftyTwoWeekLow != null && q.fiftyTwoWeekHigh != null
-                ? `${q.fiftyTwoWeekLow.toFixed(0)}–${q.fiftyTwoWeekHigh.toFixed(0)}`
-                : '--'}
-            />
-            <StatCell
-              label={t('dayRange')}
-              value={q.dayLow != null && q.dayHigh != null
-                ? `${q.dayLow.toFixed(2)}–${q.dayHigh.toFixed(2)}`
-                : '--'}
-            />
-          </div>
+        <div className="shrink-0 border-t border-border/30 bg-black/20 grid grid-cols-8">
+          <StatCell label={t('mktCap')} value={formatCompact(q.marketCap)} />
+          <StatCell label={t('peLabel')} value={q.pe != null ? q.pe.toFixed(2) : '--'} />
+          <StatCell label={t('epsLabel')} value={q.eps != null ? `$${q.eps.toFixed(2)}` : '--'} />
+          <StatCell label={t('betaLabel')} value={q.beta != null ? q.beta.toFixed(2) : '--'} />
+          <StatCell label={t('volume')} value={formatCompact(q.volume)} />
+          <StatCell label={t('avgVol')} value={formatCompact(q.avgVolume)} />
+          <StatCell label="52W" value={q.fiftyTwoWeekLow != null && q.fiftyTwoWeekHigh != null ? `${q.fiftyTwoWeekLow.toFixed(0)}–${q.fiftyTwoWeekHigh.toFixed(0)}` : '--'} />
+          <StatCell label="DAY" value={q.dayLow != null && q.dayHigh != null ? `${q.dayLow.toFixed(1)}–${q.dayHigh.toFixed(1)}` : '--'} />
         </div>
       )}
 
@@ -1167,9 +1159,9 @@ function formatCompact(n: number | null | undefined): string {
 
 function StatCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="px-3 py-2 border-r border-border/20 last:border-r-0 text-center">
-      <div className="text-[8px] font-black uppercase tracking-[0.15em] text-neutral/50">{label}</div>
-      <div className="text-[11px] font-mono font-bold text-gray-300 mt-0.5">{value}</div>
+    <div className="px-2 py-1 border-r border-border/10 last:border-r-0 text-center">
+      <div className="text-[7px] font-black uppercase tracking-[0.1em] text-neutral/40">{label}</div>
+      <div className="text-[10px] font-mono font-bold text-gray-300">{value}</div>
     </div>
   );
 }
