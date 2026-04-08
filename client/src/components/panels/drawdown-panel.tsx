@@ -44,7 +44,7 @@ export function DrawdownPanel() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value.toUpperCase())}
               placeholder="Symbol"
-              className="w-20 pl-5 pr-1.5 py-1 bg-white/[0.03] border border-border/20 rounded text-[10px] font-mono text-white placeholder:text-neutral/30 focus:outline-none focus:border-rose-400/40"
+              className="w-20 pl-6 pr-1.5 py-1 bg-white/[0.03] border border-border/20 rounded text-[10px] font-mono text-white placeholder:text-neutral/30 focus:outline-none focus:border-rose-400/40"
             />
           </div>
           <button

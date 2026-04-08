@@ -54,7 +54,7 @@ export function CryptoPanel() {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder={t('cryptoSearch')}
-            className="w-full bg-black/60 border border-border/30 pl-7 pr-2 py-1 text-[10px] font-mono text-white placeholder:text-neutral/30"
+            className="w-full bg-black/60 border border-border/30 pl-8 pr-2 py-1 text-[10px] font-mono text-white placeholder:text-neutral/30"
           />
         </div>
       </div>

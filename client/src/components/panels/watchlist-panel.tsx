@@ -28,6 +28,7 @@ type SortKey =
   | 'price'
   | 'changePercent'
   | 'volume'
+  | 'marketCap'
   | 'dayRange'
   | 'w52Range';
 
@@ -183,6 +184,9 @@ export function WatchlistPanel() {
         case 'volume':
           cmp = (qa?.volume ?? 0) - (qb?.volume ?? 0);
           break;
+        case 'marketCap':
+          cmp = (qa?.marketCap ?? 0) - (qb?.marketCap ?? 0);
+          break;
         case 'dayRange': {
           const ra =
             qa && qa.dayHigh != null && qa.dayLow != null
@@ -317,7 +321,7 @@ export function WatchlistPanel() {
               onFocus={() => searchInput && setShowDropdown(true)}
               onKeyDown={handleInputKeyDown}
               placeholder={t('addSymbol')}
-              className="w-full bg-black border border-border/30 pl-7 pr-2 py-1 text-[9px] font-mono text-white placeholder:text-neutral/20 outline-none focus:border-cyan-400/50 transition-colors"
+              className="w-full bg-black border border-border/30 pl-8 pr-2 py-1 text-[9px] font-mono text-white placeholder:text-neutral/20 outline-none focus:border-cyan-400/50 transition-colors"
             />
           </div>
 
@@ -356,7 +360,7 @@ export function WatchlistPanel() {
       )}
 
       {/* ── Column Headers ── */}
-      <div className="grid grid-cols-[1.2fr_0.7fr_0.6fr_0.6fr_0.8fr_1fr_40px] px-3 py-1 border-b border-border/20 text-[7px] font-black text-neutral/40 uppercase tracking-wider shrink-0 gap-1">
+      <div className="grid grid-cols-[1fr_0.6fr_0.5fr_0.6fr_0.5fr_0.7fr_0.8fr_36px] px-3 py-1 border-b border-border/20 text-[7px] font-black text-neutral/40 uppercase tracking-wider shrink-0 gap-1">
         <ColHeader
           label={t('symbol')}
           sortKey="symbol"
@@ -383,6 +387,14 @@ export function WatchlistPanel() {
         <ColHeader
           label={t('volume')}
           sortKey="volume"
+          current={sortKey}
+          asc={sortAsc}
+          onClick={handleSort}
+          className="text-right"
+        />
+        <ColHeader
+          label="MKT CAP"
+          sortKey="marketCap"
           current={sortKey}
           asc={sortAsc}
           onClick={handleSort}
@@ -434,7 +446,7 @@ export function WatchlistPanel() {
             <button
               key={item.symbol}
               onClick={() => setSelectedSymbol(item.symbol)}
-              className="w-full grid grid-cols-[1.2fr_0.7fr_0.6fr_0.6fr_0.8fr_1fr_40px] px-3 py-1.5 border-b border-border/10 hover:bg-white/[0.02] transition-colors text-left gap-1 group"
+              className="w-full grid grid-cols-[1fr_0.6fr_0.5fr_0.6fr_0.5fr_0.7fr_0.8fr_36px] px-3 py-1.5 border-b border-border/10 hover:bg-white/[0.02] transition-colors text-left gap-1 group"
             >
               {/* Symbol + name */}
               <div className="min-w-0 self-center">
@@ -467,6 +479,11 @@ export function WatchlistPanel() {
               {/* Volume */}
               <span className="text-[9px] font-mono text-neutral/50 text-right self-center">
                 {q ? fmtVol(q.volume) : '--'}
+              </span>
+
+              {/* Market Cap */}
+              <span className="text-[9px] font-mono text-neutral/50 text-right self-center">
+                {q?.marketCap ? fmtVol(q.marketCap) : '--'}
               </span>
 
               {/* Day High / Low */}
