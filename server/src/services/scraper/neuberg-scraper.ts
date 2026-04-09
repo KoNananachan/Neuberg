@@ -75,8 +75,12 @@ export class NeubergSource implements NewsSource {
   }
 
   async fetchArticles(limit: number): Promise<NewsItem[]> {
+    const headers: Record<string, string> = { 'User-Agent': 'Neuberg/1.0' };
+    if (env.NEWS_API_KEY) {
+      headers['X-API-Key'] = env.NEWS_API_KEY;
+    }
     const resp = await fetch(`${this.apiUrl}?limit=${limit}`, {
-      headers: { 'User-Agent': 'Neuberg/1.0' },
+      headers,
       signal: AbortSignal.timeout(15_000),
     });
 

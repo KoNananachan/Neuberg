@@ -16,6 +16,7 @@ const envSchema = z.object({
 
   // News data source
   NEWS_API_URL: z.string().default(''),
+  NEWS_API_KEY: z.string().default(''),
 
   // AI / LLM provider (any OpenAI-compatible endpoint)
   // Supports: AI_API_KEY or GEMINI_API_KEY (backward compat)

@@ -41,14 +41,26 @@ export function AiInsights() {
     <GlassCard
       className="h-full"
       headerRight={
-        <button
-          onClick={() => refetch()}
-          className="p-0.5 text-neutral/50 hover:text-accent transition-colors"
-          title={t('refresh')}
-          aria-label="Refresh AI insights"
-        >
-          <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href="https://tradingnews.press"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[8px] font-mono text-accent/50 hover:text-accent transition-colors uppercase tracking-wider"
+          >
+            <span className="text-neutral/30">Data:</span>
+            <span className="font-bold">TradingNews API</span>
+            <svg className="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+          </a>
+          <button
+            onClick={() => refetch()}
+            className="p-0.5 text-neutral/50 hover:text-accent transition-colors"
+            title={t('refresh')}
+            aria-label="Refresh AI insights"
+          >
+            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       }
     >
       <div className="flex-1 overflow-auto no-scrollbar bg-black flex flex-col">

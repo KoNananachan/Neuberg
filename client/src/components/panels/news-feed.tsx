@@ -207,7 +207,36 @@ export function NewsFeed() {
               : data?.articles || []
             ).map((article, index) => {
               const sentimentColor = getSentimentColor(article.sentiment);
-              return (
+              const items: React.ReactNode[] = [];
+
+              // Insert API promo card every 8 articles
+              if (index > 0 && index % 8 === 0) {
+                items.push(
+                  <a
+                    key={`promo-${index}`}
+                    href="https://tradingnews.press"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-3 py-2 border-b border-accent/20 bg-accent/[0.03] hover:bg-accent/[0.06] transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-[9px] font-mono font-bold text-accent uppercase tracking-wider">
+                          ⚡ TradingNews API
+                        </div>
+                        <div className="text-[8px] font-mono text-neutral/50 mt-0.5 uppercase">
+                          Real-time financial news with AI-powered sentiment analysis
+                        </div>
+                      </div>
+                      <span className="text-[8px] font-mono font-bold text-accent border border-accent/30 px-2 py-0.5 uppercase shrink-0">
+                        Get API Key →
+                      </span>
+                    </div>
+                  </a>
+                );
+              }
+
+              items.push(
                 <button
                   key={article.id}
                   onClick={() => handleArticleClick(article)}
@@ -294,6 +323,7 @@ export function NewsFeed() {
                   <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-accent opacity-0 group-hover:opacity-100" />
                 </button>
               );
+              return items;
             })}
         </div>
       </div>
@@ -351,6 +381,19 @@ export function NewsFeed() {
           )}
         </div>
       )}
+
+      {/* Powered by footer */}
+      <a
+        href="https://tradingnews.press"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 flex items-center justify-center gap-2 px-3 py-1.5 border-t border-accent/20 bg-accent/[0.04] hover:bg-accent/10 transition-colors group"
+      >
+        <svg className="w-3 h-3 text-accent/60 group-hover:text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <span className="text-[9px] font-mono text-neutral/50 uppercase tracking-wider group-hover:text-neutral/70">Powered by</span>
+        <span className="text-[10px] font-mono font-bold text-accent uppercase tracking-wider">TradingNews API</span>
+        <svg className="w-3 h-3 text-accent/40 group-hover:text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+      </a>
 
     </GlassCard>
   );
