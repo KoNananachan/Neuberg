@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Volume2, RefreshCw, Gauge, Palette, Rss, Brain, ArrowRightLeft } from 'lucide-react';
+import { Bell, RefreshCw, Gauge, Palette, Rss, Brain, ArrowRightLeft } from 'lucide-react';
 import { useAppStore, type UserSettings } from '../../stores/use-app-store';
 import { useT } from '../../i18n';
 

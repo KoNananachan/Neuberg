@@ -1,6 +1,6 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAuthStore } from '../../stores/use-auth-store';
-import { Wallet, ChevronDown, Copy, ExternalLink, Power } from 'lucide-react';
+import { Wallet, ChevronDown } from 'lucide-react';
 
 export function WalletButton() {
   const user = useAuthStore((s) => s.user);

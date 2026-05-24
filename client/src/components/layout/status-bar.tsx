@@ -1,7 +1,7 @@
 import { useAppStore } from '../../stores/use-app-store';
 import { useAccount } from 'wagmi';
 import { useT } from '../../i18n';
-import { Database, Zap, Cpu, TerminalSquare, LinkIcon } from 'lucide-react';
+import { Database, Zap, Cpu, LinkIcon } from 'lucide-react';
 
 export function StatusBar() {
   const lastScrapeTime = useAppStore((s) => s.lastScrapeTime);

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../../stores/use-app-store';
-import { Terminal, Search, Globe, TrendingUp, Cpu, X, Command } from 'lucide-react';
+import { Terminal, Search, Globe, TrendingUp, Cpu, Command } from 'lucide-react';
 import { useCategories } from '../../api/hooks/use-categories';
 import { useT } from '../../i18n';
 

@@ -1,16 +1,14 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   createChart,
   type IChartApi,
   type ISeriesApi,
-  type SeriesType,
   ColorType,
   type MouseEventParams,
-  type LogicalRange,
 } from 'lightweight-charts';
 import { useStockDetail } from '../../api/hooks/use-stocks';
 import { useAppStore } from '../../stores/use-app-store';
-import { sma, ema } from '../../lib/indicators';
+import { sma } from '../../lib/indicators';
 import { rsi } from '../../lib/indicators/rsi';
 import { macd } from '../../lib/indicators/macd';
 import { IndicatorToolbar } from './indicator-toolbar';

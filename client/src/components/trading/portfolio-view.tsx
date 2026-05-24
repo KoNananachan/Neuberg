@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import { useUserState, useStockUserState, useSpotBalances, usePerpMetaAndCtxs, useStockPerps, useCombinedMids } from '../../hooks/use-hyperliquid';
 import { useQueryClient } from '@tanstack/react-query';
-import { Wallet, Loader2, X } from 'lucide-react';
+import { Wallet, Loader2 } from 'lucide-react';
 import { useT } from '../../i18n';
 import {
   buildOrderAction,
