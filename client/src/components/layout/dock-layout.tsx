@@ -525,6 +525,12 @@ const SportsMediaRightsPanel = lazy(() => import('../panels/sports-media-rights-
 const LuxuryCollectiblesIndexPanel = lazy(() => import('../panels/luxury-collectibles-index-panel').then(m => ({ default: m.LuxuryCollectiblesIndexPanel })));
 const FintechDigitalPaymentsPanel = lazy(() => import('../panels/fintech-digital-payments-panel').then(m => ({ default: m.FintechDigitalPaymentsPanel })));
 const CyberRiskInsurancePanel = lazy(() => import('../panels/cyber-risk-insurance-panel').then(m => ({ default: m.CyberRiskInsurancePanel })));
+// ── Investor Terminal panels ────────────────────────────────────────────────
+const StockPickerPanel = lazy(() => import('../panels/stock-picker-panel').then(m => ({ default: m.StockPickerPanel })));
+const ValuationCardPanel = lazy(() => import('../panels/valuation-card-panel').then(m => ({ default: m.ValuationCardPanel })));
+const PortfolioReviewPanel = lazy(() => import('../panels/portfolio-review-panel').then(m => ({ default: m.PortfolioReviewPanel })));
+const ResearchNotesPanel = lazy(() => import('../panels/research-notes-panel').then(m => ({ default: m.ResearchNotesPanel })));
+const DcaPanel = lazy(() => import('../panels/dca-panel').then(m => ({ default: m.DcaPanel })));
 
 function LazyWrap({ children }: { children: React.ReactNode }) {
   return (
@@ -1060,6 +1066,12 @@ export const PANEL_IDS = {
   LUXURY_COLLECTIBLES_INDEX: 'luxury-collectibles-index',
   FINTECH_DIGITAL_PAYMENTS: 'fintech-digital-payments',
   CYBER_RISK_INSURANCE: 'cyber-risk-insurance',
+  // ── Investor Terminal panels ─────────────────────────────────────────────
+  IV_STOCK_PICKER: 'iv-stock-picker',
+  IV_VALUATION_CARD: 'iv-valuation-card',
+  IV_PORTFOLIO_REVIEW: 'iv-portfolio-review',
+  IV_RESEARCH_NOTES: 'iv-research-notes',
+  IV_DCA: 'iv-dca',
 } as const;
 
 export const PANEL_NAMES: Record<string, string> = {
@@ -1579,6 +1591,12 @@ export const PANEL_NAMES: Record<string, string> = {
   [PANEL_IDS.LUXURY_COLLECTIBLES_INDEX]: 'LUXURY & COLLECTIBLES',
   [PANEL_IDS.FINTECH_DIGITAL_PAYMENTS]: 'FINTECH & PAYMENTS',
   [PANEL_IDS.CYBER_RISK_INSURANCE]: 'CYBER RISK & INSURANCE',
+  // ── Investor Terminal ─────────────────────────────────────────────────────
+  [PANEL_IDS.IV_STOCK_PICKER]: 'STOCK PICKER',
+  [PANEL_IDS.IV_VALUATION_CARD]: 'VALUATION CARD',
+  [PANEL_IDS.IV_PORTFOLIO_REVIEW]: 'PORTFOLIO REVIEW',
+  [PANEL_IDS.IV_RESEARCH_NOTES]: 'RESEARCH & NOTES',
+  [PANEL_IDS.IV_DCA]: 'DCA / DOUBLE DOWN',
 };
 
 /** Maps panel IDs to i18n translation keys */
@@ -2916,6 +2934,12 @@ export function DockLayout() {
       case PANEL_IDS.LUXURY_COLLECTIBLES_INDEX: content = <LazyWrap><LuxuryCollectiblesIndexPanel /></LazyWrap>; break;
       case PANEL_IDS.FINTECH_DIGITAL_PAYMENTS: content = <LazyWrap><FintechDigitalPaymentsPanel /></LazyWrap>; break;
       case PANEL_IDS.CYBER_RISK_INSURANCE: content = <LazyWrap><CyberRiskInsurancePanel /></LazyWrap>; break;
+      // ── Investor Terminal ───────────────────────────────────────────────
+      case PANEL_IDS.IV_STOCK_PICKER: content = <LazyWrap><StockPickerPanel /></LazyWrap>; break;
+      case PANEL_IDS.IV_VALUATION_CARD: content = <LazyWrap><ValuationCardPanel /></LazyWrap>; break;
+      case PANEL_IDS.IV_PORTFOLIO_REVIEW: content = <LazyWrap><PortfolioReviewPanel /></LazyWrap>; break;
+      case PANEL_IDS.IV_RESEARCH_NOTES: content = <LazyWrap><ResearchNotesPanel /></LazyWrap>; break;
+      case PANEL_IDS.IV_DCA: content = <LazyWrap><DcaPanel /></LazyWrap>; break;
       default: {
         const extra = extraFactories.get(component ?? '');
         if (extra) return <PanelErrorBoundary>{extra(node)}</PanelErrorBoundary>;
@@ -2952,5 +2976,12 @@ export function resetLayout() {
   localStorage.setItem(RESET_FLAG, '1');
   const nonDefaultPanels = ALL_PANEL_IDS.filter(id => !DEFAULT_PANEL_IDS.has(id));
   useAppStore.setState({ hiddenPanels: nonDefaultPanels });
+  window.location.reload();
+}
+
+export function applyInvestorLayout(model: IJsonModel) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(model));
+  localStorage.setItem(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION));
+  useAppStore.setState({ hiddenPanels: [] });
   window.location.reload();
 }
