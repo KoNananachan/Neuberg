@@ -1,8 +1,8 @@
 # Privacy Policy
 
-**Neuberg** — operated by Bauhinia AI Limited
+**Neuberg** — operated by Nuvela Technologies Inc.
 
-Last updated: March 2026
+Last updated: November 2, 2026
 
 ---
 
@@ -148,4 +148,4 @@ If you have questions about this Privacy Policy or your data, contact us at:
 
 ---
 
-Bauhinia AI Limited
+Nuvela Technologies Inc.

@@ -4,7 +4,7 @@
   "description": "AI-powered trading news terminal with real-time sentiment analysis, market data, and prediction markets",
   "private": true,
   "license": "BUSL-1.1",
-  "author": "Bauhinia AI Limited",
+  "author": "Nuvela Technologies Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/KoNananachan/Neuberg.git"

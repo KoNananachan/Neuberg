@@ -1,8 +1,8 @@
 # Terms of Service
 
-**Neuberg** — operated by Bauhinia AI Limited
+**Neuberg** — operated by Nuvela Technologies Inc.
 
-Last updated: March 2026
+Last updated: November 2, 2026
 
 ---
 
@@ -76,6 +76,7 @@ Violation of these terms may result in immediate account suspension or terminati
 
 Neuberg offers a paid Pro subscription with additional features.
 
+- **Nuvela Technologies Inc.** is the seller of the Pro subscription and the entity that charges subscription fees.
 - Payments are processed through **Stripe**.
 - Subscriptions renew automatically at the end of each billing period.
 - You may cancel your subscription at any time. Cancellation takes effect at the **end of the current billing period** — you will retain access to Pro features until then.
@@ -100,8 +101,8 @@ Neuberg connects to third-party services including, but not limited to, Alpaca M
 Neuberg is licensed under the **Business Source License 1.1 (BSL 1.1)**.
 
 - You may view and use the source code for non-commercial purposes as permitted by the license.
-- **Commercial use requires a separate license** from Bauhinia AI Limited.
-- All trademarks, branding, and original content remain the property of Bauhinia AI Limited.
+- **Commercial use requires a separate license** from Nuvela Technologies Inc.
+- All trademarks, branding, and original content remain the property of Nuvela Technologies Inc.
 
 For commercial licensing inquiries, contact us at the email address below.
 
@@ -122,7 +123,7 @@ To the maximum extent permitted by law:
 
 ## 10. Indemnification
 
-You agree to indemnify, defend, and hold harmless Bauhinia AI Limited, its officers, directors, employees, and agents from and against any and all claims, liabilities, damages, losses, costs, and expenses (including reasonable legal fees) arising out of or related to:
+You agree to indemnify, defend, and hold harmless Nuvela Technologies Inc., its officers, directors, employees, and agents from and against any and all claims, liabilities, damages, losses, costs, and expenses (including reasonable legal fees) arising out of or related to:
 
 - Your use of the service or any activity under your account.
 - Your violation of these Terms of Service.
@@ -175,4 +176,4 @@ If you have questions about these Terms of Service, contact us at:
 
 ---
 
-Bauhinia AI Limited
+Nuvela Technologies Inc.

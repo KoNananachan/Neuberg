@@ -173,7 +173,7 @@ Neuberg/
 │           ├── stocks/        # Yahoo Finance, insider tracking
 │           └── websocket/     # Real-time price updates
 ├── Dockerfile                 # Multi-stage production build
-└── LICENSE                    # BSL 1.1 (Bauhinia AI Limited)
+└── LICENSE                    # BSL 1.1 (Nuvela Technologies Inc.)
 ```
 
 ---
@@ -187,7 +187,7 @@ Neuberg/
 
 Licensed under the [Business Source License 1.1](LICENSE).
 
-**Licensor:** Bauhinia AI Limited
+**Licensor:** Nuvela Technologies Inc.
 
 You may view, fork, and modify the code for non-commercial purposes. Commercial use requires a separate license. See [LICENSE](LICENSE) for details.
 

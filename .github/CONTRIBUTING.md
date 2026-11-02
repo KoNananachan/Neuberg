@@ -50,4 +50,4 @@ Pull requests require at least one approving review before they can be merged.
 
 ## License
 
-By contributing to Neuberg, you agree that your contributions will be licensed under the Business Source License 1.1 (BSL 1.1), as held by Bauhinia AI Limited.
+By contributing to Neuberg, you agree that your contributions will be licensed under the Business Source License 1.1 (BSL 1.1), as held by Nuvela Technologies Inc.
