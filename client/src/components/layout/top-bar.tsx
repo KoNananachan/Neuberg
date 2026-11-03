@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../../stores/use-app-store';
 import { useT, LOCALE_LABELS, type Locale } from '../../i18n';
-import { Search, Bell, Settings, LayoutGrid, Maximize2, Minimize2, Globe } from 'lucide-react';
+import { Search, Bell, Settings, LayoutGrid, Maximize2, Minimize2, Globe, BarChart2 } from 'lucide-react';
+import { INVESTOR_LAYOUTS } from '../../config/layouts/investor-layouts';
+import { applyInvestorLayout } from './dock-layout';
 import { NotificationPanel } from '../common/notification-panel';
 import { SettingsPanel } from '../common/settings-panel';
 import { PanelToggleMenu } from '../common/panel-toggle-menu';
@@ -76,6 +78,9 @@ export function TopBar() {
         </button>
 
         <div className="flex items-center gap-2">
+          {/* Investor Layout Switcher */}
+          <InvestorLayoutMenu />
+
           {/* Panel Toggle */}
           <div className="relative" ref={panelMenuRef}>
             <button
@@ -217,6 +222,47 @@ export function TopBar() {
         </div>
       </div>
     </header>
+  );
+}
+
+function InvestorLayoutMenu() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 text-neutral hover:text-accent transition-colors px-2 py-1 border border-transparent hover:border-border bg-black ${open ? 'text-accent border-border' : ''}`}
+        title="Investor Layouts"
+      >
+        <BarChart2 className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline text-[9px] font-mono font-black tracking-widest uppercase">INVESTOR</span>
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 bg-panel border border-border z-50 min-w-[160px]">
+          <p className="text-[8px] font-mono text-neutral/40 uppercase tracking-widest px-2 pt-2 pb-1">Load Layout</p>
+          {INVESTOR_LAYOUTS.map((l) => (
+            <button
+              key={l.id}
+              onClick={() => { applyInvestorLayout(l.model); setOpen(false); }}
+              className="w-full text-left px-3 py-1.5 text-[10px] font-mono text-neutral hover:bg-hover hover:text-accent transition-colors border-b border-border/30 last:border-0"
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
